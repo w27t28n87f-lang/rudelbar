@@ -1,0 +1,436 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --bg: #171717;
+    --card: #242424;
+    --card-dark: #1d1d1d;
+    --gold: #f4a51c;
+    --gold-soft: #b97832;
+    --text: #ffffff;
+    --muted: #aaaaaa;
+    --button: #555555;
+    --danger: #a63b43;
+}
+
+html,
+body {
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+    padding:
+        max(16px, env(safe-area-inset-top))
+        max(14px, env(safe-area-inset-right))
+        max(16px, env(safe-area-inset-bottom))
+        max(14px, env(safe-area-inset-left));
+}
+
+button {
+    font: inherit;
+    border: none;
+    cursor: pointer;
+}
+
+.app {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* KOPF */
+
+.kopf {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.kopf h1 {
+    font-size: clamp(24px, 5vw, 38px);
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.kopf p {
+    margin-top: 3px;
+    color: var(--gold);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.hauptbutton {
+    flex-shrink: 0;
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: var(--gold);
+    color: #3b2500;
+    font-weight: 800;
+    font-size: 16px;
+}
+
+/* HAUPTBEREICH */
+
+.inhalt {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 18px;
+    align-items: start;
+}
+
+.getraenke-bereich {
+    min-width: 0;
+}
+
+.getraenke-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+/* GETRÄNKEKACHEL */
+
+.getraenk {
+    min-width: 0;
+    padding: 12px;
+    border: 1.5px solid var(--gold-soft);
+    border-radius: 20px;
+    background: var(--card);
+    overflow: hidden;
+}
+
+.getraenk-bild {
+    width: 100%;
+    height: 130px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--card-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.getraenk-bild img {
+    width: 78%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+.getraenk-symbol {
+    font-size: 52px;
+    color: var(--gold);
+}
+
+.getraenk-name {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 19px;
+    font-weight: 900;
+}
+
+.getraenk-preis {
+    margin-top: 3px;
+    text-align: center;
+    color: var(--gold);
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.getraenk-aktionen {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    margin-top: 12px;
+}
+
+.aktion {
+    min-height: 42px;
+    border-radius: 10px;
+    background: var(--button);
+    font-size: 19px;
+}
+
+.bearbeiten {
+    color: #36d9ee;
+}
+
+.entfernen {
+    color: #ff4b55;
+}
+
+/* BESTELLUNG */
+
+.bestellung {
+    position: sticky;
+    top: 12px;
+    padding: 18px;
+    border: 1.5px solid var(--gold-soft);
+    border-radius: 20px;
+    background: var(--card);
+}
+
+.bestellung h2 {
+    font-size: 27px;
+    margin-bottom: 18px;
+}
+
+.warenkorb {
+    min-height: 180px;
+}
+
+.leer {
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: var(--muted);
+    text-align: center;
+}
+
+.warenkorb-symbol {
+    margin-bottom: 8px;
+    font-size: 44px;
+}
+
+.leer p {
+    font-weight: 700;
+}
+
+.gesamt-zeile {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 0;
+    border-top: 1px solid var(--gold-soft);
+    font-size: 21px;
+}
+
+#gesamtpreis {
+    color: var(--gold);
+    font-size: 25px;
+}
+
+.zahlung {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+}
+
+.zahlung-button {
+    min-height: 52px;
+    border-radius: 12px;
+    font-weight: 900;
+}
+
+.bar {
+    background: var(--gold);
+    color: #392300;
+}
+
+.karte {
+    background: #666666;
+    color: white;
+}
+
+.loeschen-button {
+    width: 100%;
+    min-height: 46px;
+    margin-top: 9px;
+    border-radius: 12px;
+    background: var(--danger);
+    color: white;
+    font-weight: 800;
+}
+
+/* HANDY */
+
+@media (max-width: 760px) {
+
+    body {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .kopf {
+        align-items: flex-end;
+    }
+
+    .kopf h1 {
+        font-size: 25px;
+    }
+
+    .kopf p {
+        font-size: 10px;
+    }
+
+    .hauptbutton {
+        padding: 12px 14px;
+        font-size: 14px;
+    }
+
+    .inhalt {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .getraenke-bereich {
+        width: 100%;
+    }
+
+    .getraenke-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+    }
+
+    .getraenk {
+        padding: 8px;
+        border-radius: 15px;
+    }
+
+    .getraenk-bild {
+        height: 95px;
+    }
+
+    .getraenk-bild img {
+        width: 82%;
+    }
+
+    .getraenk-symbol {
+        font-size: 38px;
+    }
+
+    .getraenk-name {
+        font-size: 15px;
+    }
+
+    .getraenk-preis {
+        font-size: 15px;
+    }
+
+    .aktion {
+        min-height: 38px;
+        font-size: 16px;
+    }
+
+    .bestellung {
+        position: relative;
+        top: auto;
+        width: 100%;
+        margin-top: 4px;
+        padding: 14px;
+    }
+
+    .bestellung h2 {
+        font-size: 24px;
+    }
+
+    .warenkorb,
+    .leer {
+        min-height: 130px;
+    }
+}
+
+/* SEHR SCHMALE HANDYS */
+
+@media (max-width: 360px) {
+
+    .kopf {
+        gap: 8px;
+    }
+
+    .hauptbutton {
+        padding: 10px;
+        font-size: 13px;
+    }
+
+    .getraenke-grid {
+        gap: 7px;
+    }
+
+    .getraenk-bild {
+        height: 82px;
+    }
+}
+.getraenk-hauptbereich {
+    width: 100%;
+    background: transparent;
+    color: white;
+}
+
+.ausgewaehlt {
+    margin-top: 6px;
+    color: var(--gold);
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
+}
+
+.warenkorb-zeile {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #444;
+}
+
+.warenkorb-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.warenkorb-info small {
+    color: var(--muted);
+}
+
+.warenkorb-steuerung {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.warenkorb-steuerung button {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #555;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.warenkorb-steuerung span {
+    min-width: 20px;
+    text-align: center;
+    font-weight: 800;
+}
+
+.warenkorb-summe {
+    color: var(--gold);
+    white-space: nowrap;
+}
+
+@media (max-width: 430px) {
+    .warenkorb-zeile {
+        grid-template-columns: 1fr auto;
+    }
+
+    .warenkorb-summe {
+        grid-column: 1 / -1;
+        text-align: right;
+    }
+}

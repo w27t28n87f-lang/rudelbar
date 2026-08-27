@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <title>Rudelbar</title>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main class="app">
+        <header class="kopf">
+            <div>
+                <h1>RUDELBAR</h1>
+                <p>Die mobile Kneipe</p>
+            </div>
+
+            <button class="hauptbutton" id="getraenkHinzufuegen">
+                + Getränk
+            </button>
+        </header>
+
+        <section class="inhalt">
+
+            <div class="getraenke-bereich">
+                <div id="getraenkeListe" class="getraenke-grid">
+                    <!-- Getränke kommen später per JavaScript hier hinein -->
+                </div>
+            </div>
+
+            <aside class="bestellung">
+                <h2>Bestellung</h2>
+
+                <div id="warenkorb" class="warenkorb">
+                    <div class="leer">
+                        <div class="warenkorb-symbol">🛒</div>
+                        <p>Noch keine Getränke</p>
+                    </div>
+                </div>
+
+                <div class="gesamt-zeile">
+                    <strong>GESAMT</strong>
+                    <strong id="gesamtpreis">0,00 €</strong>
+                </div>
+
+                <div class="zahlung">
+                    <button id="barButton" class="zahlung-button bar">
+                        BAR
+                    </button>
+
+                    <button id="karteButton" class="zahlung-button karte">
+                        KARTE
+                    </button>
+                </div>
+
+                <button id="bestellungLoeschen" class="loeschen-button">
+                    Bestellung löschen
+                </button>
+            </aside>
+
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
