@@ -2,185 +2,439 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
   <meta name="theme-color" content="#171717">
+
   <title>Rudelbar</title>
+
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <main class="app">
 
-    <header class="kopf">
-      <div class="branding">
-        <img src="rudelbar-icon.png" class="logo" alt="Rudelbar">
+<main class="app">
 
-        <div>
-          <h1>RUDELBAR</h1>
-          <p>DIE MOBILE KNEIPE</p>
-        </div>
+  <!-- KOPF -->
+
+  <header class="kopf">
+
+    <div class="branding">
+
+      <img
+        src="rudelbar-icon.png"
+        class="logo"
+        alt="Rudelbar"
+      >
+
+      <div>
+        <h1>RUDELBAR</h1>
+        <p>DIE MOBILE KNEIPE</p>
       </div>
 
-      <div class="kopf-buttons">
-        <button class="iconbutton" id="statistikBtn" aria-label="Übersicht">
-          <svg viewBox="0 0 24 24">
-            <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>
-          </svg>
-        </button>
+    </div>
 
-        <button class="hauptbutton" id="getraenkHinzufuegen">
-          + Getränk
-        </button>
-      </div>
-    </header>
+    <div class="kopf-buttons">
 
-    <section class="inhalt">
+      <button
+        class="iconbutton"
+        id="statistikBtn"
+        aria-label="Tagesübersicht"
+        title="Tagesübersicht"
+      >
+        <svg viewBox="0 0 24 24">
+          <path d="M4 20V10"/>
+          <path d="M10 20V4"/>
+          <path d="M16 20v-7"/>
+          <path d="M22 20H2"/>
+        </svg>
+      </button>
 
-      <section class="produkte">
-        <div id="getraenkeListe" class="getraenke-grid"></div>
-      </section>
+      <button
+        class="iconbutton abschluss-button"
+        id="abschlussBtn"
+        aria-label="Tagesabschluss"
+        title="Tagesabschluss"
+      >
+        <svg viewBox="0 0 24 24">
+          <path d="M20 6L9 17l-5-5"/>
+        </svg>
+      </button>
 
-      <aside class="bestellung">
-        <h2>Bestellung</h2>
+      <button
+        class="hauptbutton"
+        id="getraenkHinzufuegen"
+      >
+        + Getränk
+      </button>
 
-        <div id="warenkorb" class="warenkorb"></div>
+    </div>
 
-        <div class="gesamt-zeile">
-          <strong>GESAMT</strong>
-          <strong id="gesamtpreis">0,00 €</strong>
-        </div>
+  </header>
 
-        <div class="zahlung">
-          <button id="barButton" class="zahlung-button bar">
-            BAR
-          </button>
 
-          <button id="karteButton" class="zahlung-button karte">
-            KARTE
-          </button>
-        </div>
+  <!-- HAUPTBEREICH -->
 
-        <button id="bestellungLoeschen" class="loeschen-button">
-          Bestellung löschen
-        </button>
-      </aside>
+  <section class="inhalt">
+
+    <section class="produkte">
+
+      <div
+        id="getraenkeListe"
+        class="getraenke-grid"
+      ></div>
 
     </section>
-  </main>
 
-  <!-- Getränk -->
 
-  <dialog id="getraenkDialog">
-    <div class="dialogbox">
-      <div class="dialog-kopf">
-        <h2 id="dialogTitel">Getränk hinzufügen</h2>
-        <button class="sekundaer" id="getraenkAbbrechen">Abbrechen</button>
+    <!-- BESTELLUNG -->
+
+    <aside class="bestellung">
+
+      <h2>Bestellung</h2>
+
+      <div
+        id="warenkorb"
+        class="warenkorb"
+      ></div>
+
+      <div class="gesamt-zeile">
+
+        <strong>GESAMT</strong>
+
+        <strong id="gesamtpreis">
+          0,00 €
+        </strong>
+
       </div>
 
-      <label>
-        Name
-        <input id="nameInput" autocomplete="off">
-      </label>
+      <div class="zahlung">
 
-      <label>
-        Preis
-        <input id="preisInput" inputmode="decimal" placeholder="3,50">
-      </label>
+        <button
+          id="barButton"
+          class="zahlung-button bar"
+        >
+          BAR
+        </button>
 
-      <label>
-        Foto
-        <input id="bildInput" type="file" accept="image/*">
-      </label>
+        <button
+          id="karteButton"
+          class="zahlung-button karte"
+        >
+          KARTE
+        </button>
 
-      <div id="bildVorschau" class="bild-vorschau"></div>
+      </div>
 
-      <button class="hauptbutton voll" id="getraenkSpeichern">
-        Speichern
+      <button
+        id="bestellungLoeschen"
+        class="loeschen-button"
+      >
+        Bestellung löschen
       </button>
-    </div>
-  </dialog>
 
-  <!-- Übersicht -->
+    </aside>
 
-  <dialog id="statistikDialog">
-    <div class="dialogbox gross">
-      <div class="dialog-kopf">
-        <h2>Tagesübersicht</h2>
+  </section>
 
-        <div class="dialog-aktionen">
-          <button class="teilenBtn" id="getraenkeTeilen">
-            Teilen
-          </button>
+</main>
 
-          <button class="sekundaer" id="statistikSchliessen">
-            Fertig
-          </button>
-        </div>
-      </div>
 
-      <div id="statistikInhalt"></div>
-    </div>
-  </dialog>
+<!-- GETRÄNK BEARBEITEN -->
 
-  <!-- Tagesabschluss -->
+<dialog id="getraenkDialog">
 
-  <dialog id="abschlussDialog">
-    <div class="dialogbox gross">
-      <div class="dialog-kopf">
-        <h2>Tagesabschluss</h2>
+  <div class="dialogbox">
 
-        <div class="dialog-aktionen">
-          <button class="teilenBtn" id="abschlussTeilen">
-            Teilen
-          </button>
+    <div class="dialog-kopf">
 
-          <button class="sekundaer" id="abschlussSchliessen">
-            Fertig
-          </button>
-        </div>
-      </div>
+      <h2 id="dialogTitel">
+        Getränk hinzufügen
+      </h2>
 
-      <div class="abschluss-form">
-        <label>
-          Veranstaltung
-          <input id="veranstaltungInput" placeholder="z. B. Dorffest">
-        </label>
-
-        <label>
-          Anfangsbestand
-          <input id="anfangsbestandInput" inputmode="decimal" value="0">
-        </label>
-
-        <label>
-          Einlagen
-          <input id="einlagenInput" inputmode="decimal" value="0">
-        </label>
-
-        <label>
-          Entnahmen
-          <input id="entnahmenInput" inputmode="decimal" value="0">
-        </label>
-
-        <label>
-          Ausgaben
-          <input id="ausgabenInput" inputmode="decimal" value="0">
-        </label>
-
-        <label>
-          Ist-Kassenbestand
-          <input id="istKasseInput" inputmode="decimal" value="0">
-        </label>
-      </div>
-
-      <div id="abschlussInhalt"></div>
-
-      <button class="hauptbutton voll" id="abschlussSpeichern">
-        Tagesabschluss speichern
+      <button
+        class="sekundaer"
+        id="getraenkAbbrechen"
+      >
+        Abbrechen
       </button>
-    </div>
-  </dialog>
 
-  <script src="app.js"></script>
+    </div>
+
+    <label>
+      Name
+
+      <input
+        id="nameInput"
+        autocomplete="off"
+      >
+    </label>
+
+    <label>
+      Preis
+
+      <input
+        id="preisInput"
+        inputmode="decimal"
+        placeholder="3,50"
+      >
+    </label>
+
+    <label>
+      Foto
+
+      <input
+        id="bildInput"
+        type="file"
+        accept="image/*"
+      >
+    </label>
+
+    <div
+      id="bildVorschau"
+      class="bild-vorschau"
+    ></div>
+
+    <button
+      class="hauptbutton voll"
+      id="getraenkSpeichern"
+    >
+      Speichern
+    </button>
+
+  </div>
+
+</dialog>
+
+
+<!-- TAGESÜBERSICHT -->
+
+<dialog id="statistikDialog">
+
+  <div class="dialogbox gross">
+
+    <div class="dialog-kopf">
+
+      <h2>Tagesübersicht</h2>
+
+      <div class="dialog-aktionen">
+
+        <button
+          class="teilenBtn"
+          id="getraenkeTeilen"
+        >
+          Teilen
+        </button>
+
+        <button
+          class="sekundaer"
+          id="statistikSchliessen"
+        >
+          Fertig
+        </button>
+
+      </div>
+
+    </div>
+
+    <div id="statistikInhalt"></div>
+
+  </div>
+
+</dialog>
+
+
+<!-- VERKAUF BEARBEITEN -->
+
+<dialog id="verkaufDialog">
+
+  <div class="dialogbox gross">
+
+    <div class="dialog-kopf">
+
+      <h2>Verkauf bearbeiten</h2>
+
+      <button
+        class="sekundaer"
+        id="verkaufAbbrechen"
+      >
+        Abbrechen
+      </button>
+
+    </div>
+
+    <label>
+      Zahlungsart
+
+      <select id="verkaufZahlungsart">
+
+        <option value="Bar">
+          Bar
+        </option>
+
+        <option value="Karte">
+          Karte
+        </option>
+
+      </select>
+
+    </label>
+
+    <h3 class="zwischenueberschrift">
+      Getränke
+    </h3>
+
+    <div id="verkaufPositionen"></div>
+
+    <div class="verkauf-edit-gesamt">
+
+      <strong>GESAMT</strong>
+
+      <strong id="verkaufEditGesamt">
+        0,00 €
+      </strong>
+
+    </div>
+
+    <div class="verkauf-edit-buttons">
+
+      <button
+        class="hauptbutton"
+        id="verkaufSpeichern"
+      >
+        Änderungen speichern
+      </button>
+
+      <button
+        class="loeschen-button"
+        id="verkaufLoeschen"
+      >
+        Verkauf löschen
+      </button>
+
+    </div>
+
+  </div>
+
+</dialog>
+
+
+<!-- TAGESABSCHLUSS -->
+
+<dialog id="abschlussDialog">
+
+  <div class="dialogbox gross">
+
+    <div class="dialog-kopf">
+
+      <h2>Tagesabschluss</h2>
+
+      <div class="dialog-aktionen">
+
+        <button
+          class="teilenBtn"
+          id="abschlussTeilen"
+        >
+          Teilen
+        </button>
+
+        <button
+          class="sekundaer"
+          id="abschlussSchliessen"
+        >
+          Fertig
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div class="abschluss-form">
+
+      <label>
+        Veranstaltung
+
+        <input
+          id="veranstaltungInput"
+          placeholder="z. B. Dorffest"
+        >
+      </label>
+
+      <label>
+        Anfangsbestand
+
+        <input
+          id="anfangsbestandInput"
+          inputmode="decimal"
+          value="0"
+        >
+      </label>
+
+      <label>
+        Einlagen
+
+        <input
+          id="einlagenInput"
+          inputmode="decimal"
+          value="0"
+        >
+      </label>
+
+      <label>
+        Entnahmen
+
+        <input
+          id="entnahmenInput"
+          inputmode="decimal"
+          value="0"
+        >
+      </label>
+
+      <label>
+        Ausgaben
+
+        <input
+          id="ausgabenInput"
+          inputmode="decimal"
+          value="0"
+        >
+      </label>
+
+      <label>
+        Ist-Kassenbestand
+
+        <input
+          id="istKasseInput"
+          inputmode="decimal"
+          value="0"
+        >
+      </label>
+
+    </div>
+
+
+    <div id="abschlussInhalt"></div>
+
+
+    <button
+      class="hauptbutton voll"
+      id="abschlussSpeichern"
+    >
+      Tagesabschluss speichern
+    </button>
+
+  </div>
+
+</dialog>
+
+
+<script src="app.js"></script>
+
 </body>
 </html>
