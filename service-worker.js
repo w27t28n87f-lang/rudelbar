@@ -1,4 +1,4 @@
-const CACHE_NAME = "rudelbar-cache-v1";
+const CACHE_NAME = "rudelbar-cache-v2";
 
 const DATEIEN = [
     "./",
