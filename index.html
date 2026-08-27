@@ -15,6 +15,7 @@
     <header class="kopf">
       <div class="branding">
         <img src="rudelbar-icon.png" class="logo" alt="Rudelbar">
+
         <div>
           <h1>RUDELBAR</h1>
           <p>DIE MOBILE KNEIPE</p>
@@ -23,10 +24,14 @@
 
       <div class="kopf-buttons">
         <button class="iconbutton" id="statistikBtn" aria-label="Übersicht">
-          <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+          <svg viewBox="0 0 24 24">
+            <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>
+          </svg>
         </button>
 
-        <button class="hauptbutton" id="getraenkHinzufuegen">+ Getränk</button>
+        <button class="hauptbutton" id="getraenkHinzufuegen">
+          + Getränk
+        </button>
       </div>
     </header>
 
@@ -39,16 +44,7 @@
       <aside class="bestellung">
         <h2>Bestellung</h2>
 
-        <div id="warenkorb" class="warenkorb">
-          <div class="leer">
-            <svg class="leer-icon" viewBox="0 0 24 24">
-              <path d="M3 3h2l2 12h10l3-8H6"/>
-              <circle cx="9" cy="20" r="1"/>
-              <circle cx="18" cy="20" r="1"/>
-            </svg>
-            <p>Noch keine Getränke</p>
-          </div>
-        </div>
+        <div id="warenkorb" class="warenkorb"></div>
 
         <div class="gesamt-zeile">
           <strong>GESAMT</strong>
@@ -56,8 +52,13 @@
         </div>
 
         <div class="zahlung">
-          <button id="barButton" class="zahlung-button bar">BAR</button>
-          <button id="karteButton" class="zahlung-button karte">KARTE</button>
+          <button id="barButton" class="zahlung-button bar">
+            BAR
+          </button>
+
+          <button id="karteButton" class="zahlung-button karte">
+            KARTE
+          </button>
         </div>
 
         <button id="bestellungLoeschen" class="loeschen-button">
@@ -68,34 +69,36 @@
     </section>
   </main>
 
-  <!-- Getränk Dialog -->
+  <!-- Getränk -->
 
   <dialog id="getraenkDialog">
-    <form method="dialog" class="dialogbox" id="getraenkForm">
-      <h2 id="dialogTitel">Getränk hinzufügen</h2>
+    <div class="dialogbox">
+      <div class="dialog-kopf">
+        <h2 id="dialogTitel">Getränk hinzufügen</h2>
+        <button class="sekundaer" id="getraenkAbbrechen">Abbrechen</button>
+      </div>
 
       <label>
         Name
-        <input id="nameInput" autocomplete="off" required>
+        <input id="nameInput" autocomplete="off">
       </label>
 
       <label>
         Preis
-        <input id="preisInput" inputmode="decimal" placeholder="3,50" required>
+        <input id="preisInput" inputmode="decimal" placeholder="3,50">
       </label>
 
       <label>
         Foto
-        <input id="bildInput" type="file" accept="image/*" capture="environment">
+        <input id="bildInput" type="file" accept="image/*">
       </label>
 
       <div id="bildVorschau" class="bild-vorschau"></div>
 
-      <div class="dialog-buttons">
-        <button value="cancel" class="sekundaer">Abbrechen</button>
-        <button type="button" id="getraenkSpeichern" class="hauptbutton">Speichern</button>
-      </div>
-    </form>
+      <button class="hauptbutton voll" id="getraenkSpeichern">
+        Speichern
+      </button>
+    </div>
   </dialog>
 
   <!-- Übersicht -->
@@ -105,9 +108,14 @@
       <div class="dialog-kopf">
         <h2>Tagesübersicht</h2>
 
-        <div>
-          <button class="teilenBtn" id="getraenkeTeilen">Teilen</button>
-          <button class="sekundaer" id="statistikSchliessen">Fertig</button>
+        <div class="dialog-aktionen">
+          <button class="teilenBtn" id="getraenkeTeilen">
+            Teilen
+          </button>
+
+          <button class="sekundaer" id="statistikSchliessen">
+            Fertig
+          </button>
         </div>
       </div>
 
@@ -122,9 +130,14 @@
       <div class="dialog-kopf">
         <h2>Tagesabschluss</h2>
 
-        <div>
-          <button class="teilenBtn" id="abschlussTeilen">Teilen</button>
-          <button class="sekundaer" id="abschlussSchliessen">Fertig</button>
+        <div class="dialog-aktionen">
+          <button class="teilenBtn" id="abschlussTeilen">
+            Teilen
+          </button>
+
+          <button class="sekundaer" id="abschlussSchliessen">
+            Fertig
+          </button>
         </div>
       </div>
 

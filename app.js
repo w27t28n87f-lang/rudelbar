@@ -5,56 +5,69 @@ const VERKAEUFE_KEY = "rudelbar_verkaeufe";
 const ABSCHLUSS_KEY = "rudelbar_abschluesse";
 
 let getraenke = laden(GETRAENKE_KEY, [
-  {id:id(),name:"Pils",preis:3.50,bild:null},
-  {id:id(),name:"Radler",preis:3.50,bild:null},
-  {id:id(),name:"Cola",preis:3.00,bild:null},
-  {id:id(),name:"Wasser",preis:2.50,bild:null}
+  { id: neueID(), name: "Pils", preis: 3.50, bild: null },
+  { id: neueID(), name: "Radler", preis: 3.50, bild: null },
+  { id: neueID(), name: "Cola", preis: 3.00, bild: null },
+  { id: neueID(), name: "Wasser", preis: 2.50, bild: null }
 ]);
 
 let verkaeufe = laden(VERKAEUFE_KEY, []);
 let abschluesse = laden(ABSCHLUSS_KEY, []);
+
 let warenkorb = {};
 let editID = null;
 let neuesBild = null;
 
-function id(){
+function neueID() {
   return crypto.randomUUID();
 }
 
-function laden(key, fallback){
+function laden(key, fallback) {
   try {
-    return JSON.parse(localStorage.getItem(key)) || fallback;
+    const daten = localStorage.getItem(key);
+    return daten ? JSON.parse(daten) : fallback;
   } catch {
     return fallback;
   }
 }
 
-function speichern(){
-  localStorage.setItem(GETRAENKE_KEY, JSON.stringify(getraenke));
-  localStorage.setItem(VERKAEUFE_KEY, JSON.stringify(verkaeufe));
-  localStorage.setItem(ABSCHLUSS_KEY, JSON.stringify(abschluesse));
+function speichern() {
+  try {
+    localStorage.setItem(GETRAENKE_KEY, JSON.stringify(getraenke));
+    localStorage.setItem(VERKAEUFE_KEY, JSON.stringify(verkaeufe));
+    localStorage.setItem(ABSCHLUSS_KEY, JSON.stringify(abschluesse));
+    return true;
+  } catch (error) {
+    console.error(error);
+    alert("Speichern fehlgeschlagen. Der lokale Speicher ist möglicherweise voll.");
+    return false;
+  }
 }
 
-function euro(x){
-  return Number(x).toLocaleString("de-DE", {
-    style:"currency",
-    currency:"EUR"
+function euro(wert) {
+  return Number(wert).toLocaleString("de-DE", {
+    style: "currency",
+    currency: "EUR"
   });
 }
 
-function zahl(text){
-  return Number(String(text).replace(/\./g,"").replace(",", ".")) || 0;
+function zahl(text) {
+  return Number(
+    String(text)
+      .replace(/\./g, "")
+      .replace(",", ".")
+  ) || 0;
 }
 
-function esc(s){
-  return String(s)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;");
+function esc(text) {
+  return String(text)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
-function bierSVG(){
+function bierSVG() {
   return `
   <svg class="becher-icon" viewBox="0 0 24 24">
     <path d="M6 3h9v17H6z"/>
@@ -64,7 +77,7 @@ function bierSVG(){
   </svg>`;
 }
 
-function stiftSVG(){
+function stiftSVG() {
   return `
   <svg viewBox="0 0 24 24">
     <path d="M12 20h9"/>
@@ -72,7 +85,7 @@ function stiftSVG(){
   </svg>`;
 }
 
-function trashSVG(){
+function trashSVG() {
   return `
   <svg viewBox="0 0 24 24">
     <path d="M3 6h18"/>
@@ -82,12 +95,24 @@ function trashSVG(){
   </svg>`;
 }
 
-function render(){
+function leerWarenkorbHTML() {
+  return `
+  <div class="leer">
+    <svg class="leer-icon" viewBox="0 0 24 24">
+      <path d="M3 3h2l2 12h10l3-8H6"/>
+      <circle cx="9" cy="20" r="1"/>
+      <circle cx="18" cy="20" r="1"/>
+    </svg>
+    <p>Noch keine Getränke</p>
+  </div>`;
+}
+
+function render() {
   renderGetraenke();
   renderWarenkorb();
 }
 
-function renderGetraenke(){
+function renderGetraenke() {
   $("getraenkeListe").innerHTML = getraenke.map(g => {
     const anzahl = warenkorb[g.id] || 0;
 
@@ -95,16 +120,26 @@ function renderGetraenke(){
     <article class="getraenk">
       <button class="getraenk-hauptbereich" data-add="${g.id}">
         <div class="getraenk-bild">
-          ${g.bild
-            ? `<img src="${g.bild}" alt="${esc(g.name)}">`
-            : bierSVG()
+          ${
+            g.bild
+              ? `<img src="${g.bild}" alt="${esc(g.name)}">`
+              : bierSVG()
           }
         </div>
 
-        <div class="getraenk-name">${esc(g.name)}</div>
-        <div class="getraenk-preis">${euro(g.preis)}</div>
+        <div class="getraenk-name">
+          ${esc(g.name)}
+        </div>
 
-        ${anzahl ? `<div class="ausgewaehlt">${anzahl} × gewählt</div>` : ""}
+        <div class="getraenk-preis">
+          ${euro(g.preis)}
+        </div>
+
+        ${
+          anzahl
+            ? `<div class="ausgewaehlt">${anzahl} × gewählt</div>`
+            : ""
+        }
       </button>
 
       <div class="getraenk-aktionen">
@@ -119,35 +154,32 @@ function renderGetraenke(){
     </article>`;
   }).join("");
 
-  document.querySelectorAll("[data-add]").forEach(b => {
-    b.onclick = () => {
-      warenkorb[b.dataset.add] = (warenkorb[b.dataset.add] || 0) + 1;
+  document.querySelectorAll("[data-add]").forEach(button => {
+    button.onclick = () => {
+      const id = button.dataset.add;
+      warenkorb[id] = (warenkorb[id] || 0) + 1;
       render();
     };
   });
 
-  document.querySelectorAll("[data-edit]").forEach(b => {
-    b.onclick = () => editGetraenk(b.dataset.edit);
+  document.querySelectorAll("[data-edit]").forEach(button => {
+    button.onclick = () => {
+      getraenkBearbeiten(button.dataset.edit);
+    };
   });
 
-  document.querySelectorAll("[data-delete]").forEach(b => {
-    b.onclick = () => deleteGetraenk(b.dataset.delete);
+  document.querySelectorAll("[data-delete]").forEach(button => {
+    button.onclick = () => {
+      getraenkLoeschen(button.dataset.delete);
+    };
   });
 }
 
-function renderWarenkorb(){
+function renderWarenkorb() {
   const liste = getraenke.filter(g => (warenkorb[g.id] || 0) > 0);
 
   if (!liste.length) {
-    $("warenkorb").innerHTML = `
-    <div class="leer">
-      <svg class="leer-icon" viewBox="0 0 24 24">
-        <path d="M3 3h2l2 12h10l3-8H6"/>
-        <circle cx="9" cy="20" r="1"/>
-        <circle cx="18" cy="20" r="1"/>
-      </svg>
-      <p>Noch keine Getränke</p>
-    </div>`;
+    $("warenkorb").innerHTML = leerWarenkorbHTML();
   } else {
     $("warenkorb").innerHTML = liste.map(g => `
       <div class="warenkorb-zeile">
@@ -169,20 +201,26 @@ function renderWarenkorb(){
     `).join("");
   }
 
-  document.querySelectorAll("[data-minus]").forEach(b => {
-    b.onclick = () => {
-      let id = b.dataset.minus;
+  document.querySelectorAll("[data-minus]").forEach(button => {
+    button.onclick = () => {
+      const id = button.dataset.minus;
+
       warenkorb[id]--;
 
-      if (warenkorb[id] <= 0) delete warenkorb[id];
+      if (warenkorb[id] <= 0) {
+        delete warenkorb[id];
+      }
+
       render();
     };
   });
 
-  document.querySelectorAll("[data-plus]").forEach(b => {
-    b.onclick = () => {
-      let id = b.dataset.plus;
-      warenkorb[id]++;
+  document.querySelectorAll("[data-plus]").forEach(button => {
+    button.onclick = () => {
+      const id = button.dataset.plus;
+
+      warenkorb[id] = (warenkorb[id] || 0) + 1;
+
       render();
     };
   });
@@ -190,14 +228,13 @@ function renderWarenkorb(){
   $("gesamtpreis").textContent = euro(gesamtpreis());
 }
 
-function gesamtpreis(){
-  return getraenke.reduce(
-    (sum,g) => sum + (warenkorb[g.id] || 0) * g.preis,
-    0
-  );
+function gesamtpreis() {
+  return getraenke.reduce((summe, g) => {
+    return summe + (warenkorb[g.id] || 0) * g.preis;
+  }, 0);
 }
 
-function openNew(){
+function neuesGetraenkOeffnen() {
   editID = null;
   neuesBild = null;
 
@@ -210,83 +247,153 @@ function openNew(){
   $("getraenkDialog").showModal();
 }
 
-function editGetraenk(id){
+function getraenkBearbeiten(id) {
   const g = getraenke.find(x => x.id === id);
+
   if (!g) return;
 
   editID = id;
   neuesBild = g.bild || null;
 
   $("dialogTitel").textContent = "Getränk bearbeiten";
+
   $("nameInput").value = g.name;
-  $("preisInput").value = String(g.preis).replace(".",",");
+  $("preisInput").value = String(g.preis).replace(".", ",");
 
   $("bildVorschau").innerHTML =
-    g.bild ? `<img src="${g.bild}">` : "";
+    g.bild
+      ? `<img src="${g.bild}" alt="${esc(g.name)}">`
+      : "";
 
   $("getraenkDialog").showModal();
 }
 
-function saveGetraenk(){
+function getraenkSpeichern() {
   const name = $("nameInput").value.trim();
   const preis = zahl($("preisInput").value);
 
-  if (!name || !preis) {
-    alert("Bitte Name und Preis eingeben.");
+  if (!name) {
+    alert("Bitte einen Namen eingeben.");
+    return;
+  }
+
+  if (!preis || preis <= 0) {
+    alert("Bitte einen gültigen Preis eingeben.");
     return;
   }
 
   if (editID) {
-    let g = getraenke.find(x => x.id === editID);
+    const g = getraenke.find(x => x.id === editID);
+
+    if (!g) return;
 
     g.name = name;
     g.preis = preis;
     g.bild = neuesBild;
-
   } else {
     getraenke.push({
-      id:id(),
+      id: neueID(),
       name,
       preis,
-      bild:neuesBild
+      bild: neuesBild
     });
   }
 
-  speichern();
+  if (!speichern()) return;
+
   render();
   $("getraenkDialog").close();
 }
 
-function deleteGetraenk(id){
+function getraenkLoeschen(id) {
   const g = getraenke.find(x => x.id === id);
+
   if (!g) return;
 
-  if (!confirm(`${g.name} wirklich löschen?`)) return;
+  if (!confirm(`${g.name} wirklich löschen?`)) {
+    return;
+  }
 
   getraenke = getraenke.filter(x => x.id !== id);
+
   delete warenkorb[id];
 
   speichern();
   render();
 }
 
-$("bildInput").onchange = e => {
-  const file = e.target.files[0];
+$("bildInput").onchange = async event => {
+  const file = event.target.files[0];
+
   if (!file) return;
 
-  const reader = new FileReader();
-
-  reader.onload = () => {
-    neuesBild = reader.result;
+  try {
+    neuesBild = await bildVerkleinern(file, 900, 0.72);
 
     $("bildVorschau").innerHTML =
-      `<img src="${neuesBild}">`;
-  };
-
-  reader.readAsDataURL(file);
+      `<img src="${neuesBild}" alt="Getränk">`;
+  } catch (error) {
+    console.error(error);
+    alert("Das Foto konnte nicht verarbeitet werden.");
+  }
 };
 
-function verkauf(zahlungsart){
+function bildVerkleinern(file, maxGroesse = 900, qualitaet = 0.72) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onerror = reject;
+
+    reader.onload = () => {
+      const img = new Image();
+
+      img.onerror = reject;
+
+      img.onload = () => {
+        let breite = img.width;
+        let hoehe = img.height;
+
+        if (breite > maxGroesse || hoehe > maxGroesse) {
+          const faktor = Math.min(
+            maxGroesse / breite,
+            maxGroesse / hoehe
+          );
+
+          breite = Math.round(breite * faktor);
+          hoehe = Math.round(hoehe * faktor);
+        }
+
+        const canvas = document.createElement("canvas");
+
+        canvas.width = breite;
+        canvas.height = hoehe;
+
+        const ctx = canvas.getContext("2d");
+
+        ctx.drawImage(
+          img,
+          0,
+          0,
+          breite,
+          hoehe
+        );
+
+        resolve(
+          canvas.toDataURL(
+            "image/jpeg",
+            qualitaet
+          )
+        );
+      };
+
+      img.src = reader.result;
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+function verkaufAbschliessen(zahlungsart) {
   const gesamt = gesamtpreis();
 
   if (!gesamt) {
@@ -297,18 +404,18 @@ function verkauf(zahlungsart){
   const positionen = getraenke
     .filter(g => warenkorb[g.id])
     .map(g => ({
-      name:g.name,
-      preis:g.preis,
-      anzahl:warenkorb[g.id]
+      name: g.name,
+      preis: g.preis,
+      anzahl: warenkorb[g.id]
     }));
 
   verkaeufe.push({
-    id:id(),
-    datum:new Date().toISOString(),
+    id: neueID(),
+    datum: new Date().toISOString(),
     zahlungsart,
     gesamt,
     positionen,
-    abgeschlossen:false
+    abgeschlossen: false
   });
 
   warenkorb = {};
@@ -316,10 +423,12 @@ function verkauf(zahlungsart){
   speichern();
   render();
 
-  alert(`${zahlungsart}: ${euro(gesamt)} gespeichert ✓`);
+  alert(
+    `${zahlungsart}: ${euro(gesamt)} gespeichert ✓`
+  );
 }
 
-function heuteVerkaeufe(){
+function heuteVerkaeufe() {
   const heute = new Date().toDateString();
 
   return verkaeufe.filter(v =>
@@ -327,120 +436,152 @@ function heuteVerkaeufe(){
   );
 }
 
-function statistik(){
-  const v = heuteVerkaeufe();
-  const daten = aggregieren(v);
-
-  $("statistikInhalt").innerHTML = `
-  <div class="stat-karten">
-    <div class="stat">
-      <span>Verkäufe</span>
-      <strong>${v.length}</strong>
-    </div>
-
-    <div class="stat">
-      <span>Getränke</span>
-      <strong>${daten.anzahl}</strong>
-    </div>
-
-    <div class="stat">
-      <span>Gesamt</span>
-      <strong>${euro(daten.gesamt)}</strong>
-    </div>
-  </div>
-
-  ${getraenkeTabelle(daten)}
-
-  <h3>Einzelne Verkäufe</h3>
-
-  <table class="tabelle">
-    <tr>
-      <th>Zeit</th>
-      <th>Zahlung</th>
-      <th>Betrag</th>
-    </tr>
-
-    ${v.map(x => `
-      <tr>
-        <td>${new Date(x.datum).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})}</td>
-        <td>${x.zahlungsart}</td>
-        <td>${euro(x.gesamt)}</td>
-      </tr>
-    `).join("")}
-  </table>`;
-
-  $("statistikDialog").showModal();
+function offeneVerkaeufe() {
+  return verkaeufe.filter(v => !v.abgeschlossen);
 }
 
-function aggregieren(liste){
-  let map = {};
+function aggregieren(liste) {
+  const map = {};
+
   let anzahl = 0;
   let gesamt = 0;
 
   liste.forEach(v => {
-    gesamt += v.gesamt;
+    gesamt += Number(v.gesamt);
 
     v.positionen.forEach(p => {
       anzahl += p.anzahl;
 
       if (!map[p.name]) {
         map[p.name] = {
-          anzahl:0,
-          umsatz:0
+          anzahl: 0,
+          umsatz: 0
         };
       }
 
       map[p.name].anzahl += p.anzahl;
-      map[p.name].umsatz += p.preis * p.anzahl;
+
+      map[p.name].umsatz +=
+        p.preis * p.anzahl;
     });
   });
 
-  return {map,anzahl,gesamt};
+  return {
+    map,
+    anzahl,
+    gesamt
+  };
 }
 
-function getraenkeTabelle(daten){
-  const rows = Object.entries(daten.map)
-    .sort((a,b) => b[1].anzahl - a[1].anzahl)
-    .map(([name,x]) => `
-    <tr>
-      <td>${esc(name)}</td>
-      <td>${x.anzahl}</td>
-      <td>${euro(x.umsatz)}</td>
-    </tr>`).join("");
+function getraenkeTabelle(daten) {
+  const zeilen = Object.entries(daten.map)
+    .sort((a, b) => b[1].anzahl - a[1].anzahl)
+    .map(([name, x]) => `
+      <tr>
+        <td>${esc(name)}</td>
+        <td>${x.anzahl}</td>
+        <td>${euro(x.umsatz)}</td>
+      </tr>
+    `)
+    .join("");
 
   return `
   <table class="tabelle">
-    <tr>
-      <th>Getränk</th>
-      <th>Stück</th>
-      <th>Umsatz</th>
-    </tr>
+    <thead>
+      <tr>
+        <th>Getränk</th>
+        <th>Stück</th>
+        <th>Umsatz</th>
+      </tr>
+    </thead>
 
-    ${rows}
+    <tbody>
+      ${zeilen}
 
-    <tr class="gesamt">
-      <td>GESAMT</td>
-      <td>${daten.anzahl}</td>
-      <td>${euro(daten.gesamt)}</td>
-    </tr>
+      <tr class="gesamt">
+        <td>GESAMT</td>
+        <td>${daten.anzahl}</td>
+        <td>${euro(daten.gesamt)}</td>
+      </tr>
+    </tbody>
   </table>`;
 }
 
-function offeneVerkaeufe(){
-  return verkaeufe.filter(v => !v.abgeschlossen);
+function statistikOeffnen() {
+  const v = heuteVerkaeufe();
+  const daten = aggregieren(v);
+
+  $("statistikInhalt").innerHTML = `
+    <div class="stat-karten">
+      <div class="stat">
+        <span>Verkäufe</span>
+        <strong>${v.length}</strong>
+      </div>
+
+      <div class="stat">
+        <span>Getränke</span>
+        <strong>${daten.anzahl}</strong>
+      </div>
+
+      <div class="stat">
+        <span>Gesamt</span>
+        <strong>${euro(daten.gesamt)}</strong>
+      </div>
+    </div>
+
+    <h3>Verkaufte Getränke</h3>
+
+    ${getraenkeTabelle(daten)}
+
+    <h3>Einzelne Verkäufe</h3>
+
+    <table class="tabelle">
+      <thead>
+        <tr>
+          <th>Zeit</th>
+          <th>Zahlung</th>
+          <th>Betrag</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        ${v.map(x => `
+          <tr>
+            <td>
+              ${
+                new Date(x.datum)
+                  .toLocaleTimeString(
+                    "de-DE",
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    }
+                  )
+              }
+            </td>
+
+            <td>${x.zahlungsart}</td>
+            <td>${euro(x.gesamt)}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+
+  $("statistikDialog").showModal();
 }
 
-function updateAbschluss(){
+function abschlussBerechnen() {
   const v = offeneVerkaeufe();
   const daten = aggregieren(v);
 
   const bar = v
     .filter(x => x.zahlungsart === "Bar")
-    .reduce((s,x) => s + x.gesamt,0);
+    .reduce((summe, x) => summe + x.gesamt, 0);
 
   const karte = v
     .filter(x => x.zahlungsart === "Karte")
-    .reduce((s,x) => s + x.gesamt,0);
+    .reduce((summe, x) => summe + x.gesamt, 0);
 
   const start = zahl($("anfangsbestandInput").value);
   const einlagen = zahl($("einlagenInput").value);
@@ -448,31 +589,529 @@ function updateAbschluss(){
   const ausgaben = zahl($("ausgabenInput").value);
   const ist = zahl($("istKasseInput").value);
 
-  const soll = start + bar + einlagen - entnahmen - ausgaben;
+  const soll =
+    start
+    + bar
+    + einlagen
+    - entnahmen
+    - ausgaben;
+
   const diff = ist - soll;
 
-  $("abschlussInhalt").innerHTML = `
-  <table class="tabelle">
-    <tr><th>Bereich</th><th>Betrag</th></tr>
-    <tr><td>Barumsatz</td><td>${euro(bar)}</td></tr>
-    <tr><td>Kartenumsatz</td><td>${euro(karte)}</td></tr>
-    <tr class="gesamt"><td>Gesamtumsatz</td><td>${euro(daten.gesamt)}</td></tr>
-    <tr><td>Soll-Kasse</td><td>${euro(soll)}</td></tr>
-    <tr><td>Ist-Kasse</td><td>${euro(ist)}</td></tr>
-    <tr class="gesamt"><td>Differenz</td><td>${euro(diff)}</td></tr>
-  </table>
-
-  ${getraenkeTabelle(daten)}`;
-
   return {
-    bar,karte,daten,start,einlagen,entnahmen,ausgaben,ist,soll,diff
+    v,
+    daten,
+    bar,
+    karte,
+    start,
+    einlagen,
+    entnahmen,
+    ausgaben,
+    ist,
+    soll,
+    diff
   };
 }
 
-function openAbschluss(){
-  updateAbschluss();
+function abschlussAktualisieren() {
+  const d = abschlussBerechnen();
+
+  $("abschlussInhalt").innerHTML = `
+    <h3>Umsatz</h3>
+
+    <table class="tabelle">
+      <tbody>
+        <tr>
+          <td>Barumsatz</td>
+          <td>${euro(d.bar)}</td>
+        </tr>
+
+        <tr>
+          <td>Kartenumsatz</td>
+          <td>${euro(d.karte)}</td>
+        </tr>
+
+        <tr class="gesamt">
+          <td>Gesamtumsatz</td>
+          <td>${euro(d.daten.gesamt)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Kassenprüfung</h3>
+
+    <table class="tabelle">
+      <tbody>
+        <tr>
+          <td>Anfangsbestand</td>
+          <td>${euro(d.start)}</td>
+        </tr>
+
+        <tr>
+          <td>Einlagen</td>
+          <td>${euro(d.einlagen)}</td>
+        </tr>
+
+        <tr>
+          <td>Entnahmen</td>
+          <td>${euro(d.entnahmen)}</td>
+        </tr>
+
+        <tr>
+          <td>Ausgaben</td>
+          <td>${euro(d.ausgaben)}</td>
+        </tr>
+
+        <tr>
+          <td>Soll-Kassenbestand</td>
+          <td>${euro(d.soll)}</td>
+        </tr>
+
+        <tr>
+          <td>Ist-Kassenbestand</td>
+          <td>${euro(d.ist)}</td>
+        </tr>
+
+        <tr class="gesamt">
+          <td>Differenz</td>
+          <td>${euro(d.diff)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Verkaufte Getränke</h3>
+
+    ${getraenkeTabelle(d.daten)}
+  `;
+
+  return d;
+}
+
+function abschlussOeffnen() {
+  abschlussAktualisieren();
   $("abschlussDialog").showModal();
 }
+
+function abschlussSpeichern() {
+  const d = abschlussAktualisieren();
+
+  if (!d.v.length) {
+    alert("Keine offenen Verkäufe.");
+    return;
+  }
+
+  const abschlussID = neueID();
+
+  abschluesse.push({
+    id: abschlussID,
+    datum: new Date().toISOString(),
+    veranstaltung:
+      $("veranstaltungInput").value.trim()
+      || "Tagesabschluss",
+    bar: d.bar,
+    karte: d.karte,
+    gesamt: d.daten.gesamt,
+    soll: d.soll,
+    ist: d.ist,
+    diff: d.diff
+  });
+
+  d.v.forEach(v => {
+    v.abgeschlossen = true;
+    v.abschlussID = abschlussID;
+  });
+
+  if (!speichern()) return;
+
+  alert("Tagesabschluss gespeichert ✓");
+
+  $("abschlussDialog").close();
+}
+
+function exportHTML(titel, inhalt) {
+  return `
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
+
+<title>${titel}</title>
+
+<style>
+  body {
+    margin: 0;
+    padding: 30px;
+    background: #171717;
+    color: white;
+    font-family:
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+  }
+
+  .blatt {
+    max-width: 900px;
+    margin: auto;
+  }
+
+  h1 {
+    margin: 0;
+    color: #efa834;
+    font-size: 34px;
+  }
+
+  .untertitel {
+    margin-top: 4px;
+    margin-bottom: 28px;
+    color: #b87931;
+    font-weight: 800;
+    letter-spacing: 1px;
+  }
+
+  h2 {
+    color: #efa834;
+    margin-top: 30px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0 28px;
+    background: #242424;
+  }
+
+  th {
+    background: #efa834;
+    color: #222;
+  }
+
+  th,
+  td {
+    padding: 12px;
+    border: 1px solid #555;
+    text-align: left;
+  }
+
+  th:not(:first-child),
+  td:not(:first-child) {
+    text-align: right;
+  }
+
+  .gesamt {
+    color: #efa834;
+    font-weight: 900;
+  }
+
+  @media print {
+    body {
+      background: white;
+      color: black;
+    }
+
+    table {
+      background: white;
+    }
+
+    td {
+      border-color: #aaa;
+    }
+  }
+</style>
+</head>
+
+<body>
+  <div class="blatt">
+    <h1>RUDELBAR</h1>
+
+    <div class="untertitel">
+      DIE MOBILE KNEIPE
+    </div>
+
+    <h2>${titel}</h2>
+
+    ${inhalt}
+  </div>
+</body>
+</html>
+`;
+}
+
+async function htmlTeilen(html, dateiname) {
+  const blob = new Blob(
+    [html],
+    {
+      type: "text/html;charset=utf-8"
+    }
+  );
+
+  const datei = new File(
+    [blob],
+    dateiname,
+    {
+      type: "text/html"
+    }
+  );
+
+  if (
+    navigator.share
+    &&
+    (
+      !navigator.canShare
+      ||
+      navigator.canShare({
+        files: [datei]
+      })
+    )
+  ) {
+    try {
+      await navigator.share({
+        title: "Rudelbar",
+        files: [datei]
+      });
+
+      return;
+    } catch (error) {
+      if (error.name === "AbortError") {
+        return;
+      }
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = dateiname;
+
+  document.body.appendChild(link);
+
+  link.click();
+
+  link.remove();
+
+  setTimeout(
+    () => URL.revokeObjectURL(url),
+    1000
+  );
+}
+
+async function tagesuebersichtTeilen() {
+  const daten = aggregieren(heuteVerkaeufe());
+
+  const zeilen = Object.entries(daten.map)
+    .sort((a, b) => b[1].anzahl - a[1].anzahl)
+    .map(([name, x]) => `
+      <tr>
+        <td>${esc(name)}</td>
+        <td>${x.anzahl}</td>
+        <td>${euro(x.umsatz)}</td>
+      </tr>
+    `)
+    .join("");
+
+  const html = exportHTML(
+    "Tagesübersicht",
+    `
+      <p>
+        Datum:
+        ${new Date().toLocaleDateString("de-DE")}
+      </p>
+
+      <h2>Verkaufte Getränke</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Getränk</th>
+            <th>Stück</th>
+            <th>Umsatz</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${zeilen}
+
+          <tr class="gesamt">
+            <td>GESAMT</td>
+            <td>${daten.anzahl}</td>
+            <td>${euro(daten.gesamt)}</td>
+          </tr>
+        </tbody>
+      </table>
+    `
+  );
+
+  await htmlTeilen(
+    html,
+    "Rudelbar_Tagesuebersicht.html"
+  );
+}
+
+async function tagesabschlussTeilen() {
+  const d = abschlussAktualisieren();
+
+  const zeilen = Object.entries(d.daten.map)
+    .sort((a, b) => b[1].anzahl - a[1].anzahl)
+    .map(([name, x]) => `
+      <tr>
+        <td>${esc(name)}</td>
+        <td>${x.anzahl}</td>
+        <td>${euro(x.umsatz)}</td>
+      </tr>
+    `)
+    .join("");
+
+  const veranstaltung =
+    $("veranstaltungInput").value.trim()
+    || "Tagesabschluss";
+
+  const html = exportHTML(
+    "Tagesabschluss",
+    `
+      <p>
+        <strong>Veranstaltung:</strong>
+        ${esc(veranstaltung)}
+      </p>
+
+      <p>
+        <strong>Datum:</strong>
+        ${new Date().toLocaleDateString("de-DE")}
+      </p>
+
+      <h2>Umsatz</h2>
+
+      <table>
+        <tbody>
+          <tr>
+            <td>Barumsatz</td>
+            <td>${euro(d.bar)}</td>
+          </tr>
+
+          <tr>
+            <td>Kartenumsatz</td>
+            <td>${euro(d.karte)}</td>
+          </tr>
+
+          <tr class="gesamt">
+            <td>Gesamtumsatz</td>
+            <td>${euro(d.daten.gesamt)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Kassenprüfung</h2>
+
+      <table>
+        <tbody>
+          <tr>
+            <td>Anfangsbestand</td>
+            <td>${euro(d.start)}</td>
+          </tr>
+
+          <tr>
+            <td>Einlagen</td>
+            <td>${euro(d.einlagen)}</td>
+          </tr>
+
+          <tr>
+            <td>Entnahmen</td>
+            <td>${euro(d.entnahmen)}</td>
+          </tr>
+
+          <tr>
+            <td>Ausgaben</td>
+            <td>${euro(d.ausgaben)}</td>
+          </tr>
+
+          <tr>
+            <td>Soll-Kassenbestand</td>
+            <td>${euro(d.soll)}</td>
+          </tr>
+
+          <tr>
+            <td>Ist-Kassenbestand</td>
+            <td>${euro(d.ist)}</td>
+          </tr>
+
+          <tr class="gesamt">
+            <td>Differenz</td>
+            <td>${euro(d.diff)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Verkaufte Getränke</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Getränk</th>
+            <th>Stück</th>
+            <th>Umsatz</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${zeilen}
+
+          <tr class="gesamt">
+            <td>GESAMT</td>
+            <td>${d.daten.anzahl}</td>
+            <td>${euro(d.daten.gesamt)}</td>
+          </tr>
+        </tbody>
+      </table>
+    `
+  );
+
+  await htmlTeilen(
+    html,
+    "Rudelbar_Tagesabschluss.html"
+  );
+}
+
+$("getraenkHinzufuegen").onclick =
+  neuesGetraenkOeffnen;
+
+$("getraenkSpeichern").onclick =
+  getraenkSpeichern;
+
+$("getraenkAbbrechen").onclick =
+  () => $("getraenkDialog").close();
+
+$("barButton").onclick =
+  () => verkaufAbschliessen("Bar");
+
+$("karteButton").onclick =
+  () => verkaufAbschliessen("Karte");
+
+$("bestellungLoeschen").onclick = () => {
+  warenkorb = {};
+  render();
+};
+
+$("statistikBtn").onclick =
+  statistikOeffnen;
+
+$("statistikSchliessen").onclick =
+  () => $("statistikDialog").close();
+
+$("getraenkeTeilen").onclick =
+  tagesuebersichtTeilen;
+
+$("abschlussSchliessen").onclick =
+  () => $("abschlussDialog").close();
+
+$("abschlussSpeichern").onclick =
+  abschlussSpeichern;
+
+$("abschlussTeilen").onclick =
+  tagesabschlussTeilen;
 
 [
   "anfangsbestandInput",
@@ -480,121 +1119,55 @@ function openAbschluss(){
   "entnahmenInput",
   "ausgabenInput",
   "istKasseInput"
-].forEach(x => $(x).oninput = updateAbschluss);
+].forEach(id => {
+  $(id).oninput = abschlussAktualisieren;
+});
 
-function saveAbschluss(){
-  const d = updateAbschluss();
-  const offene = offeneVerkaeufe();
+/*
+Einmal tippen:
+Tagesübersicht
 
-  if (!offene.length) {
-    alert("Keine offenen Verkäufe.");
-    return;
-  }
+Ca. 0,7 Sekunden gedrückt halten:
+Tagesabschluss
+*/
 
-  const abschlussID = id();
-
-  abschluesse.push({
-    id:abschlussID,
-    datum:new Date().toISOString(),
-    veranstaltung:$("veranstaltungInput").value.trim() || "Tagesabschluss",
-    ...d
-  });
-
-  offene.forEach(v => v.abgeschlossen = true);
-
-  speichern();
-
-  alert("Tagesabschluss gespeichert ✓");
-  $("abschlussDialog").close();
-}
-
-async function teilenGetraenke(){
-  const daten = aggregieren(heuteVerkaeufe());
-
-  let text =
-`RUDELBAR – Verkaufte Getränke
-
-Getränk | Stück | Umsatz
-`;
-
-  Object.entries(daten.map).forEach(([name,x]) => {
-    text += `${name} | ${x.anzahl} | ${euro(x.umsatz)}\n`;
-  });
-
-  text += `\nGESAMT | ${daten.anzahl} | ${euro(daten.gesamt)}`;
-
-  await teilen(text);
-}
-
-async function teilenAbschluss(){
-  const d = updateAbschluss();
-
-  const text =
-`RUDELBAR – Tagesabschluss
-
-Veranstaltung:
-${$("veranstaltungInput").value || "-"}
-
-Bar: ${euro(d.bar)}
-Karte: ${euro(d.karte)}
-Gesamt: ${euro(d.daten.gesamt)}
-
-Soll-Kasse: ${euro(d.soll)}
-Ist-Kasse: ${euro(d.ist)}
-Differenz: ${euro(d.diff)}
-`;
-
-  await teilen(text);
-}
-
-async function teilen(text){
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title:"Rudelbar",
-        text
-      });
-    } catch {}
-  } else {
-    await navigator.clipboard.writeText(text);
-    alert("In Zwischenablage kopiert.");
-  }
-}
-
-$("getraenkHinzufuegen").onclick = openNew;
-$("getraenkSpeichern").onclick = saveGetraenk;
-
-$("barButton").onclick = () => verkauf("Bar");
-$("karteButton").onclick = () => verkauf("Karte");
-
-$("bestellungLoeschen").onclick = () => {
-  warenkorb = {};
-  render();
-};
-
-$("statistikBtn").onclick = statistik;
-$("statistikSchliessen").onclick = () => $("statistikDialog").close();
-
-$("getraenkeTeilen").onclick = teilenGetraenke;
-
-$("abschlussSchliessen").onclick = () => $("abschlussDialog").close();
-$("abschlussSpeichern").onclick = saveAbschluss;
-$("abschlussTeilen").onclick = teilenAbschluss;
-
-$("statistikBtn").ondblclick = openAbschluss;
-
-/* Langer Druck auf Statistik = Tagesabschluss */
-let timer;
+let langdruckTimer = null;
+let langdruckAktiv = false;
 
 $("statistikBtn").onpointerdown = () => {
-  timer = setTimeout(openAbschluss,700);
+  langdruckAktiv = false;
+
+  langdruckTimer = setTimeout(() => {
+    langdruckAktiv = true;
+    abschlussOeffnen();
+  }, 700);
 };
 
-$("statistikBtn").onpointerup =
-$("statistikBtn").onpointerleave = () => clearTimeout(timer);
+$("statistikBtn").onpointerup = () => {
+  clearTimeout(langdruckTimer);
+};
+
+$("statistikBtn").onpointerleave = () => {
+  clearTimeout(langdruckTimer);
+};
+
+$("statistikBtn").onclick = () => {
+  if (!langdruckAktiv) {
+    statistikOeffnen();
+  }
+
+  langdruckAktiv = false;
+};
 
 render();
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js");
+  navigator.serviceWorker
+    .register("service-worker.js")
+    .catch(error => {
+      console.error(
+        "Service Worker:",
+        error
+      );
+    });
 }

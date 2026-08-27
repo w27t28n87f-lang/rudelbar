@@ -10,8 +10,8 @@
   --card2: #1c1c1c;
   --gold: #efa834;
   --gold2: #b87931;
-  --text: #fff;
-  --muted: #aaa;
+  --text: #ffffff;
+  --muted: #aaaaaa;
   --button: #595959;
   --danger: #9f3940;
   --cyan: #44dbea;
@@ -23,7 +23,8 @@ html {
   -webkit-font-smoothing: antialiased;
 }
 
-html, body {
+html,
+body {
   min-height: 100%;
   background: var(--bg);
   color: var(--text);
@@ -38,12 +39,13 @@ body {
     max(12px, env(safe-area-inset-left));
 }
 
-button, input {
+button,
+input {
   font: inherit;
 }
 
 button {
-  border: 0;
+  border: none;
   cursor: pointer;
 }
 
@@ -120,10 +122,6 @@ svg {
   height: 48px;
   display: grid;
   place-items: center;
-}
-
-.iconbutton svg {
-  width: 22px;
 }
 
 .inhalt {
@@ -336,21 +334,21 @@ svg {
 }
 
 dialog {
-  border: 0;
+  border: none;
   padding: 0;
   background: transparent;
-  width: min(94vw, 760px);
-  max-height: 90vh;
+  width: min(94vw, 780px);
+  max-height: 92vh;
   margin: auto;
 }
 
 dialog::backdrop {
-  background: rgba(0,0,0,.75);
+  background: rgba(0, 0, 0, .75);
   backdrop-filter: blur(5px);
 }
 
 .dialogbox {
-  max-height: 90vh;
+  max-height: 92vh;
   overflow: auto;
   background: #242424;
   color: white;
@@ -361,10 +359,6 @@ dialog::backdrop {
 
 .dialogbox.gross {
   width: 100%;
-}
-
-.dialogbox h2 {
-  margin-bottom: 16px;
 }
 
 .dialogbox label {
@@ -383,16 +377,17 @@ dialog::backdrop {
   border-radius: 10px;
 }
 
-.dialog-buttons,
 .dialog-kopf {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
-.dialog-buttons {
-  margin-top: 18px;
+.dialog-aktionen {
+  display: flex;
+  gap: 7px;
 }
 
 .sekundaer,
