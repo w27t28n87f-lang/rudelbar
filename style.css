@@ -1,447 +1,545 @@
 * {
-    html {
-    -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-body {
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-}
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 :root {
-    --bg: #171717;
-    --card: #242424;
-    --card-dark: #1d1d1d;
-    --gold: #f4a51c;
-    --gold-soft: #b97832;
-    --text: #ffffff;
-    --muted: #aaaaaa;
-    --button: #555555;
-    --danger: #a63b43;
+  --bg: #151515;
+  --card: #242424;
+  --card2: #1c1c1c;
+  --gold: #efa834;
+  --gold2: #b87931;
+  --text: #fff;
+  --muted: #aaa;
+  --button: #595959;
+  --danger: #9f3940;
+  --cyan: #44dbea;
 }
 
-html,
-body {
-    min-height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+html, body {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 body {
-    padding:
-        max(16px, env(safe-area-inset-top))
-        max(14px, env(safe-area-inset-right))
-        max(16px, env(safe-area-inset-bottom))
-        max(14px, env(safe-area-inset-left));
+  padding:
+    max(14px, env(safe-area-inset-top))
+    max(12px, env(safe-area-inset-right))
+    max(14px, env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
+}
+
+button, input {
+  font: inherit;
 }
 
 button {
-    font: inherit;
-    border: none;
-    cursor: pointer;
+  border: 0;
+  cursor: pointer;
+}
+
+svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .app {
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
+  max-width: 1450px;
+  margin: auto;
 }
 
-/* KOPF */
-
 .kopf {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.branding {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  width: 68px;
+  height: 68px;
+  border-radius: 16px;
+  object-fit: cover;
 }
 
 .kopf h1 {
-    font-size: clamp(24px, 5vw, 38px);
-    font-weight: 900;
-    letter-spacing: 1px;
+  font-size: clamp(25px, 4vw, 38px);
+  font-weight: 900;
 }
 
 .kopf p {
-    margin-top: 3px;
-    color: var(--gold);
-    font-weight: 700;
-    font-size: 13px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.kopf-buttons {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+
+.hauptbutton,
+.iconbutton,
+.teilenBtn {
+  background: var(--gold);
+  color: #332000;
+  font-weight: 900;
+  border-radius: 13px;
 }
 
 .hauptbutton {
-    flex-shrink: 0;
-    padding: 14px 18px;
-    border-radius: 14px;
-    background: var(--gold);
-    color: #3b2500;
-    font-weight: 800;
-    font-size: 16px;
+  padding: 14px 18px;
 }
 
-/* HAUPTBEREICH */
+.iconbutton {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+}
+
+.iconbutton svg {
+  width: 22px;
+}
 
 .inhalt {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 360px;
-    gap: 18px;
-    align-items: start;
-}
-
-.getraenke-bereich {
-    min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 370px;
+  gap: 18px;
 }
 
 .getraenke-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
-/* GETRÄNKEKACHEL */
-
 .getraenk {
-    min-width: 0;
-    padding: 12px;
-    border: 1.5px solid var(--gold-soft);
-    border-radius: 20px;
-    background: var(--card);
-    overflow: hidden;
+  background: var(--card);
+  border: 1.5px solid var(--gold2);
+  border-radius: 20px;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.getraenk-hauptbereich {
+  width: 100%;
+  background: transparent;
+  color: white;
 }
 
 .getraenk-bild {
-    width: 100%;
-    height: 130px;
-    border-radius: 14px;
-    overflow: hidden;
-    background: var(--card-dark);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  height: 145px;
+  background: var(--card2);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
 }
 
 .getraenk-bild img {
-    width: 78%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 12px;
+  width: 82%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
 }
 
-.getraenk-symbol {
-    font-size: 52px;
-    color: var(--gold);
+.becher-icon {
+  width: 52px;
+  height: 52px;
+  color: var(--gold);
 }
 
 .getraenk-name {
-    margin-top: 10px;
-    text-align: center;
-    font-size: 19px;
-    font-weight: 900;
+  margin-top: 11px;
+  text-align: center;
+  font-size: 19px;
+  font-weight: 900;
 }
 
 .getraenk-preis {
-    margin-top: 3px;
-    text-align: center;
-    color: var(--gold);
-    font-size: 18px;
-    font-weight: 900;
-}
-
-.getraenk-aktionen {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 7px;
-    margin-top: 12px;
-}
-
-.aktion {
-    min-height: 42px;
-    border-radius: 10px;
-    background: var(--button);
-    font-size: 19px;
-}
-
-.bearbeiten {
-    color: #36d9ee;
-}
-
-.entfernen {
-    color: #ff4b55;
-}
-
-/* BESTELLUNG */
-
-.bestellung {
-    position: sticky;
-    top: 12px;
-    padding: 18px;
-    border: 1.5px solid var(--gold-soft);
-    border-radius: 20px;
-    background: var(--card);
-}
-
-.bestellung h2 {
-    font-size: 27px;
-    margin-bottom: 18px;
-}
-
-.warenkorb {
-    min-height: 180px;
-}
-
-.leer {
-    min-height: 180px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    color: var(--muted);
-    text-align: center;
-}
-
-.warenkorb-symbol {
-    margin-bottom: 8px;
-    font-size: 44px;
-}
-
-.leer p {
-    font-weight: 700;
-}
-
-.gesamt-zeile {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 15px;
-    padding: 15px 0;
-    border-top: 1px solid var(--gold-soft);
-    font-size: 21px;
-}
-
-#gesamtpreis {
-    color: var(--gold);
-    font-size: 25px;
-}
-
-.zahlung {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 9px;
-}
-
-.zahlung-button {
-    min-height: 52px;
-    border-radius: 12px;
-    font-weight: 900;
-}
-
-.bar {
-    background: var(--gold);
-    color: #392300;
-}
-
-.karte {
-    background: #666666;
-    color: white;
-}
-
-.loeschen-button {
-    width: 100%;
-    min-height: 46px;
-    margin-top: 9px;
-    border-radius: 12px;
-    background: var(--danger);
-    color: white;
-    font-weight: 800;
-}
-
-/* HANDY */
-
-@media (max-width: 760px) {
-
-    body {
-        padding-left: 10px;
-        padding-right: 10px;
-    }
-
-    .kopf {
-        align-items: flex-end;
-    }
-
-    .kopf h1 {
-        font-size: 25px;
-    }
-
-    .kopf p {
-        font-size: 10px;
-    }
-
-    .hauptbutton {
-        padding: 12px 14px;
-        font-size: 14px;
-    }
-
-    .inhalt {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .getraenke-bereich {
-        width: 100%;
-    }
-
-    .getraenke-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 9px;
-    }
-
-    .getraenk {
-        padding: 8px;
-        border-radius: 15px;
-    }
-
-    .getraenk-bild {
-        height: 95px;
-    }
-
-    .getraenk-bild img {
-        width: 82%;
-    }
-
-    .getraenk-symbol {
-        font-size: 38px;
-    }
-
-    .getraenk-name {
-        font-size: 15px;
-    }
-
-    .getraenk-preis {
-        font-size: 15px;
-    }
-
-    .aktion {
-        min-height: 38px;
-        font-size: 16px;
-    }
-
-    .bestellung {
-        position: relative;
-        top: auto;
-        width: 100%;
-        margin-top: 4px;
-        padding: 14px;
-    }
-
-    .bestellung h2 {
-        font-size: 24px;
-    }
-
-    .warenkorb,
-    .leer {
-        min-height: 130px;
-    }
-}
-
-/* SEHR SCHMALE HANDYS */
-
-@media (max-width: 360px) {
-
-    .kopf {
-        gap: 8px;
-    }
-
-    .hauptbutton {
-        padding: 10px;
-        font-size: 13px;
-    }
-
-    .getraenke-grid {
-        gap: 7px;
-    }
-
-    .getraenk-bild {
-        height: 82px;
-    }
-}
-.getraenk-hauptbereich {
-    width: 100%;
-    background: transparent;
-    color: white;
+  margin-top: 3px;
+  text-align: center;
+  color: var(--gold);
+  font-size: 18px;
+  font-weight: 900;
 }
 
 .ausgewaehlt {
-    margin-top: 6px;
-    color: var(--gold);
-    font-size: 12px;
-    font-weight: 800;
-    text-align: center;
+  text-align: center;
+  color: var(--gold);
+  margin-top: 5px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.getraenk-aktionen {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.aktion {
+  min-height: 44px;
+  border-radius: 11px;
+  background: var(--button);
+  display: grid;
+  place-items: center;
+}
+
+.bearbeiten {
+  color: var(--cyan);
+}
+
+.entfernen {
+  color: #ff525b;
+}
+
+.bestellung {
+  position: sticky;
+  top: 12px;
+  background: var(--card);
+  border: 1.5px solid var(--gold2);
+  border-radius: 20px;
+  padding: 18px;
+}
+
+.bestellung h2 {
+  font-size: 28px;
+  margin-bottom: 15px;
+}
+
+.warenkorb {
+  min-height: 180px;
+}
+
+.leer {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.leer-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--gold);
 }
 
 .warenkorb-zeile {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 0;
-    border-bottom: 1px solid #444;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #444;
 }
 
 .warenkorb-info {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
+  display: flex;
+  flex-direction: column;
 }
 
 .warenkorb-info small {
-    color: var(--muted);
+  color: var(--muted);
 }
 
 .warenkorb-steuerung {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .warenkorb-steuerung button {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: #555;
-    color: white;
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.warenkorb-steuerung span {
-    min-width: 20px;
-    text-align: center;
-    font-weight: 800;
+  width: 33px;
+  height: 33px;
+  border-radius: 8px;
+  background: #555;
+  color: white;
+  font-size: 19px;
+  font-weight: 900;
 }
 
 .warenkorb-summe {
-    color: var(--gold);
-    white-space: nowrap;
+  color: var(--gold);
 }
 
-@media (max-width: 430px) {
-    .warenkorb-zeile {
-        grid-template-columns: 1fr auto;
-    }
+.gesamt-zeile {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--gold2);
+  padding: 14px 0;
+  font-size: 22px;
+}
 
-    .warenkorb-summe {
-        grid-column: 1 / -1;
-        text-align: right;
-    }
+#gesamtpreis {
+  color: var(--gold);
+  font-size: 26px;
+}
+
+.zahlung {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.zahlung-button {
+  min-height: 52px;
+  border-radius: 11px;
+  font-weight: 900;
+}
+
+.bar {
+  background: var(--gold);
+}
+
+.karte {
+  background: #666;
+  color: white;
+}
+
+.loeschen-button {
+  width: 100%;
+  margin-top: 9px;
+  min-height: 45px;
+  border-radius: 11px;
+  background: var(--danger);
+  color: white;
+  font-weight: 800;
+}
+
+dialog {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  width: min(94vw, 760px);
+  max-height: 90vh;
+  margin: auto;
+}
+
+dialog::backdrop {
+  background: rgba(0,0,0,.75);
+  backdrop-filter: blur(5px);
+}
+
+.dialogbox {
+  max-height: 90vh;
+  overflow: auto;
+  background: #242424;
+  color: white;
+  padding: 20px;
+  border-radius: 20px;
+  border: 1px solid var(--gold2);
+}
+
+.dialogbox.gross {
+  width: 100%;
+}
+
+.dialogbox h2 {
+  margin-bottom: 16px;
+}
+
+.dialogbox label {
+  display: block;
+  margin: 12px 0;
+  font-weight: 700;
+}
+
+.dialogbox input {
+  width: 100%;
+  margin-top: 5px;
+  padding: 12px;
+  border: 1px solid #555;
+  background: #181818;
+  color: white;
+  border-radius: 10px;
+}
+
+.dialog-buttons,
+.dialog-kopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.dialog-buttons {
+  margin-top: 18px;
+}
+
+.sekundaer,
+.teilenBtn {
+  padding: 11px 15px;
+  border-radius: 10px;
+}
+
+.sekundaer {
+  background: #555;
+  color: white;
+}
+
+.bild-vorschau img {
+  max-width: 100%;
+  max-height: 240px;
+  display: block;
+  margin: 10px auto;
+  border-radius: 12px;
+}
+
+.tabelle {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+.tabelle th {
+  background: var(--gold);
+  color: #222;
+}
+
+.tabelle th,
+.tabelle td {
+  padding: 10px;
+  border-bottom: 1px solid #444;
+  text-align: left;
+}
+
+.tabelle th:not(:first-child),
+.tabelle td:not(:first-child) {
+  text-align: right;
+}
+
+.tabelle .gesamt {
+  color: var(--gold);
+  font-weight: 900;
+}
+
+.stat-karten {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.stat {
+  background: #181818;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.stat span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.stat strong {
+  font-size: 18px;
+}
+
+.abschluss-form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 14px;
+}
+
+.voll {
+  width: 100%;
+  margin-top: 18px;
+}
+
+@media (max-width: 760px) {
+  .logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .branding h1 {
+    font-size: 23px;
+  }
+
+  .branding p {
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+
+  .hauptbutton {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .iconbutton {
+    width: 42px;
+    height: 42px;
+  }
+
+  .inhalt {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .getraenke-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .getraenk {
+    padding: 8px;
+    border-radius: 16px;
+  }
+
+  .getraenk-bild {
+    height: 100px;
+  }
+
+  .becher-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .getraenk-name,
+  .getraenk-preis {
+    font-size: 15px;
+  }
+
+  .bestellung {
+    position: static;
+    width: 100%;
+  }
+
+  .stat-karten {
+    grid-template-columns: 1fr;
+  }
+
+  .abschluss-form {
+    grid-template-columns: 1fr;
+  }
 }

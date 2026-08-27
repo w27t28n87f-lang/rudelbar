@@ -2,15 +2,15 @@
   "name": "Rudelbar – Die mobile Kneipe",
   "short_name": "Rudelbar",
   "description": "Verkaufs- und Kassen-App der Rudelbar",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#171717",
-  "theme_color": "#171717",
+  "background_color": "#151515",
+  "theme_color": "#151515",
   "icons": [
     {
-      "src": "assets/rudelbar-icon.png",
+      "src": "rudelbar-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
