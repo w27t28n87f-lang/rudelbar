@@ -8,16 +8,15 @@
   --bg: #151515;
   --card: #242424;
   --card2: #1c1c1c;
-
   --gold: #efa834;
   --gold2: #b87931;
-
   --text: #ffffff;
   --muted: #aaaaaa;
-
   --button: #595959;
   --danger: #9f3940;
   --cyan: #44dbea;
+  --green: #42d99a;
+  --orange: #efaa3c;
 }
 
 html {
@@ -29,15 +28,9 @@ html {
 html,
 body {
   min-height: 100%;
-
   background: var(--bg);
   color: var(--text);
-
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 body {
@@ -61,20 +54,14 @@ button {
 
 svg {
   display: block;
-
   width: 24px;
   height: 24px;
-
   fill: none;
   stroke: currentColor;
-
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-
-
-/* APP */
 
 .app {
   max-width: 1450px;
@@ -86,64 +73,97 @@ svg {
 
 .kopf {
   display: flex;
-
   justify-content: space-between;
   align-items: center;
-
   gap: 14px;
-
   margin-bottom: 18px;
 }
 
 .branding {
   display: flex;
   align-items: center;
-
   gap: 12px;
 }
 
 .logo {
   width: 68px;
   height: 68px;
-
   border-radius: 16px;
-
   object-fit: cover;
 }
 
 .kopf h1 {
   font-size: clamp(25px, 4vw, 38px);
-
   font-weight: 900;
 }
 
 .kopf p {
   color: var(--gold);
-
   font-size: 11px;
-
   font-weight: 800;
-
   letter-spacing: 2px;
+}
+
+.kopf-rechts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
 }
 
 .kopf-buttons {
   display: flex;
-
   gap: 9px;
-
   align-items: center;
 }
+
+
+/* SYNC STATUS */
+
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #262626;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.sync-punkt {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #888;
+}
+
+.sync-status.online .sync-punkt {
+  background: var(--green);
+}
+
+.sync-status.wartet .sync-punkt {
+  background: var(--orange);
+}
+
+.sync-status.offline .sync-punkt {
+  background: #888;
+}
+
+.sync-status.fehler .sync-punkt {
+  background: #ff525b;
+}
+
+
+/* BUTTONS */
 
 .hauptbutton,
 .iconbutton,
 .teilenBtn {
   background: var(--gold);
-
   color: #332000;
-
   font-weight: 900;
-
   border-radius: 13px;
 }
 
@@ -154,151 +174,104 @@ svg {
 .iconbutton {
   width: 48px;
   height: 48px;
-
   display: grid;
-
   place-items: center;
 }
 
 .abschluss-button {
   background: #3d3d3d;
-
   color: var(--gold);
 }
 
 
-/* HAUPTBEREICH */
+/* LAYOUT */
 
 .inhalt {
   display: grid;
-
-  grid-template-columns:
-    minmax(0, 1fr)
-    370px;
-
+  grid-template-columns: minmax(0, 1fr) 370px;
   gap: 18px;
+}
+
+.getraenke-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 
 /* GETRÄNKE */
 
-.getraenke-grid {
-  display: grid;
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap: 14px;
-}
-
 .getraenk {
   background: var(--card);
-
-  border:
-    1.5px
-    solid
-    var(--gold2);
-
+  border: 1.5px solid var(--gold2);
   border-radius: 20px;
-
   padding: 12px;
-
   overflow: hidden;
 }
 
 .getraenk-hauptbereich {
   width: 100%;
-
   background: transparent;
-
   color: white;
 }
 
 .getraenk-bild {
   height: 145px;
-
   background: var(--card2);
-
   border-radius: 14px;
-
   display: grid;
-
   place-items: center;
-
   overflow: hidden;
 }
 
 .getraenk-bild img {
   width: 82%;
   height: 100%;
-
   object-fit: cover;
-
   border-radius: 12px;
 }
 
 .becher-icon {
   width: 52px;
   height: 52px;
-
   color: var(--gold);
 }
 
 .getraenk-name {
   margin-top: 11px;
-
   text-align: center;
-
   font-size: 19px;
-
   font-weight: 900;
 }
 
 .getraenk-preis {
   margin-top: 3px;
-
   text-align: center;
-
   color: var(--gold);
-
   font-size: 18px;
-
   font-weight: 900;
 }
 
 .ausgewaehlt {
   text-align: center;
-
   color: var(--gold);
-
   margin-top: 5px;
-
   font-size: 12px;
-
   font-weight: 800;
 }
 
 .getraenk-aktionen {
   display: grid;
-
-  grid-template-columns:
-    1fr
-    1fr;
-
+  grid-template-columns: 1fr 1fr;
   gap: 7px;
-
   margin-top: 12px;
 }
 
 .aktion {
   min-height: 44px;
-
   border-radius: 11px;
-
   background: var(--button);
-
   display: grid;
-
   place-items: center;
 }
 
@@ -315,24 +288,15 @@ svg {
 
 .bestellung {
   position: sticky;
-
   top: 12px;
-
   background: var(--card);
-
-  border:
-    1.5px
-    solid
-    var(--gold2);
-
+  border: 1.5px solid var(--gold2);
   border-radius: 20px;
-
   padding: 18px;
 }
 
 .bestellung h2 {
   font-size: 28px;
-
   margin-bottom: 15px;
 }
 
@@ -342,48 +306,30 @@ svg {
 
 .leer {
   min-height: 180px;
-
   display: grid;
-
   place-items: center;
-
   align-content: center;
-
   gap: 8px;
-
   color: var(--muted);
 }
 
 .leer-icon {
   width: 48px;
   height: 48px;
-
   color: var(--gold);
 }
 
 .warenkorb-zeile {
   display: grid;
-
-  grid-template-columns:
-    1fr
-    auto
-    auto;
-
+  grid-template-columns: 1fr auto auto;
   align-items: center;
-
   gap: 10px;
-
   padding: 10px 0;
-
-  border-bottom:
-    1px
-    solid
-    #444;
+  border-bottom: 1px solid #444;
 }
 
 .warenkorb-info {
   display: flex;
-
   flex-direction: column;
 }
 
@@ -393,24 +339,17 @@ svg {
 
 .warenkorb-steuerung {
   display: flex;
-
   align-items: center;
-
   gap: 7px;
 }
 
 .warenkorb-steuerung button {
   width: 33px;
   height: 33px;
-
   border-radius: 8px;
-
   background: #555;
-
   color: white;
-
   font-size: 19px;
-
   font-weight: 900;
 }
 
@@ -420,68 +359,46 @@ svg {
 
 .gesamt-zeile {
   display: flex;
-
   justify-content: space-between;
-
-  border-top:
-    1px
-    solid
-    var(--gold2);
-
+  border-top: 1px solid var(--gold2);
   padding: 14px 0;
-
   font-size: 22px;
 }
 
 #gesamtpreis {
   color: var(--gold);
-
   font-size: 26px;
 }
 
 .zahlung {
   display: grid;
-
-  grid-template-columns:
-    1fr
-    1fr;
-
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
 .zahlung-button {
   min-height: 52px;
-
   border-radius: 11px;
-
   font-weight: 900;
 }
 
 .bar {
   background: var(--gold);
-
   color: #332000;
 }
 
 .karte {
   background: #666;
-
   color: white;
 }
 
 .loeschen-button {
   width: 100%;
-
   margin-top: 9px;
-
   min-height: 45px;
-
   border-radius: 11px;
-
   background: var(--danger);
-
   color: white;
-
   font-weight: 800;
 }
 
@@ -490,52 +407,26 @@ svg {
 
 dialog {
   border: none;
-
   padding: 0;
-
   background: transparent;
-
-  width:
-    min(
-      94vw,
-      800px
-    );
-
+  width: min(94vw, 800px);
   max-height: 92vh;
-
   margin: auto;
 }
 
 dialog::backdrop {
-  background:
-    rgba(
-      0,
-      0,
-      0,
-      .75
-    );
-
-  backdrop-filter:
-    blur(5px);
+  background: rgba(0,0,0,.78);
+  backdrop-filter: blur(5px);
 }
 
 .dialogbox {
   max-height: 92vh;
-
   overflow: auto;
-
   background: #242424;
-
   color: white;
-
   padding: 20px;
-
   border-radius: 20px;
-
-  border:
-    1px
-    solid
-    var(--gold2);
+  border: 1px solid var(--gold2);
 }
 
 .dialogbox.gross {
@@ -544,80 +435,90 @@ dialog::backdrop {
 
 .dialogbox label {
   display: block;
-
   margin: 12px 0;
-
   font-weight: 700;
 }
 
 .dialogbox input,
 .dialogbox select {
   width: 100%;
-
   margin-top: 5px;
-
   padding: 12px;
-
-  border:
-    1px
-    solid
-    #555;
-
+  border: 1px solid #555;
   background: #181818;
-
   color: white;
-
   border-radius: 10px;
 }
 
 .dialog-kopf {
   display: flex;
-
   justify-content: space-between;
-
   align-items: center;
-
   gap: 10px;
-
   margin-bottom: 16px;
 }
 
 .dialog-aktionen {
   display: flex;
-
   gap: 7px;
 }
 
 .sekundaer,
 .teilenBtn {
   padding: 11px 15px;
-
   border-radius: 10px;
 }
 
 .sekundaer {
   background: #555;
-
   color: white;
 }
 
 .bild-vorschau img {
   max-width: 100%;
   max-height: 240px;
-
   display: block;
-
-  margin:
-    10px
-    auto;
-
+  margin: 10px auto;
   border-radius: 12px;
 }
 
 .voll {
   width: 100%;
-
   margin-top: 18px;
+}
+
+
+/* LOGIN */
+
+.login-box {
+  max-width: 440px;
+  margin: auto;
+  text-align: left;
+}
+
+.login-logo {
+  width: 86px;
+  height: 86px;
+  border-radius: 20px;
+  display: block;
+  margin: 0 auto 18px;
+}
+
+.login-box h2 {
+  text-align: center;
+}
+
+.login-hinweis {
+  color: var(--muted);
+  text-align: center;
+  margin: 8px 0 20px;
+}
+
+.login-fehler {
+  min-height: 22px;
+  color: #ff696f;
+  font-size: 13px;
+  margin-top: 8px;
 }
 
 
@@ -625,29 +526,19 @@ dialog::backdrop {
 
 .tabelle {
   width: 100%;
-
   border-collapse: collapse;
-
-  margin:
-    16px
-    0;
+  margin: 16px 0;
 }
 
 .tabelle th {
   background: var(--gold);
-
   color: #222;
 }
 
 .tabelle th,
 .tabelle td {
   padding: 10px;
-
-  border-bottom:
-    1px
-    solid
-    #444;
-
+  border-bottom: 1px solid #444;
   text-align: left;
 }
 
@@ -658,7 +549,6 @@ dialog::backdrop {
 
 .tabelle .gesamt {
   color: var(--gold);
-
   font-weight: 900;
 }
 
@@ -667,30 +557,20 @@ dialog::backdrop {
 
 .stat-karten {
   display: grid;
-
-  grid-template-columns:
-    repeat(3, 1fr);
-
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-
-  margin:
-    14px
-    0;
+  margin: 14px 0;
 }
 
 .stat {
   background: #181818;
-
   border-radius: 12px;
-
   padding: 12px;
 }
 
 .stat span {
   display: block;
-
   color: var(--muted);
-
   font-size: 12px;
 }
 
@@ -703,24 +583,17 @@ dialog::backdrop {
 
 .verkauf-aktion {
   display: flex;
-
   justify-content: flex-end;
-
   gap: 6px;
 }
 
 .mini-button {
   width: 36px;
   height: 36px;
-
   display: grid;
-
   place-items: center;
-
   border-radius: 9px;
-
   background: #555;
-
   color: var(--cyan);
 }
 
@@ -730,29 +603,15 @@ dialog::backdrop {
 
 .verkauf-position {
   display: grid;
-
-  grid-template-columns:
-    1fr
-    auto
-    auto;
-
+  grid-template-columns: 1fr auto auto;
   align-items: center;
-
   gap: 10px;
-
-  padding:
-    11px
-    0;
-
-  border-bottom:
-    1px
-    solid
-    #444;
+  padding: 11px 0;
+  border-bottom: 1px solid #444;
 }
 
 .verkauf-position-info {
   display: flex;
-
   flex-direction: column;
 }
 
@@ -762,41 +621,26 @@ dialog::backdrop {
 
 .verkauf-menge {
   display: flex;
-
   align-items: center;
-
   gap: 7px;
 }
 
 .verkauf-menge button {
   width: 36px;
   height: 36px;
-
   border-radius: 9px;
-
   background: #555;
-
   color: white;
-
   font-size: 20px;
-
   font-weight: 900;
 }
 
 .verkauf-edit-gesamt {
   display: flex;
-
   justify-content: space-between;
-
   margin-top: 18px;
-
   padding-top: 14px;
-
-  border-top:
-    1px
-    solid
-    var(--gold2);
-
+  border-top: 1px solid var(--gold2);
   font-size: 22px;
 }
 
@@ -806,13 +650,8 @@ dialog::backdrop {
 
 .verkauf-edit-buttons {
   display: grid;
-
-  grid-template-columns:
-    2fr
-    1fr;
-
+  grid-template-columns: 2fr 1fr;
   gap: 9px;
-
   margin-top: 18px;
 }
 
@@ -822,22 +661,13 @@ dialog::backdrop {
 
 .zwischenueberschrift {
   margin-top: 22px;
-
   color: var(--gold);
 }
 
-
-/* TAGESABSCHLUSS */
-
 .abschluss-form {
   display: grid;
-
-  grid-template-columns:
-    repeat(2, 1fr);
-
-  gap:
-    8px
-    14px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 14px;
 }
 
 
@@ -856,17 +686,28 @@ dialog::backdrop {
 
   .branding p {
     font-size: 8px;
-
     letter-spacing: 1px;
+  }
+
+  .kopf {
+    align-items: flex-start;
+  }
+
+  .kopf-rechts {
+    gap: 5px;
   }
 
   .kopf-buttons {
     gap: 6px;
   }
 
+  .sync-status {
+    padding: 4px 8px;
+    font-size: 9px;
+  }
+
   .hauptbutton {
     padding: 12px;
-
     font-size: 14px;
   }
 
@@ -877,23 +718,16 @@ dialog::backdrop {
 
   .inhalt {
     display: flex;
-
     flex-direction: column;
   }
 
   .getraenke-grid {
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
-
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 9px;
   }
 
   .getraenk {
     padding: 8px;
-
     border-radius: 16px;
   }
 
@@ -913,29 +747,21 @@ dialog::backdrop {
 
   .bestellung {
     position: static;
-
     width: 100%;
   }
 
   .stat-karten {
-    grid-template-columns:
-      1fr;
+    grid-template-columns: 1fr;
   }
 
   .abschluss-form {
-    grid-template-columns:
-      1fr;
+    grid-template-columns: 1fr;
   }
 
   .verkauf-edit-buttons {
-    grid-template-columns:
-      1fr;
+    grid-template-columns: 1fr;
   }
-
 }
-
-
-/* SEHR SCHMALES HANDY */
 
 @media (max-width: 390px) {
 
@@ -953,10 +779,7 @@ dialog::backdrop {
   }
 
   .hauptbutton {
-    padding:
-      10px
-      9px;
-
+    padding: 10px 9px;
     font-size: 12px;
   }
 
@@ -964,5 +787,4 @@ dialog::backdrop {
     width: 39px;
     height: 39px;
   }
-
 }
