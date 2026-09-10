@@ -420,13 +420,9 @@ async function authStart() {
   $("loginEmail").value = localStorage.getItem(EMAIL_KEY) || "";
 
   const token = einladungsTokenAusURL();
-  if (token) {
-    $("registrierenOeffnen").classList.remove("versteckt");
-    registrierungOeffnen();
-  } else {
-    $("registrierenOeffnen").classList.add("versteckt");
-    $("loginDialog").showModal();
-  }
+  $("registrierenOeffnen").classList.remove("versteckt");
+  if (token) registrierungOeffnen();
+  else $("loginDialog").showModal();
 }
 
 async function anmelden() {
@@ -544,11 +540,17 @@ function startNachLogin(){
 
 /* EINLADUNGEN / REGISTRIERUNG */
 
+const INVITE_TOKEN_KEY = "rudelbar_invite_token";
 function einladungsTokenAusURL() {
   try {
-    return new URL(window.location.href).searchParams.get("invite")?.trim() || "";
+    const ausUrl = new URL(window.location.href).searchParams.get("invite")?.trim() || "";
+    if (ausUrl) {
+      sessionStorage.setItem(INVITE_TOKEN_KEY, ausUrl);
+      return ausUrl;
+    }
+    return sessionStorage.getItem(INVITE_TOKEN_KEY) || "";
   } catch {
-    return "";
+    return sessionStorage.getItem(INVITE_TOKEN_KEY) || "";
   }
 }
 
@@ -577,16 +579,21 @@ async function adminStatusLaden() {
 
 function registrierungOeffnen() {
   const token = einladungsTokenAusURL();
-  if (!token) {
-    alert("Für die Registrierung wird ein gültiger Einladungslink benötigt.");
-    return;
-  }
-
   if ($("loginDialog").open) $("loginDialog").close();
   $("registerFehler").textContent = "";
   $("registerErfolg").textContent = "";
   $("registerPasswort").value = "";
   $("registerPasswort2").value = "";
+  const status = $("registerInviteStatus");
+  if (status) {
+    status.textContent = token
+      ? "✓ Persönliche Einladung erkannt. Du kannst jetzt dein eigenes Konto anlegen."
+      : "Für ein neues Konto brauchst du den persönlichen Einladungslink vom Administrator.";
+    status.classList.toggle("ok", Boolean(token));
+  }
+  ["registerName","registerEmail","registerPasswort","registerPasswort2","registerButton"].forEach(id=>{
+    const el=$(id); if(el) el.disabled=!token;
+  });
   $("registrierungDialog").showModal();
 }
 
@@ -648,6 +655,7 @@ async function registrierenMitEinladung() {
     if (error) throw error;
 
     localStorage.setItem(EMAIL_KEY, email);
+    sessionStorage.removeItem(INVITE_TOKEN_KEY);
     angemeldet = true;
     const sessionResult = await sb.auth.getSession();
     aktuellerUser = sessionResult.data.session?.user || null;

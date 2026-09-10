@@ -7,8 +7,8 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json?v=98">
-  <link rel="stylesheet" href="style.css?v=98">
+  <link rel="manifest" href="manifest.json?v=99">
+  <link rel="stylesheet" href="style.css?v=99">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -144,17 +144,17 @@
 
       <main class="creator-buehne">
         <div class="creator-360-kopf">
-          <div><strong>↻ 360° Ansicht</strong><small id="creator360Hinweis">Echte Rundum-Frames, keine Bild-Verzerrung</small></div>
-          <output id="creator360Out">FRONT</output>
+          <div><strong>360° Produktstudio</strong><small id="creator360Hinweis">Mit dem Finger drehen · Pinch zum Zoomen</small></div>
+          <output id="creator360Out">3D LIVE</output>
         </div>
         <div id="creatorCanvasWrap" class="creator-canvas-wrap">
           <div id="creator3DViewport" class="creator-3d-viewport" aria-label="3D Produktansicht"></div>
           <canvas id="creatorCanvas" class="creator-2d-fallback" width="900" height="900"></canvas>
-          <div id="creatorHinweis" class="creator-canvas-hinweis">PNG hochladen. Danach Motiv direkt auf dem 3D-Hoodie verschieben.</div>
-          <div class="creator-3d-badge" id="creator3DBadge">ECHTES 3D · GLB</div>
+          <div id="creatorHinweis" class="creator-canvas-hinweis">PNG hochladen und direkt auf dem Kleidungsstück platzieren.</div>
+          <div class="creator-3d-badge" id="creator3DBadge">3D LIVE</div>
         </div>
-        <div id="creator360Status" class="creator-360-status">3D aktiv: frei drehen, zoomen und Druckmotiv direkt auf dem Modell platzieren.</div>
-        <p class="creator-tipp">Freie 3D-Drehung mit einem Finger. Pinch/Scroll = Zoom. Motiv-Regler verändern Größe, Position und Drehung auf dem Hoodie.</p>
+        <div id="creator360Status" class="creator-360-status">3D-Studio bereit.</div>
+        <p class="creator-tipp">Drehen mit einem Finger. Zoomen mit zwei Fingern. Dein Motiv bleibt auf dem Kleidungsstück verankert.</p>
       </main>
 
       <aside class="creator-panel creator-optionen">
@@ -292,8 +292,8 @@
       Anmelden
     </button>
 
-    <button class="link-button versteckt" id="registrierenOeffnen" type="button">
-      Einladung erhalten? Jetzt registrieren
+    <button class="link-button" id="registrierenOeffnen" type="button">
+      Registrieren
     </button>
 
   </div>
@@ -306,6 +306,7 @@
     <img src="Logo-Haupt.png" class="login-logo" alt="Rudelbar">
     <h2>RUDELBAR</h2>
     <p class="login-hinweis">Registrierung per persönlicher Einladung</p>
+    <div id="registerInviteStatus" class="invite-status">Einladungslink wird geprüft…</div>
 
     <label>
       Name
@@ -708,7 +709,7 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="app.js?v=98"></script>
+<script src="app.js?v=99"></script>
 <script type="importmap">
 {
   "imports": {
@@ -717,7 +718,7 @@
   }
 }
 </script>
-<script type="module" src="creator3d.js?v=98"></script>
+<script type="module" src="creator3d.js?v=99"></script>
 
 </body>
 </html>

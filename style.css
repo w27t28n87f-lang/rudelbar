@@ -1915,3 +1915,60 @@ dialog::backdrop {
 .creator-3d-badge{background:rgba(8,8,8,.88)!important;backdrop-filter:blur(8px)}
 .creator-3d-badge.bereit::before{content:'● ';color:#6bd47b}
 .creator-360-status.bereit{color:#d7d7d7!important}
+
+/* ===== RUDELBAR v99: LOGIN + CREATOR 3D ===== */
+#registrierenOeffnen{display:block!important;width:100%;margin-top:12px;padding:13px 16px;border:1px solid rgba(242,173,48,.55);border-radius:14px;background:#151515;color:#f4b13a;font-weight:900;font-size:15px;text-decoration:none}
+#registrierenOeffnen.versteckt{display:block!important}
+.invite-status{margin:10px 0 14px;padding:11px 13px;border-radius:12px;border:1px solid #3a3a3a;background:#151515;color:#aaa;font-size:12px;line-height:1.45;text-align:left}
+.invite-status.ok{border-color:rgba(77,205,112,.5);background:rgba(39,110,57,.12);color:#d8f3df}
+#registrierungDialog input:disabled{opacity:.45;cursor:not-allowed}
+
+.creator-seite{background:#070707!important}
+.creator-wrap{max-width:1480px!important}
+.creator-kopf{position:sticky;top:0;z-index:30;background:rgba(7,7,7,.92);backdrop-filter:blur(18px);border-bottom:1px solid rgba(242,173,48,.24)!important;padding:12px 0 16px!important}
+.creator-head-actions .hauptbutton,.creator-head-actions .sekundaer{min-height:46px;border-radius:14px!important;font-weight:900!important}
+.creator-layout{gap:16px!important;padding-top:16px!important}
+.creator-panel,.creator-buehne{background:linear-gradient(180deg,#111,#0b0b0b)!important;border:1px solid #292929!important;box-shadow:0 18px 60px rgba(0,0,0,.22)}
+.creator-buehne{border-radius:24px!important;overflow:hidden!important}
+.creator-360-kopf{padding:15px 18px!important;background:rgba(13,13,13,.96)!important;border-bottom:1px solid #292929!important}
+.creator-360-kopf strong{font-size:18px!important;letter-spacing:.2px}
+.creator-360-kopf small{margin-top:3px;font-size:11px!important;color:#989898!important}
+.creator-360-kopf output{background:#181818!important;border:1px solid rgba(242,173,48,.42)!important;color:#f5b643!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);font-size:12px!important}
+.creator-canvas-wrap{padding:12px!important;background:#090909!important}
+.creator-3d-viewport{height:min(67dvh,760px)!important;min-height:500px!important;border-radius:22px!important;background:radial-gradient(circle at 50% 36%,#ffffff 0,#ededed 44%,#d7d7d7 72%,#c9c9c9 100%)!important;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12),0 20px 50px rgba(0,0,0,.28)!important}
+.creator-3d-viewport.creator-bg-dark{background:radial-gradient(circle at 50% 36%,#555 0,#2c2c2c 50%,#111 100%)!important}
+.creator-3d-viewport.creator-bg-transparent{background-color:#e8e8e8!important}
+.creator-3d-badge{top:24px!important;right:24px!important;padding:8px 12px!important;background:rgba(11,11,11,.82)!important;border:1px solid rgba(242,173,48,.55)!important;color:#fff!important;font-size:10px!important;box-shadow:0 8px 28px rgba(0,0,0,.20)!important}
+.creator-3d-badge.bereit::before{content:'● ';color:#62d47a}
+.creator-canvas-hinweis{bottom:22px!important;width:min(88%,520px)!important;padding:12px 16px!important;background:rgba(11,11,11,.84)!important;border:1px solid rgba(242,173,48,.52)!important;backdrop-filter:blur(10px);font-size:12px!important}
+.creator-360-status{padding:12px 16px!important;background:#0e0e0e!important;border-top:1px solid #252525!important;color:#b5b5b5!important;font-size:11px!important}
+.creator-tipp{padding:11px 16px!important;color:#777!important;background:#0b0b0b!important}
+.creator-upload{background:#131313!important;border:1px dashed #555!important;border-radius:16px!important;transition:.18s ease}
+.creator-upload:active{transform:scale(.99);border-color:#f2ad30!important}
+.creator-full{min-height:44px;border-radius:13px!important}
+.creator-regler label{font-size:12px!important;color:#b8b8b8!important}
+.creator-regler input[type=range]{accent-color:#f2ad30!important}
+.creator-mini-actions{gap:10px!important}
+.creator-mini-actions button{min-height:42px!important;border-radius:12px!important;background:#171717!important;border:1px solid #343434!important;font-weight:800!important}
+.creator-mini-actions button:active{transform:scale(.98)}
+.creator-farben button,.creator-groessen button,.creator-hintergruende button{transition:.15s ease}
+.creator-farben button:active,.creator-groessen button:active,.creator-hintergruende button:active{transform:scale(.96)}
+.creator-draft-v99{display:grid;gap:3px;width:100%;text-align:left;padding:11px 12px;border:1px solid #333;border-radius:12px;background:#161616;color:#fff}
+.creator-draft-v99 small{color:#888}
+
+@media(max-width:760px){
+  .creator-seite{padding:0 8px max(24px,env(safe-area-inset-bottom))!important}
+  .creator-kopf{padding-top:max(10px,env(safe-area-inset-top))!important}
+  .creator-layout{display:flex!important;flex-direction:column!important;gap:12px!important}
+  .creator-buehne{order:1!important;border-radius:20px!important}
+  .creator-produkte{order:2!important}
+  .creator-optionen{order:3!important}
+  .creator-3d-viewport{height:58dvh!important;min-height:470px!important;max-height:650px!important;border-radius:18px!important}
+  .creator-canvas-wrap{padding:8px!important}
+  .creator-3d-badge{top:18px!important;right:18px!important}
+  .creator-360-kopf{padding:13px 14px!important}
+  .creator-360-kopf strong{font-size:16px!important}
+  .creator-head-actions{gap:8px!important}
+  .creator-head-actions button{font-size:13px!important}
+  .creator-panel{border-radius:18px!important;padding:14px!important}
+}
