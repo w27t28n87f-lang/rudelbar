@@ -121,12 +121,6 @@
           <input id="creatorDatei" type="file" accept="image/png">
         </label>
         <button id="creatorDateiBtn" class="hauptbutton creator-full" type="button">PNG auswählen</button>
-        <details class="creator-3d-import">
-          <summary>Eigenes 3D-Modell (GLB) laden</summary>
-          <p>Für Produktionsmodelle mit sauberem UV-Mapping. Das Modell bleibt nur auf diesem Gerät.</p>
-          <input id="creatorModelFile" type="file" accept=".glb,model/gltf-binary">
-          <button id="creatorModelReset" class="sekundaer creator-full" type="button">Rudelbar Hoodie laden</button>
-        </details>
 
         <h2><span>3</span> Design anpassen</h2>
         <div class="creator-regler">
@@ -142,19 +136,17 @@
         </div>
       </aside>
 
-      <main class="creator-buehne">
-        <div class="creator-360-kopf">
-          <div><strong>360° Produktstudio</strong><small id="creator360Hinweis">Mit dem Finger drehen · Pinch zum Zoomen</small></div>
-          <output id="creator360Out">3D LIVE</output>
+      <main class="creator-buehne creator-2d-buehne">
+        <div class="creator-360-kopf creator-2d-kopf">
+          <div><strong>2D Produktstudio</strong><small id="creator360Hinweis">Realistische Vorderansicht · Motiv direkt mit dem Finger verschieben</small></div>
+          <output id="creator360Out">FRONT</output>
         </div>
-        <div id="creatorCanvasWrap" class="creator-canvas-wrap">
-          <div id="creator3DViewport" class="creator-3d-viewport" aria-label="3D Produktansicht"></div>
-          <canvas id="creatorCanvas" class="creator-2d-fallback" width="900" height="900"></canvas>
+        <div id="creatorCanvasWrap" class="creator-canvas-wrap creator-2d-wrap">
+          <canvas id="creatorCanvas" class="creator-2d-studio" width="900" height="900" aria-label="2D Produktansicht"></canvas>
           <div id="creatorHinweis" class="creator-canvas-hinweis">PNG hochladen und direkt auf dem Kleidungsstück platzieren.</div>
-          <div class="creator-3d-badge" id="creator3DBadge">3D LIVE</div>
         </div>
-        <div id="creator360Status" class="creator-360-status">3D-Studio bereit.</div>
-        <p class="creator-tipp">Drehen mit einem Finger. Zoomen mit zwei Fingern. Dein Motiv bleibt auf dem Kleidungsstück verankert.</p>
+        <div id="creator360Status" class="creator-360-status bereit">2D-Studio bereit · Hoodie, T-Shirt, Polo, Sweatshirt, Zip-Hoodie, Softshell, Tanktop, Cap und Tasche.</div>
+        <p class="creator-tipp">Motiv anfassen und verschieben. Größe und Drehung kannst du zusätzlich über die Regler einstellen.</p>
       </main>
 
       <aside class="creator-panel creator-optionen">
@@ -301,7 +293,7 @@
 </dialog>
 
 <!-- REGISTRIERUNG NUR PER EINLADUNG -->
-<dialog id="registrierungDialog">
+<section id="registrierungDialog" class="register-page versteckt" aria-label="Registrierung">
   <div class="dialogbox login-box">
     <img src="Logo-Haupt.png" class="login-logo" alt="Rudelbar">
     <h2>RUDELBAR</h2>
@@ -709,16 +701,7 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="app.js?v=100"></script>
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
-  }
-}
-</script>
-<script type="module" src="creator3d.js?v=100"></script>
+<script src="app.js?v=101"></script>
 
 </body>
 </html>

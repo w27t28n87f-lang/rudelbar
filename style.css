@@ -2015,3 +2015,57 @@ dialog::backdrop {
   .creator-canvas-wrap{padding:10px!important}
   #creatorHinweis{width:calc(100% - 34px)!important;bottom:18px!important}
 }
+
+
+/* ===== RUDELBAR v101: stabile Registrierung + realistischer 2D Creator ===== */
+body.register-offen{overflow:hidden!important}
+#registrierungDialog.register-page{
+  position:fixed!important; inset:0!important; z-index:100000!important;
+  display:flex; align-items:flex-start; justify-content:center;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:max(22px,env(safe-area-inset-top)) 14px max(30px,env(safe-area-inset-bottom));
+  background:radial-gradient(circle at 50% 0,#1e1e1e 0,#0b0b0b 48%,#050505 100%);
+}
+#registrierungDialog.register-page.versteckt{display:none!important}
+#registrierungDialog .login-box{
+  position:relative!important; width:min(100%,520px)!important; max-height:none!important;
+  overflow:visible!important; margin:auto!important; padding:22px!important;
+  background:linear-gradient(180deg,#242424,#171717)!important;
+  border:1px solid rgba(242,173,48,.72)!important; border-radius:24px!important;
+}
+#registrierungDialog label{position:relative!important;z-index:2!important;display:block!important}
+#registrierungDialog input{
+  position:relative!important; z-index:3!important; display:block!important;
+  width:100%!important; min-height:56px!important; margin-top:7px!important;
+  padding:13px 14px!important; border-radius:14px!important;
+  background:#0d0d0d!important; border:1px solid #5a5a5a!important; color:#fff!important;
+  font-size:16px!important; opacity:1!important; pointer-events:auto!important;
+  touch-action:manipulation!important; -webkit-user-select:text!important; user-select:text!important;
+  -webkit-appearance:none!important; appearance:none!important;
+}
+#registrierungDialog input:focus{border-color:#f2ad30!important;box-shadow:0 0 0 3px rgba(242,173,48,.20)!important;outline:none!important}
+#registrierungDialog .invite-status{border-radius:14px;padding:11px 12px;background:#111;border:1px solid #333}
+
+.creator-2d-buehne{background:#090909!important}
+.creator-2d-wrap{position:relative!important;padding:10px!important;background:#080808!important}
+.creator-2d-studio{
+  display:block!important; width:100%!important; height:auto!important; aspect-ratio:1/1!important;
+  border-radius:22px!important; background:#e5e5e5!important; touch-action:none!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.72),0 18px 48px rgba(0,0,0,.30)!important;
+}
+.creator-2d-kopf output{background:#171717!important;border:1px solid rgba(242,173,48,.55)!important;color:#f4b13a!important}
+.creator-produkt-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+.creator-produkt-grid button{
+  min-width:0!important; padding:7px 7px 10px!important; border-radius:18px!important;
+  background:linear-gradient(180deg,#181818,#0e0e0e)!important;border:1px solid #343434!important;color:#fff!important;
+  box-shadow:0 10px 24px rgba(0,0,0,.18)!important;
+}
+.creator-produkt-grid button.aktiv{border-color:#f2ad30!important;box-shadow:0 0 0 2px rgba(242,173,48,.28),0 12px 28px rgba(0,0,0,.26)!important}
+.creator-produkt-foto{
+  display:block!important;width:100%!important;aspect-ratio:1/1!important;object-fit:cover!important;
+  border-radius:13px!important;background:radial-gradient(circle,#f7f7f7,#d5d5d5)!important;
+}
+.creator-produkt-grid strong{display:block!important;margin-top:8px!important;font-size:13px!important}
+.creator-3d-import,.creator-3d-viewport,.creator-3d-badge{display:none!important}
+.creator-canvas-hinweis{pointer-events:none!important}
+@media (min-width:760px){.creator-produkt-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
