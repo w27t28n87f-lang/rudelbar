@@ -1720,3 +1720,34 @@ dialog::backdrop {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ===== RUDELBAR v80: RECHNUNGEN ===== */
+.rechnung-dialogbox { max-width: 980px; }
+.rechnung-form { margin-bottom: 18px; }
+.rechnung-positionen-kopf { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:10px 0; }
+.rechnung-positionen-kopf h3 { margin:0; }
+.rechnung-positionen { display:grid; gap:10px; }
+.rechnung-position { display:grid; grid-template-columns: minmax(220px,2.4fr) 90px 110px 130px 54px; gap:8px; align-items:end; padding:12px; border:1px solid #3a3a3a; border-radius:14px; background:#151515; }
+.rechnung-position label { display:grid; gap:6px; color:var(--muted); font-size:12px; font-weight:800; }
+.rechnung-position input,.rechnung-position select { width:100%; min-width:0; padding:10px; border:1px solid #4a4a4a; border-radius:10px; background:#0f0f0f; color:white; font:inherit; }
+.rechnung-pos-loeschen { height:42px; border:1px solid #743232; border-radius:10px; background:#321616; color:#ff8a8a; font-weight:900; }
+.rechnung-summen { width:min(100%,420px); margin:18px 0 18px auto; display:grid; border:1px solid #393939; border-radius:14px; overflow:hidden; }
+.rechnung-summen > div { display:flex; justify-content:space-between; gap:20px; padding:11px 14px; border-bottom:1px solid #333; }
+.rechnung-summen > div:last-child { border-bottom:0; }
+.rechnung-gesamt { background:#0c0c0c; color:var(--goldHell); font-size:18px; }
+.rechnung-notiz { display:grid; gap:7px; color:var(--muted); font-weight:800; }
+.rechnung-notiz textarea { width:100%; padding:12px; border:1px solid #4a4a4a; border-radius:12px; background:#111; color:white; font:inherit; resize:vertical; }
+.rechnung-dialog-aktionen { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
+.rechnung-card-aktionen { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.rechnung-card-aktionen button { padding:9px 11px; border-radius:10px; font-weight:850; }
+.rechnung-pdf,.rechnung-teilen,.rechnung-drucken { border:1px solid rgba(242,169,31,.5); background:#211a0d; color:#ffd36f; }
+.rechnung-storno { border:1px solid #6b4f1b; background:#2b2110; color:#ffd36f; }
+.rechnung-klein { color:var(--muted); font-size:12px; }
+.rechnung-monat { display:flex; align-items:center; gap:8px; }
+@media (max-width:760px){
+  .rechnung-position { grid-template-columns:1fr 1fr; }
+  .rechnung-position label:first-child { grid-column:1/-1; }
+  .rechnung-pos-loeschen { grid-column:2; }
+  .rechnung-dialog-aktionen { display:grid; grid-template-columns:1fr; }
+}

@@ -2409,6 +2409,7 @@ function modulDatenZeigen(modulId) {
   $("modulBereich").textContent = bereich.subtitel;
   $("modulInhaltTitel").textContent = modul.titel;
   $("modulInhaltText").textContent = modul.text;
+  $("modulMonatExport")?.classList.toggle("versteckt", modulId !== "rechnungen");
 
   alleHauptansichtenVerstecken();
   $("modulAnsicht").classList.remove("versteckt");
@@ -2417,6 +2418,10 @@ function modulDatenZeigen(modulId) {
 }
 
 function modulRendern() {
+  if (aktivesModul === "rechnungen" && ["mode", "service", "security"].includes(aktiverBereich)) {
+    rechnungenRendern();
+    return;
+  }
   if (aktiverBereich === "kneipe" && aktivesModul === "archiv") {
     archivModulRendern();
     return;
@@ -2602,6 +2607,208 @@ function bereichOeffnen(bereich) {
   bereichMenuZeigen(bereich);
 }
 
+
+/* ===== RUDELBAR v80: RECHNUNGEN ===== */
+
+const FIRMEN_DATEN = {
+  inhaber: "Martin Küster",
+  strasse: "Kielort 16 C",
+  ort: "22850 Norderstedt",
+  telefon: "015259574522"
+};
+
+const RECHNUNGS_BEREICHE = {
+  mode: { name: "Rudelbar Mode", prefix: "RBM", logo: "Logo-Mode.png" },
+  service: { name: "Rudelbar Facility Service", prefix: "RBF", logo: "Logo-Service.png" },
+  security: { name: "Rudelbar Security", prefix: "RBS", logo: "Logo-Haupt.png" }
+};
+
+let rechnungEditID = null;
+let rechnungPositionen = [];
+let rechnungReservierteNummer = "";
+
+function isoHeute(){ return new Date().toISOString().slice(0,10); }
+function datumDE(iso){ if(!iso) return ""; const [y,m,d]=String(iso).slice(0,10).split("-"); return `${d}.${m}.${y}`; }
+function plusTage(iso,tage){ const d=new Date(`${iso}T12:00:00`); d.setDate(d.getDate()+tage); return d.toISOString().slice(0,10); }
+
+async function naechsteRechnungsnummer(){
+  if(!navigator.onLine){ throw new Error("Für eine neue fortlaufende Nummer muss die App online sein."); }
+  const cfg=RECHNUNGS_BEREICHE[aktiverBereich];
+  if(!cfg) throw new Error("Für diesen Bereich ist kein Nummernkreis eingerichtet.");
+  const { data, error } = await sb.rpc("naechste_rudelbar_nummer", { p_bereich: aktiverBereich, p_jahr: new Date().getFullYear() });
+  if(error) throw error;
+  return String(data || "");
+}
+
+function rechnungPositionNeu(pos={}){
+  rechnungPositionen.push({
+    id: pos.id || neueID(),
+    beschreibung: pos.beschreibung || "",
+    menge: Number(pos.menge ?? 1),
+    einheit: pos.einheit || "Stk.",
+    einzelpreis: Number(pos.einzelpreis ?? 0),
+    mwst: Number(pos.mwst ?? 19)
+  });
+  rechnungPositionenRendern();
+}
+
+function rechnungPositionenRendern(){
+  const box=$("rechnungPositionen");
+  if(!rechnungPositionen.length){ box.innerHTML='<div class="daten-leer"><strong>Noch keine Position</strong><span>Füge mindestens eine Rechnungsposition hinzu.</span></div>'; rechnungSummenAktualisieren(); return; }
+  box.innerHTML=rechnungPositionen.map((p,i)=>`<div class="rechnung-position" data-pos-id="${p.id}">
+    <label>Beschreibung<input data-rf="beschreibung" value="${esc(p.beschreibung)}" placeholder="Leistung / Artikel"></label>
+    <label>Menge<input data-rf="menge" type="number" step="0.01" inputmode="decimal" value="${p.menge}"></label>
+    <label>Einheit<input data-rf="einheit" value="${esc(p.einheit)}"></label>
+    <label>Einzelpreis €<input data-rf="einzelpreis" type="number" step="0.01" inputmode="decimal" value="${p.einzelpreis}"></label>
+    <label>MwSt.<select data-rf="mwst"><option value="19" ${p.mwst===19?'selected':''}>19 %</option><option value="7" ${p.mwst===7?'selected':''}>7 %</option><option value="0" ${p.mwst===0?'selected':''}>0 %</option></select></label>
+    <button type="button" class="rechnung-pos-loeschen" data-pos-del="${p.id}">×</button>
+  </div>`).join("");
+  box.querySelectorAll("[data-pos-id]").forEach(row=>{
+    const id=row.dataset.posId;
+    row.querySelectorAll("[data-rf]").forEach(input=>input.oninput=()=>{
+      const p=rechnungPositionen.find(x=>x.id===id); if(!p) return;
+      const k=input.dataset.rf;
+      p[k]=["menge","einzelpreis","mwst"].includes(k)?Number(input.value||0):input.value;
+      rechnungSummenAktualisieren();
+    });
+  });
+  box.querySelectorAll("[data-pos-del]").forEach(btn=>btn.onclick=()=>{ rechnungPositionen=rechnungPositionen.filter(x=>x.id!==btn.dataset.posDel); rechnungPositionenRendern(); });
+  rechnungSummenAktualisieren();
+}
+
+function rechnungSummen(){
+  let netto=0,mwst=0;
+  rechnungPositionen.forEach(p=>{ const n=Number(p.menge||0)*Number(p.einzelpreis||0); netto+=n; mwst+=n*Number(p.mwst||0)/100; });
+  return { netto, mwst, gesamt: netto+mwst };
+}
+function rechnungSummenAktualisieren(){ const s=rechnungSummen(); $("rechnungNetto").textContent=euro(s.netto); $("rechnungMwst").textContent=euro(s.mwst); $("rechnungGesamt").textContent=euro(s.gesamt); }
+
+async function rechnungOeffnen(id=null){
+  if(!["mode","service","security"].includes(aktiverBereich)) return;
+  rechnungEditID=id;
+  const daten=modulDatenLaden();
+  const alt=id?daten.find(x=>x.id===id):null;
+  try{
+    rechnungReservierteNummer=alt?.nummer || await naechsteRechnungsnummer();
+  }catch(e){ alert(`Neue Rechnung konnte nicht gestartet werden: ${e.message||e}`); return; }
+  const heute=isoHeute();
+  $("rechnungFormTitel").textContent=alt?"Rechnung bearbeiten":"Neue Rechnung";
+  $("rechnungNummerHinweis").textContent=`Fortlaufende Nummer: ${rechnungReservierteNummer}`;
+  $("rechnungKunde").value=alt?.kunde||"";
+  $("rechnungAdresse").value=alt?.adresse||"";
+  $("rechnungDatum").value=alt?.datum||heute;
+  $("rechnungLeistungsdatum").value=alt?.leistungsdatum||heute;
+  $("rechnungFaellig").value=alt?.faellig||plusTage(heute,14);
+  $("rechnungStatus").value=alt?.status||"Entwurf";
+  $("rechnungBetreff").value=alt?.titel||"";
+  $("rechnungNotiz").value=alt?.notiz||"Vielen Dank für Ihren Auftrag.";
+  rechnungPositionen=(alt?.positionen||[]).map(x=>({...x,id:x.id||neueID()}));
+  if(!rechnungPositionen.length) rechnungPositionen=[{id:neueID(),beschreibung:"",menge:1,einheit:"Stk.",einzelpreis:0,mwst:19}];
+  rechnungPositionenRendern();
+  $("rechnungDialog").showModal();
+}
+
+function rechnungFormNeuStarten(){
+  if(!confirm("Eingaben dieser Rechnung verwerfen und neu beginnen? Die bereits reservierte Nummer wird nicht wiederverwendet.")) return;
+  $("rechnungDialog").close();
+  rechnungEditID=null; rechnungReservierteNummer=""; rechnungPositionen=[];
+  rechnungOeffnen();
+}
+
+function rechnungSpeichern(){
+  if(!$("rechnungKunde").value.trim() || !$("rechnungAdresse").value.trim() || !$("rechnungDatum").value){ alert("Bitte Kunde, Anschrift und Rechnungsdatum ausfüllen."); return; }
+  if(!rechnungPositionen.length || rechnungPositionen.some(p=>!String(p.beschreibung||"").trim())){ alert("Bitte alle Rechnungspositionen vollständig beschreiben."); return; }
+  const daten=modulDatenLaden();
+  const alt=rechnungEditID?daten.find(x=>x.id===rechnungEditID):null;
+  const sum=rechnungSummen();
+  const neu={...(alt||{}), id:rechnungEditID||neueID(), createdAt:alt?.createdAt||new Date().toISOString(), updatedAt:new Date().toISOString(),
+    titel:$("rechnungBetreff").value.trim()||`Rechnung ${rechnungReservierteNummer}`,
+    nummer:rechnungReservierteNummer, kunde:$("rechnungKunde").value.trim(), adresse:$("rechnungAdresse").value.trim(),
+    datum:$("rechnungDatum").value, leistungsdatum:$("rechnungLeistungsdatum").value, faellig:$("rechnungFaellig").value,
+    status:$("rechnungStatus").value, notiz:$("rechnungNotiz").value.trim(), positionen:rechnungPositionen.map(x=>({...x})),
+    netto:sum.netto, mwst:sum.mwst, betrag:sum.gesamt, bereich:aktiverBereich
+  };
+  if(rechnungEditID){ const i=daten.findIndex(x=>x.id===rechnungEditID); if(i>=0) daten[i]=neu; } else daten.push(neu);
+  modulDatenSpeichern(daten); queueUpsert("moduldaten",modulZuDB(aktiverBereich,"rechnungen",neu));
+  $("rechnungDialog").close(); rechnungEditID=null; rechnungReservierteNummer=""; rechnungPositionen=[]; modulRendern();
+}
+
+function rechnungenRendern(){
+  const daten=modulDatenLaden();
+  const jetzt=new Date(); const monat=`${jetzt.getFullYear()}-${String(jetzt.getMonth()+1).padStart(2,"0")}`;
+  const monatDaten=daten.filter(x=>String(x.datum||"").startsWith(monat));
+  const offen=daten.filter(x=>x.status==="Offen").reduce((s,x)=>s+Number(x.betrag||0),0);
+  const monatSum=monatDaten.reduce((s,x)=>s+Number(x.betrag||0),0);
+  $("modulStatistik").innerHTML=`<div class="statbox"><span>Rechnungen</span><strong>${daten.length}</strong></div><div class="statbox"><span>Dieser Monat</span><strong>${euro(monatSum)}</strong></div><div class="statbox"><span>Offen</span><strong>${euro(offen)}</strong></div>`;
+  if(!daten.length){ $("modulListe").innerHTML='<div class="daten-leer"><strong>Noch keine Rechnungen</strong><span>Mit „+ Neu“ erstellst du die erste Rechnung mit fortlaufender Nummer.</span></div>'; return; }
+  const sort=[...daten].sort((a,b)=>String(b.datum||b.createdAt).localeCompare(String(a.datum||a.createdAt)));
+  $("modulListe").innerHTML=sort.map(x=>`<article class="daten-karte"><div class="daten-karte-kopf"><div><h3>${esc(x.nummer||"Rechnung")}</h3><div class="meta"><span>${esc(x.kunde||"")}</span><span> · ${datumDE(x.datum)}</span><span> · <span class="status-chip">${esc(x.status||"Entwurf")}</span></span></div></div><div class="betrag">${euro(x.betrag||0)}</div></div>${x.titel?`<div class="notiz">${esc(x.titel)}</div>`:""}<div class="rechnung-card-aktionen"><button class="daten-bearbeiten" data-re-edit="${x.id}">Bearbeiten</button><button class="rechnung-pdf" data-re-pdf="${x.id}">PDF</button><button class="rechnung-teilen" data-re-share="${x.id}">Teilen</button><button class="rechnung-drucken" data-re-print="${x.id}">Drucken</button>${x.status!=="Storniert"?`<button class="rechnung-storno" data-re-storno="${x.id}">Stornieren</button>`:""}${x.status==="Entwurf"?`<button class="daten-loeschen" data-re-del="${x.id}">Löschen</button>`:""}</div></article>`).join("");
+  document.querySelectorAll("[data-re-edit]").forEach(b=>b.onclick=()=>rechnungOeffnen(b.dataset.reEdit));
+  document.querySelectorAll("[data-re-pdf]").forEach(b=>b.onclick=()=>rechnungPDFAktion(b.dataset.rePdf,"download"));
+  document.querySelectorAll("[data-re-share]").forEach(b=>b.onclick=()=>rechnungPDFAktion(b.dataset.reShare,"share"));
+  document.querySelectorAll("[data-re-print]").forEach(b=>b.onclick=()=>rechnungDrucken(b.dataset.rePrint));
+  document.querySelectorAll("[data-re-storno]").forEach(b=>b.onclick=()=>rechnungStornieren(b.dataset.reStorno));
+  document.querySelectorAll("[data-re-del]").forEach(b=>b.onclick=()=>rechnungEntwurfLoeschen(b.dataset.reDel));
+}
+
+function rechnungEntwurfLoeschen(id){
+  const daten=modulDatenLaden(); const r=daten.find(x=>x.id===id); if(!r) return;
+  if(r.status!=="Entwurf"){ alert("Nur Entwürfe können gelöscht werden. Bereits ausgestellte Rechnungen bitte stornieren."); return; }
+  if(!confirm(`Entwurf ${r.nummer} wirklich löschen? Die Nummer wird nicht erneut vergeben.`)) return;
+  modulDatenSpeichern(daten.filter(x=>x.id!==id)); queueDelete("moduldaten",id); modulRendern();
+}
+
+function rechnungStornieren(id){
+  const daten=modulDatenLaden(); const i=daten.findIndex(x=>x.id===id); if(i<0) return;
+  if(!confirm(`Rechnung ${daten[i].nummer} als storniert markieren?`)) return;
+  daten[i]={...daten[i],status:"Storniert",updatedAt:new Date().toISOString()}; modulDatenSpeichern(daten); queueUpsert("moduldaten",modulZuDB(aktiverBereich,"rechnungen",daten[i])); modulRendern();
+}
+
+function bildAlsDataURL(src){ return new Promise((resolve,reject)=>{ const img=new Image(); img.onload=()=>{ const c=document.createElement("canvas"); c.width=img.naturalWidth; c.height=img.naturalHeight; c.getContext("2d").drawImage(img,0,0); resolve(c.toDataURL("image/png")); }; img.onerror=reject; img.src=src; }); }
+
+async function rechnungPDFBlob(r){
+  if(!window.jspdf?.jsPDF) throw new Error("PDF-Bibliothek konnte nicht geladen werden. Bitte Internetverbindung prüfen und die App neu öffnen.");
+  const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:"mm",format:"a4"});
+  const cfg=RECHNUNGS_BEREICHE[aktiverBereich]||RECHNUNGS_BEREICHE[r.bereich];
+  doc.setFillColor(12,12,12); doc.rect(0,0,210,42,"F"); doc.setDrawColor(230,166,35); doc.setLineWidth(0.7); doc.line(0,42,210,42);
+  try{ const logo=await bildAlsDataURL(cfg.logo); doc.addImage(logo,"PNG",12,5,31,31); }catch{}
+  doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(19); doc.text(cfg.name.toUpperCase(),49,18);
+  doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.text(`${FIRMEN_DATEN.inhaber} | ${FIRMEN_DATEN.strasse} | ${FIRMEN_DATEN.ort}`,49,26); doc.text(`Tel. ${FIRMEN_DATEN.telefon}`,49,31);
+  doc.setTextColor(20,20,20); doc.setFont("helvetica","bold"); doc.setFontSize(22); doc.text("RECHNUNG",14,58);
+  doc.setFontSize(9); doc.setFont("helvetica","normal"); const adr=doc.splitTextToSize(`${r.kunde}\n${r.adresse}`,80); doc.text(adr,14,69);
+  doc.setFillColor(242,242,242); doc.roundedRect(126,50,70,35,1.5,1.5,"F"); doc.setFont("helvetica","bold"); doc.text("Rechnungsnummer:",130,57); doc.text("Rechnungsdatum:",130,63); doc.text("Leistungsdatum:",130,69); doc.text("Zahlungsziel:",130,75); doc.setFont("helvetica","normal"); doc.text(String(r.nummer||""),165,57); doc.text(datumDE(r.datum),165,63); doc.text(datumDE(r.leistungsdatum||r.datum),165,69); doc.text(datumDE(r.faellig),165,75);
+  let y=96; doc.setFillColor(20,20,20); doc.rect(14,y,182,8,"F"); doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.text("Pos.",17,y+5.5); doc.text("Beschreibung",29,y+5.5); doc.text("Menge",117,y+5.5); doc.text("Einzelpreis",143,y+5.5); doc.text("Gesamt",177,y+5.5);
+  doc.setTextColor(20,20,20); doc.setFont("helvetica","normal"); y+=8;
+  (r.positionen||[]).forEach((p,i)=>{ const line=Number(p.menge||0)*Number(p.einzelpreis||0); const desc=doc.splitTextToSize(String(p.beschreibung||""),80); const h=Math.max(9,desc.length*4.3+3); if(y+h>250){doc.addPage(); y=20;} doc.setDrawColor(220,220,220); doc.rect(14,y,182,h); doc.text(String(i+1),18,y+5.5); doc.text(desc,29,y+5.5); doc.text(`${p.menge} ${p.einheit||""}`,117,y+5.5); doc.text(euro(p.einzelpreis).replace(/\s/g," "),143,y+5.5); doc.text(euro(line).replace(/\s/g," "),177,y+5.5,{align:"right"}); y+=h; });
+  const netto=Number(r.netto??0), mwst=Number(r.mwst??0), gesamt=Number(r.betrag??(netto+mwst)); y+=5; doc.setFillColor(245,245,245); doc.rect(120,y,76,22,"F"); doc.setFont("helvetica","normal"); doc.text("Netto",124,y+6); doc.text(euro(netto),192,y+6,{align:"right"}); doc.text("Umsatzsteuer",124,y+12); doc.text(euro(mwst),192,y+12,{align:"right"}); doc.setFillColor(20,20,20); doc.rect(120,y+14,76,8,"F"); doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.text("Gesamtbetrag",124,y+19.5); doc.text(euro(gesamt),192,y+19.5,{align:"right"});
+  doc.setTextColor(20,20,20); doc.setFont("helvetica","normal"); doc.setFontSize(9); const note=doc.splitTextToSize(r.notiz||"Vielen Dank für Ihren Auftrag.",180); doc.text(note,14,Math.min(278,y+34));
+  doc.setDrawColor(230,166,35); doc.line(14,286,196,286); doc.setFontSize(8); doc.text(`${cfg.name} | ${FIRMEN_DATEN.inhaber} | ${FIRMEN_DATEN.strasse}, ${FIRMEN_DATEN.ort} | ${FIRMEN_DATEN.telefon}`,14,291);
+  return doc.output("blob");
+}
+
+async function rechnungPDFAktion(id,art){
+  const r=modulDatenLaden().find(x=>x.id===id); if(!r) return;
+  try{ const blob=await rechnungPDFBlob(r); const file=new File([blob],`${r.nummer}.pdf`,{type:"application/pdf"});
+    if(art==="share" && navigator.canShare?.({files:[file]})){ await navigator.share({title:`Rechnung ${r.nummer}`,text:`Rechnung ${r.nummer} von ${RECHNUNGS_BEREICHE[aktiverBereich].name}`,files:[file]}); return; }
+    const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=`${r.nummer}.pdf`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),2000);
+  }catch(e){ alert(`PDF konnte nicht erstellt werden: ${e.message||e}`); }
+}
+
+function rechnungDrucken(id){
+  const r=modulDatenLaden().find(x=>x.id===id); if(!r) return;
+  const cfg=RECHNUNGS_BEREICHE[aktiverBereich]; const pos=(r.positionen||[]).map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.beschreibung)}</td><td>${p.menge} ${esc(p.einheit||"")}</td><td>${euro(p.einzelpreis)}</td><td>${euro(Number(p.menge||0)*Number(p.einzelpreis||0))}</td></tr>`).join("");
+  const w=window.open("","_blank"); if(!w){alert("Druckfenster wurde blockiert.");return;} w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(r.nummer)}</title><style>body{font:14px Arial;padding:28px;color:#111}.head{background:#111;color:#fff;padding:18px;border-bottom:3px solid #e6a623}.head img{height:90px;float:left;margin-right:20px}.clearfix{clear:both}table{width:100%;border-collapse:collapse;margin-top:24px}th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#111;color:#fff}.sum{width:340px;margin:18px 0 0 auto}.sum div{display:flex;justify-content:space-between;padding:7px;border-bottom:1px solid #ccc}.total{background:#111;color:#fff;font-weight:bold}.foot{margin-top:40px;border-top:2px solid #e6a623;padding-top:10px}@media print{button{display:none}}</style></head><body><div class="head"><img src="${cfg.logo}"><h1>${esc(cfg.name)}</h1><div>${esc(FIRMEN_DATEN.inhaber)} · ${esc(FIRMEN_DATEN.strasse)} · ${esc(FIRMEN_DATEN.ort)} · ${esc(FIRMEN_DATEN.telefon)}</div><div class="clearfix"></div></div><h1>RECHNUNG</h1><p><b>${esc(r.kunde)}</b><br>${esc(r.adresse).replaceAll("\n","<br>")}</p><p><b>Rechnungsnummer:</b> ${esc(r.nummer)}<br><b>Rechnungsdatum:</b> ${datumDE(r.datum)}<br><b>Leistungsdatum:</b> ${datumDE(r.leistungsdatum||r.datum)}<br><b>Zahlungsziel:</b> ${datumDE(r.faellig)}</p><h3>${esc(r.titel||"")}</h3><table><thead><tr><th>Pos.</th><th>Beschreibung</th><th>Menge</th><th>Einzelpreis</th><th>Gesamt</th></tr></thead><tbody>${pos}</tbody></table><div class="sum"><div><span>Netto</span><b>${euro(r.netto||0)}</b></div><div><span>Umsatzsteuer</span><b>${euro(r.mwst||0)}</b></div><div class="total"><span>Gesamtbetrag</span><b>${euro(r.betrag||0)}</b></div></div><p>${esc(r.notiz||"")}</p><div class="foot">${esc(cfg.name)} · ${esc(FIRMEN_DATEN.inhaber)} · ${esc(FIRMEN_DATEN.strasse)}, ${esc(FIRMEN_DATEN.ort)} · ${esc(FIRMEN_DATEN.telefon)}</div><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`); w.document.close();
+}
+
+function rechnungenMonatsauszug(){
+  if(aktivesModul!=="rechnungen") return;
+  const wert=prompt("Monat für den Auszug eingeben (JJJJ-MM)",new Date().toISOString().slice(0,7)); if(!wert) return;
+  const daten=modulDatenLaden().filter(x=>String(x.datum||"").startsWith(wert)); if(!daten.length){alert("Für diesen Monat sind keine Rechnungen gespeichert.");return;}
+  const header=["Rechnungsnummer","Datum","Kunde","Status","Netto","Umsatzsteuer","Gesamt","Betreff"];
+  const csv="\uFEFF"+[header.join(";"),...daten.map(r=>[r.nummer,r.datum,r.kunde,r.status,r.netto,r.mwst,r.betrag,r.titel].map(csvWert).join(";"))].join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=`Rudelbar_${aktiverBereich}_Rechnungen_${wert}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
 /* BUTTONS */
 
 document.querySelectorAll(".bereich-karte").forEach(button => {
@@ -2613,10 +2820,15 @@ document.querySelectorAll(".bereich-karte").forEach(button => {
 $("zurBereichsauswahl").onclick = () => bereichMenuZeigen("kneipe");
 $("bereichMenuZurueck").onclick = startseiteZeigen;
 $("modulZurueck").onclick = () => bereichMenuZeigen(aktiverBereich);
-$("modulNeu").onclick = () => modulFormOeffnen();
+$("modulNeu").onclick = () => aktivesModul === "rechnungen" ? rechnungOeffnen() : modulFormOeffnen();
 $("modulExport").onclick = modulExportieren;
 $("modulFormAbbrechen").onclick = () => $("modulFormDialog").close();
 $("modulFormSpeichern").onclick = modulFormSpeichern;
+$("modulMonatExport").onclick = rechnungenMonatsauszug;
+$("rechnungAbbrechen").onclick = () => $("rechnungDialog").close();
+$("rechnungPositionNeu").onclick = () => rechnungPositionNeu();
+$("rechnungNeuStarten").onclick = rechnungFormNeuStarten;
+$("rechnungSpeichern").onclick = rechnungSpeichern;
 
 $("inviteAdminBtn").onclick = einladungenOeffnen;
 $("logoutBtn").onclick = abmelden;

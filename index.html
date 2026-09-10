@@ -8,7 +8,7 @@
   <title>Rudelbar</title>
 
   <link rel="manifest" href="manifest.json?v=70">
-  <link rel="stylesheet" href="style.css?v=70">
+  <link rel="stylesheet" href="style.css?v=80">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -83,6 +83,7 @@
         <p id="modulInhaltText">Daten verwalten</p>
       </div>
       <div class="datenmodul-aktionen">
+        <button class="sekundaer versteckt" id="modulMonatExport">Monatsauszug</button>
         <button class="sekundaer" id="modulExport">CSV Export</button>
         <button class="hauptbutton" id="modulNeu">+ Neu</button>
       </div>
@@ -469,6 +470,48 @@
 </dialog>
 
 
+<!-- RECHNUNGSFORMULAR -->
+<dialog id="rechnungDialog">
+  <div class="dialogbox gross rechnung-dialogbox">
+    <div class="dialog-kopf">
+      <div>
+        <h2 id="rechnungFormTitel">Rechnung</h2>
+        <p id="rechnungNummerHinweis" class="login-hinweis"></p>
+      </div>
+      <button class="sekundaer" id="rechnungAbbrechen">Abbrechen</button>
+    </div>
+
+    <form id="rechnungForm" class="modul-form rechnung-form">
+      <label class="ganz">Kunde / Firma<input id="rechnungKunde" required></label>
+      <label class="ganz">Anschrift<textarea id="rechnungAdresse" rows="2" required></textarea></label>
+      <label>Rechnungsdatum<input id="rechnungDatum" type="date" required></label>
+      <label>Leistungsdatum<input id="rechnungLeistungsdatum" type="date"></label>
+      <label>Zahlungsziel<input id="rechnungFaellig" type="date"></label>
+      <label>Status<select id="rechnungStatus"><option>Entwurf</option><option>Offen</option><option>Bezahlt</option><option>Storniert</option></select></label>
+      <label class="ganz">Betreff<input id="rechnungBetreff" placeholder="z. B. Facility Service am 10.09.2026"></label>
+    </form>
+
+    <div class="rechnung-positionen-kopf">
+      <h3>Positionen</h3>
+      <button class="sekundaer" id="rechnungPositionNeu" type="button">+ Position</button>
+    </div>
+    <div id="rechnungPositionen" class="rechnung-positionen"></div>
+
+    <div class="rechnung-summen">
+      <div><span>Netto</span><strong id="rechnungNetto">0,00 €</strong></div>
+      <div><span>Umsatzsteuer</span><strong id="rechnungMwst">0,00 €</strong></div>
+      <div class="rechnung-gesamt"><span>Gesamt</span><strong id="rechnungGesamt">0,00 €</strong></div>
+    </div>
+
+    <label class="rechnung-notiz">Hinweis / Zahlungsinformation<textarea id="rechnungNotiz" rows="3" placeholder="Vielen Dank für Ihren Auftrag."></textarea></label>
+
+    <div class="rechnung-dialog-aktionen">
+      <button class="sekundaer" id="rechnungNeuStarten" type="button">Neu starten</button>
+      <button class="hauptbutton" id="rechnungSpeichern" type="button">Rechnung speichern</button>
+    </div>
+  </div>
+</dialog>
+
 <!-- GENERISCHES DATENMODUL-FORMULAR -->
 <dialog id="modulFormDialog">
   <div class="dialogbox gross">
@@ -481,7 +524,8 @@
   </div>
 </dialog>
 
-<script src="app.js?v=70"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script src="app.js?v=80"></script>
 
 </body>
 </html>
