@@ -491,7 +491,7 @@ async function nachLogin() {
 
 
 /* EINSTELLUNGEN */
-const APP_SETTINGS_KEY = "rudelbar_app_settings_v92";
+const APP_SETTINGS_KEY = "rudelbar_app_settings_v93";
 let appSettings = { startbereich:"start", creatorSpalten:"2", animationen:true };
 
 function appSettingsLaden(){
@@ -2692,8 +2692,22 @@ function creatorOeffnen(){
   creatorZeichnen();
   nachOben();
 }
+function creatorProduktSvg(id,name){
+  const common=`fill="none" stroke="#d6d6d6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"`;
+  let shape="";
+  if(id==="hoodie"||id==="ziphoodie") shape=`<path ${common} d="M42 34 Q50 18 58 34 L72 40 86 58 76 66 69 56 69 94 31 94 31 56 24 66 14 58 28 40Z"/><path ${common} d="M42 34 Q50 46 58 34 Q58 20 50 18 Q42 20 42 34Z"/>${id==="ziphoodie"?`<path ${common} d="M50 43V94"/>`:``}<path ${common} d="M39 73 Q50 80 61 73"/>`;
+  else if(id==="tshirt") shape=`<path ${common} d="M36 27 Q50 36 64 27 L82 38 73 55 65 50 65 94 35 94 35 50 27 55 18 38Z"/><path ${common} d="M42 28 Q50 38 58 28"/>`;
+  else if(id==="polo") shape=`<path ${common} d="M36 27 Q50 35 64 27 L82 38 73 55 65 50 65 94 35 94 35 50 27 55 18 38Z"/><path ${common} d="M42 27 50 39 58 27M50 39V50"/><circle cx="50" cy="45" r="1.4" fill="#d6d6d6"/>`;
+  else if(id==="sweatshirt") shape=`<path ${common} d="M36 28 Q50 36 64 28 L78 36 88 67 77 71 68 49 66 94 34 94 32 49 23 71 12 67 22 36Z"/><path ${common} d="M43 29 Q50 37 57 29"/>`;
+  else if(id==="softshell") shape=`<path ${common} d="M38 25 50 31 62 25 75 36 70 94 30 94 25 36Z"/><path ${common} d="M50 31V94M38 25 43 43 50 31 57 43 62 25"/>`;
+  else if(id==="tank") shape=`<path ${common} d="M39 25 Q50 34 61 25 L68 38 63 94 37 94 32 38Z"/><path ${common} d="M43 26 Q50 36 57 26"/>`;
+  else if(id==="cap") shape=`<path ${common} d="M24 58 Q29 31 52 31 Q75 31 79 58Z"/><path ${common} d="M24 58 Q58 54 88 66 Q61 70 35 64Z"/><path ${common} d="M52 31V57"/>`;
+  else if(id==="bag") shape=`<path ${common} d="M24 43H76V94H24Z"/><path ${common} d="M37 43 Q37 22 50 22 Q63 22 63 43"/>`;
+  else shape=`<path ${common} d="M30 30H70V90H30Z"/><path ${common} d="M50 42V78M32 60H68"/>`;
+  return `<svg class="creator-produkt-svg" viewBox="0 0 100 110" role="img" aria-label="${name}"><defs><radialGradient id="g-${id}" cx="50%" cy="30%"><stop offset="0" stop-color="#3b3b3b"/><stop offset="1" stop-color="#111"/></radialGradient></defs><rect x="2" y="2" width="96" height="106" rx="12" fill="url(#g-${id})"/>${shape}</svg>`;
+}
 function creatorUIRendern(){
-  $("creatorProduktGrid").innerHTML=CREATOR_PRODUKTE.map(p=>`<button type="button" data-cprod="${p.id}" class="${creatorState.produkt===p.id?'aktiv':''}">${p.thumb?`<img src="${p.thumb}" alt="" aria-hidden="true">`:`<span class="creator-plus">＋</span>`}<strong>${p.name}</strong></button>`).join("");
+  $("creatorProduktGrid").innerHTML=CREATOR_PRODUKTE.map(p=>`<button type="button" data-cprod="${p.id}" class="${creatorState.produkt===p.id?'aktiv':''}">${p.id!=="custom"?creatorProduktSvg(p.id,p.name):`<span class="creator-plus">＋</span>`}<strong>${p.name}</strong></button>`).join("");
   document.querySelectorAll("[data-cprod]").forEach(b=>b.onclick=()=>{creatorState.produkt=b.dataset.cprod;creatorState.x=0;creatorState.y=0;creatorUIRendern();creatorZeichnen();});
   $("creatorFarben").innerHTML=CREATOR_FARBEN.map(c=>`<button type="button" aria-label="Farbe ${c}" data-cfarbe="${c}" class="${creatorState.farbe===c?'aktiv':''}" style="--creator-farbe:${c}"></button>`).join("");
   document.querySelectorAll("[data-cfarbe]").forEach(b=>b.onclick=()=>{creatorState.farbe=b.dataset.cfarbe;creatorUIRendern();creatorZeichnen();});

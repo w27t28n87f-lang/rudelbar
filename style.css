@@ -1825,3 +1825,12 @@ dialog::backdrop {
   body.creator-3spalten-mobile .creator-produkt-grid button .creator-plus{height:96px;max-height:96px}
   body.creator-3spalten-mobile .creator-produkt-grid button strong{font-size:11px}
 }
+
+/* RUDELBAR v93: mobile creator thumbnails are self-contained SVGs */
+.creator-produkt-grid button .creator-produkt-svg{width:100%;height:74%;display:block;border-radius:9px;overflow:hidden}
+@media(max-width:760px){
+  .creator-produkt-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+  .creator-produkt-grid button{min-height:178px!important;padding:8px!important;grid-template-rows:1fr auto!important}
+  .creator-produkt-grid button .creator-produkt-svg,.creator-produkt-grid button .creator-plus{height:132px!important;max-height:132px!important}
+  .creator-produkt-grid button strong{font-size:14px!important}
+}
