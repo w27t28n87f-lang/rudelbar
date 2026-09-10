@@ -39,6 +39,8 @@ let verkaufEditPositionen = [];
 let realtimeChannel = null;
 let angemeldet = false;
 let syncLaeuft = false;
+let aktuellerUser = null;
+let istAdmin = false;
 
 
 /* GRUNDLAGEN */
@@ -407,6 +409,7 @@ async function authStart() {
   }
 
   const { data } = await sb.auth.getSession();
+  aktuellerUser = data.session?.user || null;
 
   if (data.session) {
     angemeldet = true;
@@ -415,7 +418,15 @@ async function authStart() {
   }
 
   $("loginEmail").value = localStorage.getItem(EMAIL_KEY) || "";
-  $("loginDialog").showModal();
+
+  const token = einladungsTokenAusURL();
+  if (token) {
+    $("registrierenOeffnen").classList.remove("versteckt");
+    registrierungOeffnen();
+  } else {
+    $("registrierenOeffnen").classList.add("versteckt");
+    $("loginDialog").showModal();
+  }
 }
 
 async function anmelden() {
@@ -449,13 +460,18 @@ async function anmelden() {
   localStorage.setItem(EMAIL_KEY, email);
 
   angemeldet = true;
+  const sessionResult = await sb.auth.getSession();
+  aktuellerUser = sessionResult.data.session?.user || null;
 
-  $("loginDialog").close();
+  if ($("loginDialog").open) $("loginDialog").close();
 
   await nachLogin();
 }
 
 async function nachLogin() {
+  const sessionResult = await sb.auth.getSession();
+  aktuellerUser = sessionResult.data.session?.user || null;
+  await adminStatusLaden();
   statusAktualisieren();
 
   if (syncQueue.length) {
@@ -471,6 +487,281 @@ async function nachLogin() {
   await ersteSynchronisierung();
   realtimeStarten();
   startseiteZeigen();
+}
+
+
+/* EINLADUNGEN / REGISTRIERUNG */
+
+function einladungsTokenAusURL() {
+  try {
+    return new URL(window.location.href).searchParams.get("invite")?.trim() || "";
+  } catch {
+    return "";
+  }
+}
+
+function basisAppURL() {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
+  return url;
+}
+
+async function adminStatusLaden() {
+  istAdmin = false;
+  $("inviteAdminBtn")?.classList.add("versteckt");
+
+  if (!aktuellerUser) return;
+
+  const { data, error } = await sb.rpc("is_rudelbar_admin");
+  if (error) {
+    console.warn("Adminstatus konnte nicht geladen werden:", error.message);
+    return;
+  }
+
+  istAdmin = data === true;
+  if (istAdmin) $("inviteAdminBtn")?.classList.remove("versteckt");
+}
+
+function registrierungOeffnen() {
+  const token = einladungsTokenAusURL();
+  if (!token) {
+    alert("Für die Registrierung wird ein gültiger Einladungslink benötigt.");
+    return;
+  }
+
+  if ($("loginDialog").open) $("loginDialog").close();
+  $("registerFehler").textContent = "";
+  $("registerErfolg").textContent = "";
+  $("registerPasswort").value = "";
+  $("registerPasswort2").value = "";
+  $("registrierungDialog").showModal();
+}
+
+function registrierungZurLogin() {
+  if ($("registrierungDialog").open) $("registrierungDialog").close();
+  $("loginDialog").showModal();
+}
+
+async function registrierenMitEinladung() {
+  const token = einladungsTokenAusURL();
+  const name = $("registerName").value.trim();
+  const email = $("registerEmail").value.trim().toLowerCase();
+  const passwort = $("registerPasswort").value;
+  const passwort2 = $("registerPasswort2").value;
+
+  $("registerFehler").textContent = "";
+  $("registerErfolg").textContent = "";
+
+  if (!token) {
+    $("registerFehler").textContent = "Der Einladungslink fehlt oder ist ungültig.";
+    return;
+  }
+  if (!name || !email || !passwort || !passwort2) {
+    $("registerFehler").textContent = "Bitte alle Felder ausfüllen.";
+    return;
+  }
+  if (passwort.length < 8) {
+    $("registerFehler").textContent = "Das Passwort muss mindestens 8 Zeichen lang sein.";
+    return;
+  }
+  if (passwort !== passwort2) {
+    $("registerFehler").textContent = "Die Passwörter stimmen nicht überein.";
+    return;
+  }
+
+  $("registerButton").disabled = true;
+  $("registerButton").textContent = "Konto wird erstellt…";
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/register-invite`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_KEY
+      },
+      body: JSON.stringify({ token, name, email, password: passwort })
+    });
+
+    let result = {};
+    try { result = await response.json(); } catch {}
+
+    if (!response.ok) {
+      throw new Error(result.error || "Registrierung fehlgeschlagen.");
+    }
+
+    $("registerErfolg").textContent = "Konto erstellt. Du wirst angemeldet…";
+
+    const { error } = await sb.auth.signInWithPassword({ email, password: passwort });
+    if (error) throw error;
+
+    localStorage.setItem(EMAIL_KEY, email);
+    angemeldet = true;
+    const sessionResult = await sb.auth.getSession();
+    aktuellerUser = sessionResult.data.session?.user || null;
+
+    const clean = basisAppURL();
+    history.replaceState({}, "", clean.pathname + clean.search + clean.hash);
+
+    if ($("registrierungDialog").open) $("registrierungDialog").close();
+    await nachLogin();
+  } catch (error) {
+    console.error(error);
+    $("registerFehler").textContent = error.message || "Registrierung fehlgeschlagen.";
+  } finally {
+    $("registerButton").disabled = false;
+    $("registerButton").textContent = "Konto erstellen";
+  }
+}
+
+async function einladungenOeffnen() {
+  if (!istAdmin) {
+    alert("Nur der Administrator kann Einladungen erstellen.");
+    return;
+  }
+
+  $("einladungName").value = "";
+  $("einladungErgebnis").classList.add("versteckt");
+  $("einladungLink").value = "";
+  await einladungenLaden();
+  $("einladungDialog").showModal();
+}
+
+async function einladungenLaden() {
+  const liste = $("einladungListe");
+  liste.innerHTML = '<div class="daten-leer"><span>Lade Einladungen…</span></div>';
+
+  const { data, error } = await sb
+    .from("einladungen")
+    .select("id,label,expires_at,used_at,created_at")
+    .is("used_at", null)
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    liste.innerHTML = '<div class="daten-leer"><strong>Fehler</strong><span>Einladungen konnten nicht geladen werden.</span></div>';
+    return;
+  }
+
+  if (!data?.length) {
+    liste.innerHTML = '<div class="daten-leer"><strong>Keine aktiven Einladungen</strong><span>Erstelle oben einen neuen Link.</span></div>';
+    return;
+  }
+
+  liste.innerHTML = data.map(item => {
+    const bis = new Date(item.expires_at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+    return `
+      <article class="einladung-karte">
+        <div>
+          <strong>${esc(item.label || "Einladung")}</strong>
+          <small>Gültig bis ${esc(bis)}</small>
+        </div>
+        <button class="daten-loeschen" data-invite-revoke="${item.id}" type="button">Widerrufen</button>
+      </article>`;
+  }).join("");
+
+  liste.querySelectorAll("[data-invite-revoke]").forEach(button => {
+    button.onclick = () => einladungWiderrufen(button.dataset.inviteRevoke);
+  });
+}
+
+async function einladungErstellen() {
+  if (!istAdmin || !aktuellerUser) return;
+
+  const label = $("einladungName").value.trim() || "Rudelbar-Mitglied";
+  const tage = Math.max(1, Number($("einladungTage").value) || 7);
+  const token = crypto.randomUUID() + crypto.randomUUID().replaceAll("-", "");
+  const expires = new Date(Date.now() + tage * 86400000).toISOString();
+
+  $("einladungErstellen").disabled = true;
+  $("einladungErstellen").textContent = "Erstelle…";
+
+  const { error } = await sb.from("einladungen").insert({
+    token,
+    label,
+    created_by: aktuellerUser.id,
+    expires_at: expires
+  });
+
+  $("einladungErstellen").disabled = false;
+  $("einladungErstellen").textContent = "+ Einladungslink erstellen";
+
+  if (error) {
+    console.error(error);
+    alert("Einladung konnte nicht erstellt werden.");
+    return;
+  }
+
+  const url = basisAppURL();
+  url.searchParams.set("invite", token);
+  $("einladungLink").value = url.toString();
+  $("einladungErgebnis").classList.remove("versteckt");
+  await einladungenLaden();
+}
+
+async function einladungWiderrufen(id) {
+  if (!confirm("Diese Einladung wirklich widerrufen?")) return;
+  const { error } = await sb.from("einladungen").delete().eq("id", id);
+  if (error) {
+    console.error(error);
+    alert("Einladung konnte nicht widerrufen werden.");
+    return;
+  }
+  await einladungenLaden();
+}
+
+async function einladungLinkKopieren() {
+  const link = $("einladungLink").value;
+  if (!link) return;
+  try {
+    await navigator.clipboard.writeText(link);
+    alert("Einladungslink kopiert.");
+  } catch {
+    $("einladungLink").focus();
+    $("einladungLink").select();
+    alert("Link ist markiert und kann kopiert werden.");
+  }
+}
+
+async function einladungLinkTeilen() {
+  const url = $("einladungLink").value;
+  if (!url) return;
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: "Rudelbar Einladung",
+        text: "Hier ist deine persönliche Einladung zur Rudelbar-App.",
+        url
+      });
+      return;
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+    }
+  }
+  await einladungLinkKopieren();
+}
+
+async function abmelden() {
+  if (!confirm("Von der Rudelbar-App abmelden?")) return;
+
+  if (realtimeChannel) {
+    try { await sb.removeChannel(realtimeChannel); } catch {}
+    realtimeChannel = null;
+  }
+
+  await sb.auth.signOut();
+  angemeldet = false;
+  aktuellerUser = null;
+  istAdmin = false;
+  $("inviteAdminBtn")?.classList.add("versteckt");
+  alleHauptansichtenVerstecken();
+  statusAktualisieren();
+
+  $("loginEmail").value = localStorage.getItem(EMAIL_KEY) || "";
+  $("loginPasswort").value = "";
+  $("loginFehler").textContent = "";
+  $("loginDialog").showModal();
 }
 
 
@@ -2327,12 +2618,29 @@ $("modulExport").onclick = modulExportieren;
 $("modulFormAbbrechen").onclick = () => $("modulFormDialog").close();
 $("modulFormSpeichern").onclick = modulFormSpeichern;
 
+$("inviteAdminBtn").onclick = einladungenOeffnen;
+$("logoutBtn").onclick = abmelden;
+$("einladungSchliessen").onclick = () => $("einladungDialog").close();
+$("einladungErstellen").onclick = einladungErstellen;
+$("einladungKopieren").onclick = einladungLinkKopieren;
+$("einladungTeilen").onclick = einladungLinkTeilen;
+$("registrierenOeffnen").onclick = registrierungOeffnen;
+$("registerZurLogin").onclick = registrierungZurLogin;
+$("registerButton").onclick = registrierenMitEinladung;
+
 $("loginButton").onclick = anmelden;
 
 $("loginPasswort").addEventListener(
   "keydown",
   event => {
     if (event.key === "Enter") anmelden();
+  }
+);
+
+$("registerPasswort2").addEventListener(
+  "keydown",
+  event => {
+    if (event.key === "Enter") registrierenMitEinladung();
   }
 );
 

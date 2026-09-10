@@ -7,8 +7,8 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json?v=50">
-  <link rel="stylesheet" href="style.css?v=50">
+  <link rel="manifest" href="manifest.json?v=70">
+  <link rel="stylesheet" href="style.css?v=70">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -19,6 +19,11 @@
 <section id="bereichStart" class="bereich-start versteckt" aria-label="Rudelbar Bereiche">
   <div class="bereich-start-inhalt">
     <img src="Logo-Haupt.png" class="bereich-hauptlogo" alt="Rudelbar">
+    <div class="start-adminzeile">
+      <button id="inviteAdminBtn" class="admin-mini versteckt" type="button">👥 Einladungen</button>
+      <button id="logoutBtn" class="admin-mini" type="button">Abmelden</button>
+    </div>
+
     <div class="bereich-grid">
       <button class="bereich-karte" data-bereich="kneipe">
         <img src="Logo-Mobile_Kneipe.png" alt="Rudelbar Die mobile Kneipe">
@@ -203,8 +208,94 @@
       Anmelden
     </button>
 
+    <button class="link-button versteckt" id="registrierenOeffnen" type="button">
+      Einladung erhalten? Jetzt registrieren
+    </button>
+
   </div>
 
+</dialog>
+
+<!-- REGISTRIERUNG NUR PER EINLADUNG -->
+<dialog id="registrierungDialog">
+  <div class="dialogbox login-box">
+    <img src="Logo-Haupt.png" class="login-logo" alt="Rudelbar">
+    <h2>RUDELBAR</h2>
+    <p class="login-hinweis">Registrierung per persönlicher Einladung</p>
+
+    <label>
+      Name
+      <input id="registerName" type="text" autocomplete="name" placeholder="Vor- und Nachname">
+    </label>
+
+    <label>
+      E-Mail
+      <input id="registerEmail" type="email" autocomplete="email">
+    </label>
+
+    <label>
+      Passwort
+      <input id="registerPasswort" type="password" autocomplete="new-password" minlength="8">
+    </label>
+
+    <label>
+      Passwort wiederholen
+      <input id="registerPasswort2" type="password" autocomplete="new-password" minlength="8">
+    </label>
+
+    <div id="registerFehler" class="login-fehler"></div>
+    <div id="registerErfolg" class="login-erfolg"></div>
+
+    <button class="hauptbutton voll" id="registerButton" type="button">
+      Konto erstellen
+    </button>
+
+    <button class="link-button" id="registerZurLogin" type="button">Zur Anmeldung</button>
+  </div>
+</dialog>
+
+<!-- EINLADUNGSVERWALTUNG NUR ADMIN -->
+<dialog id="einladungDialog">
+  <div class="dialogbox gross">
+    <div class="dialog-kopf">
+      <h2>Einladungen</h2>
+      <button class="sekundaer" id="einladungSchliessen" type="button">Fertig</button>
+    </div>
+
+    <p class="login-hinweis links">Nur Personen mit einem gültigen, unbenutzten Einladungslink können sich registrieren.</p>
+
+    <div class="einladung-form">
+      <label>
+        Für wen?
+        <input id="einladungName" type="text" placeholder="z. B. John J Rambo">
+      </label>
+      <label>
+        Gültigkeit
+        <select id="einladungTage">
+          <option value="1">1 Tag</option>
+          <option value="3">3 Tage</option>
+          <option value="7" selected>7 Tage</option>
+          <option value="14">14 Tage</option>
+          <option value="30">30 Tage</option>
+        </select>
+      </label>
+    </div>
+
+    <button class="hauptbutton voll" id="einladungErstellen" type="button">+ Einladungslink erstellen</button>
+
+    <div id="einladungErgebnis" class="einladung-ergebnis versteckt">
+      <label>Einladungslink
+        <textarea id="einladungLink" readonly></textarea>
+      </label>
+      <div class="einladung-aktionen">
+        <button class="sekundaer" id="einladungKopieren" type="button">Link kopieren</button>
+        <button class="hauptbutton" id="einladungTeilen" type="button">Teilen</button>
+      </div>
+    </div>
+
+    <h3 class="zwischenueberschrift">Aktive Einladungen</h3>
+    <div id="einladungListe" class="einladung-liste"></div>
+  </div>
 </dialog>
 
 
@@ -390,7 +481,7 @@
   </div>
 </dialog>
 
-<script src="app.js?v=50"></script>
+<script src="app.js?v=70"></script>
 
 </body>
 </html>
