@@ -790,7 +790,7 @@ dialog::backdrop {
 }
 /* =========================================================
    RUDELBAR PHASE 1: BEREICHSAUSWAHL
-   Startseite kompakt: großes Hauptlogo, kleinere Bereichskarten.
+   Bestehende Kasse bleibt funktional unverändert.
    ========================================================= */
 
 .versteckt {
@@ -798,47 +798,59 @@ dialog::backdrop {
 }
 
 .bereich-start {
-  min-height: calc(100dvh - 20px);
+  min-height: calc(100dvh - 28px);
   display: grid;
-  place-items: start center;
-  padding: max(18px, env(safe-area-inset-top)) 12px 28px;
+  place-items: center;
 }
 
 .bereich-start-inhalt {
-  width: min(100%, 440px);
+  width: min(100%, 720px);
   margin: 0 auto;
   text-align: center;
 }
 
 .bereich-hauptlogo {
-  width: min(76vw, 320px);
+  width: min(62vw, 340px);
   height: auto;
   display: block;
-  margin: 6px auto 18px;
+  margin: 0 auto 28px;
   object-fit: contain;
 }
 
+.bereich-start h1 {
+  font-size: clamp(28px, 7vw, 46px);
+  font-weight: 950;
+  letter-spacing: 1px;
+}
+
+.bereich-subline {
+  margin-top: 4px;
+  margin-bottom: 22px;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
 .bereich-grid {
-  width: min(90vw, 360px);
+  width: min(100%, 620px);
   margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .bereich-karte {
   position: relative;
-  aspect-ratio: 1 / 1;
-  min-height: 0;
-  padding: 6px;
+  min-height: 190px;
+  padding: 8px;
   border: 1.5px solid var(--gold);
-  border-radius: 18px;
+  border-radius: 20px;
   background: #090909;
   color: white;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0,0,0,.24);
-  display: grid;
-  place-items: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
 }
 
 .bereich-karte:active {
@@ -846,34 +858,31 @@ dialog::backdrop {
 }
 
 .bereich-karte img {
-  width: 92%;
-  height: 92%;
-  max-height: none;
+  width: 100%;
+  height: 100%;
+  max-height: 178px;
   object-fit: contain;
   display: block;
 }
 
 .security-karte {
+  display: grid;
   grid-template-rows: 1fr auto;
   align-items: center;
   justify-items: center;
-  padding: 8px 6px 12px;
+  padding-bottom: 18px;
 }
 
 .security-karte img {
-  width: 78%;
-  height: auto;
-  max-height: 108px;
-  align-self: end;
+  max-height: 140px;
 }
 
 .security-karte span {
-  margin-top: 0;
+  margin-top: -6px;
   color: white;
-  font-size: clamp(16px, 4.4vw, 21px);
+  font-size: clamp(17px, 4vw, 24px);
   font-weight: 950;
   letter-spacing: 2px;
-  line-height: 1;
 }
 
 .zurueck-button {
@@ -907,31 +916,54 @@ dialog::backdrop {
   color: var(--gold) !important;
 }
 
-@media (max-width: 390px) {
+@media (max-width: 760px) {
   .bereich-start {
-    padding-left: 10px;
-    padding-right: 10px;
+    align-items: start;
+    padding-top: 12px;
   }
 
   .bereich-hauptlogo {
-    width: min(78vw, 300px);
-    margin-bottom: 16px;
+    width: min(58vw, 270px);
+    margin-bottom: 24px;
   }
 
   .bereich-grid {
-    width: min(92vw, 350px);
-    gap: 9px;
+    gap: 10px;
   }
 
   .bereich-karte {
+    min-height: 145px;
     border-radius: 16px;
     padding: 5px;
   }
 
+  .bereich-karte img {
+    max-height: 134px;
+  }
+
   .security-karte img {
-    max-height: 98px;
+    max-height: 100px;
   }
 }
+
+@media (max-width: 390px) {
+  .bereich-hauptlogo {
+    width: min(60vw, 245px);
+  }
+
+  .bereich-karte {
+    min-height: 132px;
+  }
+
+  .bereich-karte img {
+    max-height: 120px;
+  }
+
+  .security-karte img {
+    max-height: 90px;
+  }
+}
+
 
 /* =========================================================
    RUDELBAR PHASE 2: BEREICHSMENÜS + STABILER MOBILER HEADER
@@ -1210,5 +1242,126 @@ dialog::backdrop {
 
   .modul-karte strong {
     font-size: 16px;
+  }
+}
+
+
+/* =========================================================
+   RUDELBAR v40 – STARTSEITE FINAL
+   Gewünschtes Layout: großes Hauptlogo, kleinere Bereichskarten,
+   kein zusätzlicher Schriftzug zwischen Logo und Karten.
+   ========================================================= */
+
+#bereichStart.bereich-start {
+  min-height: calc(100dvh - 28px);
+  display: block;
+  padding-top: 18px;
+}
+
+#bereichStart .bereich-start-inhalt {
+  width: min(100%, 680px);
+  margin: 0 auto;
+  text-align: center;
+}
+
+#bereichStart .bereich-hauptlogo {
+  width: min(78vw, 430px) !important;
+  max-width: 430px !important;
+  height: auto !important;
+  margin: 0 auto 22px !important;
+  display: block !important;
+  object-fit: contain !important;
+}
+
+/* Alte Überschriften/Subline sicher ausblenden, falls Safari alte DOM-Fragmente hält */
+#bereichStart h1,
+#bereichStart .bereich-subline {
+  display: none !important;
+}
+
+#bereichStart .bereich-grid {
+  width: min(88vw, 560px) !important;
+  margin: 0 auto !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+#bereichStart .bereich-karte {
+  min-height: 0 !important;
+  height: clamp(132px, 35vw, 190px) !important;
+  padding: 7px !important;
+  border: 1.5px solid var(--gold) !important;
+  border-radius: 18px !important;
+  background: #090909 !important;
+  overflow: hidden !important;
+}
+
+#bereichStart .bereich-karte img {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  display: block !important;
+}
+
+#bereichStart .security-karte {
+  display: grid !important;
+  grid-template-rows: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  justify-items: center !important;
+  padding: 7px 7px 11px !important;
+}
+
+#bereichStart .security-karte img {
+  width: 78% !important;
+  height: 100% !important;
+  max-height: none !important;
+  object-fit: contain !important;
+}
+
+#bereichStart .security-karte span {
+  margin: 0 !important;
+  font-size: clamp(15px, 4vw, 22px) !important;
+  line-height: 1 !important;
+  letter-spacing: 2px !important;
+  font-weight: 950 !important;
+}
+
+@media (max-width: 760px) {
+  #bereichStart.bereich-start {
+    padding-top: 8px;
+  }
+
+  #bereichStart .bereich-hauptlogo {
+    width: min(72vw, 330px) !important;
+    margin-bottom: 18px !important;
+  }
+
+  #bereichStart .bereich-grid {
+    width: min(94vw, 520px) !important;
+    gap: 10px !important;
+  }
+
+  #bereichStart .bereich-karte {
+    height: clamp(130px, 39vw, 172px) !important;
+    border-radius: 16px !important;
+  }
+}
+
+@media (max-width: 390px) {
+  #bereichStart .bereich-hauptlogo {
+    width: 76vw !important;
+    max-width: 300px !important;
+    margin-bottom: 14px !important;
+  }
+
+  #bereichStart .bereich-grid {
+    width: 95vw !important;
+    gap: 9px !important;
+  }
+
+  #bereichStart .bereich-karte {
+    height: 142px !important;
   }
 }
