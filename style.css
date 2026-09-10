@@ -1889,3 +1889,22 @@ dialog::backdrop {
 .creator-360-kopf strong{color:#fff!important}
 .creator-360-kopf output{min-width:74px;letter-spacing:.8px;color:var(--goldHell)!important}
 @media(max-width:760px){.creator-canvas-wrap{min-height:400px!important;padding:8px!important}.creator-360-status{font-size:10px;padding:9px 12px}}
+
+/* ===== RUDELBAR v97: ECHTER 3D CREATOR ===== */
+.creator-3d-viewport{width:100%;height:min(68dvh,720px);min-height:430px;border-radius:18px;overflow:hidden;background:radial-gradient(circle at 50% 38%,#f7f7f7 0,#dddddd 54%,#b9b9b9 100%);position:relative;touch-action:none}
+.creator-3d-viewport canvas{display:block;width:100%!important;height:100%!important;border:0!important;box-shadow:none!important;background:transparent!important}
+.creator-2d-fallback{display:none!important}
+.creator-3d-badge{position:absolute;top:26px;right:26px;z-index:5;padding:7px 10px;border-radius:999px;background:rgba(10,10,10,.78);border:1px solid rgba(230,166,35,.62);color:var(--goldHell);font-size:10px;font-weight:900;letter-spacing:1px;pointer-events:none}
+.creator-3d-import{margin-top:10px;border:1px solid #343434;border-radius:12px;background:#121212;padding:10px}
+.creator-3d-import summary{cursor:pointer;color:#ddd;font-weight:800;font-size:12px}
+.creator-3d-import p{color:#888;font-size:10px;line-height:1.45;margin:8px 0}.creator-3d-import input{width:100%;margin:7px 0 9px;color:#bbb}
+.creator-360-kopf output{min-width:92px!important}
+.creator-360-status.bereit{color:var(--goldHell)!important}
+@media(max-width:760px){.creator-3d-viewport{min-height:420px;height:56dvh;max-height:620px}.creator-3d-badge{top:16px;right:16px}.creator-canvas-hinweis{bottom:18px}}
+/* v97: echter 3D Creator */
+.creator-3d-viewport{background:radial-gradient(circle at 50% 34%,#f8f8f8 0,#e7e7e7 48%,#cfcfcf 100%)}
+.creator-3d-viewport.creator-bg-dark{background:radial-gradient(circle at 50% 34%,#454545 0,#242424 55%,#111 100%)}
+.creator-3d-viewport.creator-bg-light{background:radial-gradient(circle at 50% 34%,#fff 0,#e7e7e7 52%,#cfcfcf 100%)}
+.creator-3d-viewport.creator-bg-transparent{background-image:linear-gradient(45deg,#ddd 25%,transparent 25%),linear-gradient(-45deg,#ddd 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#ddd 75%),linear-gradient(-45deg,transparent 75%,#ddd 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0}
+.creator-3d-badge.bereit{box-shadow:0 0 0 1px rgba(230,166,35,.25),0 8px 30px rgba(0,0,0,.25)}
+.creator-2d-fallback{display:none!important}
