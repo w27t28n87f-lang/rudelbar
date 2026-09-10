@@ -1878,3 +1878,14 @@ dialog::backdrop {
 .creator-360-kopf>div{display:grid;gap:3px}.creator-360-kopf strong{font-size:17px;color:var(--goldHell)}.creator-360-kopf small{font-size:11px;color:#aaa}.creator-360-kopf output{min-width:62px;text-align:center;padding:8px 10px;border:1px solid rgba(230,166,35,.55);border-radius:999px;color:#fff;font-weight:900;background:#171717}
 .creator-360-regler{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:10px 16px;background:#0d0d0d;border-top:1px solid #272727}.creator-360-regler span{font-size:22px;color:var(--goldHell)}.creator-360-regler input{width:100%;accent-color:var(--gold);min-height:28px}
 @media(max-width:760px){.creator-360-kopf{padding:11px 12px}.creator-360-kopf strong{font-size:15px}.creator-360-kopf small{font-size:10px}.creator-produkt-grid button{background:#151515!important}.creator-produkt-grid .creator-produkt-foto{height:132px!important}}
+
+
+/* ===== RUDELBAR v96 CREATOR: echtes Frame-Konzept, keine 2D-Pappscheibe ===== */
+.creator-360-regler{display:none!important}
+.creator-360-status{padding:10px 14px;background:#0d0d0d;border-top:1px solid #292929;color:#9b9b9b;font-size:11px;text-align:center;line-height:1.45}
+.creator-360-status.bereit{color:var(--goldHell)}
+.creator-canvas-wrap{background:#0b0b0b!important;padding:14px!important}
+.creator-canvas-wrap canvas{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:18px!important}
+.creator-360-kopf strong{color:#fff!important}
+.creator-360-kopf output{min-width:74px;letter-spacing:.8px;color:var(--goldHell)!important}
+@media(max-width:760px){.creator-canvas-wrap{min-height:400px!important;padding:8px!important}.creator-360-status{font-size:10px;padding:9px 12px}}

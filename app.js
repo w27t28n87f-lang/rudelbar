@@ -2681,6 +2681,17 @@ const CREATOR_PRODUKTE = [
 ];
 const CREATOR_FARBEN=["#111111","#444444","#b9b9b9","#f2f2f2","#173a64","#214d38","#9f1f24","#d7c7a6"];
 const CREATOR_GROESSEN=["XS","S","M","L","XL","XXL","3XL"];
+// v96: echte 360°-Architektur. Pro Artikel können hier reale Rundum-Frames hinterlegt werden.
+// Solange nur das hochwertige Frontbild vorhanden ist, wird bewusst KEINE 2D-Perspektiv-Verzerrung simuliert.
+const CREATOR_360_FRAMES={
+  hoodie:[],tshirt:[],polo:[],sweatshirt:[],ziphoodie:[],softshell:[],tank:[],cap:[],bag:[],custom:[]
+};
+function creatorFramesFuerProdukt(){
+  const produkt=CREATOR_PRODUKTE.find(p=>p.id===creatorState.produkt);
+  const frames=CREATOR_360_FRAMES[creatorState.produkt]||[];
+  return frames.length?frames:(produkt?.thumb?[produkt.thumb]:[]);
+}
+function creatorHatEchte360(){return (CREATOR_360_FRAMES[creatorState.produkt]||[]).length>1;}
 const CREATOR_KEY="rudelbar_creator_entwuerfe";
 let creatorState={produkt:"hoodie",farbe:"#111111",groesse:"M",view:"front",angle:0,bg:"light",scale:1,x:0,y:0,rot:0,flipX:1,flipY:1};
 let creatorImg=null, creatorPngData="";
@@ -2824,55 +2835,52 @@ function creatorKleidungsstueck(ctx,w,h){
 function creatorBgPatch(ctx,c,x,y,w,h){ctx.save();ctx.fillStyle=c;ctx.fillRect(x,y,w,h);ctx.restore();}
 function creatorDesignBounds(){
   if(!creatorImg) return null;
-  let base=creatorState.produkt==="cap"?170:creatorState.produkt==="bag"?280:Math.abs(Math.cos((creatorState.angle||0)*Math.PI/180))<.45?180:280;
+  let base=creatorState.produkt==="cap"?170:creatorState.produkt==="bag"?280:280;
   const ratio=creatorImg.width/creatorImg.height;let dw=base*creatorState.scale,dh=dw/ratio;if(dh>base*1.35){dh=base*1.35*creatorState.scale;dw=dh*ratio;}
   let cx=450+creatorState.x, cy=(creatorState.produkt==="cap"?455:creatorState.produkt==="bag"?470:430)+creatorState.y;
   return {cx,cy,dw,dh};
 }
 const creatorProduktFotoCache=new Map();
-function creatorProduktFotoHolen(){
-  const produkt=CREATOR_PRODUKTE.find(p=>p.id===creatorState.produkt);
-  if(!produkt?.thumb) return null;
-  if(creatorProduktFotoCache.has(produkt.id)) return creatorProduktFotoCache.get(produkt.id);
-  const img=new Image();
-  creatorProduktFotoCache.set(produkt.id,img);
-  img.onload=()=>creatorZeichnen();
-  img.src=produkt.thumb;
-  return img;
+function creatorBildLaden(src){
+  if(!src)return null;
+  if(creatorProduktFotoCache.has(src))return creatorProduktFotoCache.get(src);
+  const img=new Image(); creatorProduktFotoCache.set(src,img);
+  img.onload=()=>creatorZeichnen(); img.src=src; return img;
+}
+function creatorAktuellerFrame(){
+  const frames=creatorFramesFuerProdukt();
+  if(!frames.length)return {src:null,index:0,total:0,angle:0};
+  if(!creatorHatEchte360())return {src:frames[0],index:0,total:1,angle:0};
+  const a=((Number(creatorState.angle)||0)%360+360)%360;
+  const idx=Math.round((a/360)*frames.length)%frames.length;
+  return {src:frames[idx],index:idx,total:frames.length,angle:a};
 }
 function creatorProduktFotoZeichnen(ctx,w,h){
-  const img=creatorProduktFotoHolen();
-  if(!img || !img.complete || !img.naturalWidth){ creatorKleidungsstueck(ctx,w,h); return; }
-  const angle=((Number(creatorState.angle)||0)%360+360)%360;
-  const rad=angle*Math.PI/180;
-  const facing=Math.cos(rad);
-  const side=Math.sin(rad);
-  const widthFactor=Math.max(.18,Math.abs(facing));
+  const frame=creatorAktuellerFrame();
+  const img=creatorBildLaden(frame.src);
   ctx.save();
-  const card=ctx.createRadialGradient(w*.5,h*.42,60,w*.5,h*.45,w*.62);
-  card.addColorStop(0,"#f4f4f4"); card.addColorStop(.58,"#d8d8d8"); card.addColorStop(1,"#a9a9a9");
-  ctx.fillStyle=card; ctx.beginPath(); ctx.roundRect(36,36,w-72,h-72,28); ctx.fill();
-  ctx.save(); ctx.globalAlpha=.28; ctx.filter="blur(22px)"; ctx.fillStyle="#000";
-  ctx.beginPath(); ctx.ellipse(w*.5,h*.80,235,34,0,0,Math.PI*2); ctx.fill(); ctx.restore();
-  let sx=18,sy=18,sw=img.naturalWidth-36,sh=img.naturalHeight-36;
-  const ratio=sw/sh; let dh=650,dw=dh*ratio; if(dw>650){dw=650;dh=dw/ratio;}
-  const cx=w/2,cy=h/2+8;
-  ctx.translate(cx,cy);
-  ctx.transform(widthFactor, side*.09, -side*.035, 1, 0, 0);
-  if(facing<0) ctx.scale(-1,1);
-  ctx.shadowColor="rgba(0,0,0,.30)";ctx.shadowBlur=22;ctx.shadowOffsetY=10;
-  ctx.drawImage(img,sx,sy,sw,sh,-dw/2,-dh/2,dw,dh);
-  const shade=ctx.createLinearGradient(-dw/2,0,dw/2,0);
-  if(side>=0){shade.addColorStop(0,"rgba(0,0,0,.42)");shade.addColorStop(.6,"rgba(0,0,0,0)");}
-  else {shade.addColorStop(.4,"rgba(0,0,0,0)");shade.addColorStop(1,"rgba(0,0,0,.42)");}
-  ctx.fillStyle=shade;ctx.globalCompositeOperation="multiply";ctx.fillRect(-dw/2,-dh/2,dw,dh);
+  const card=ctx.createRadialGradient(w*.5,h*.39,60,w*.5,h*.45,w*.64);
+  card.addColorStop(0,"#f8f8f8"); card.addColorStop(.58,"#dedede"); card.addColorStop(1,"#bdbdbd");
+  ctx.fillStyle=card; ctx.beginPath(); ctx.roundRect(42,42,w-84,h-84,34); ctx.fill();
+  ctx.save();ctx.globalAlpha=.20;ctx.filter="blur(20px)";ctx.fillStyle="#000";ctx.beginPath();ctx.ellipse(w*.5,h*.80,220,30,0,0,Math.PI*2);ctx.fill();ctx.restore();
+  if(!img || !img.complete || !img.naturalWidth){
+    ctx.restore(); creatorKleidungsstueck(ctx,w,h); return;
+  }
+  const pad=Math.max(10,Math.round(Math.min(img.naturalWidth,img.naturalHeight)*.025));
+  const sx=pad,sy=pad,sw=Math.max(1,img.naturalWidth-pad*2),sh=Math.max(1,img.naturalHeight-pad*2);
+  const ratio=sw/sh; let dh=690,dw=dh*ratio; if(dw>690){dw=690;dh=dw/ratio;}
+  const cx=w/2,cy=h/2+2;
+  ctx.shadowColor="rgba(0,0,0,.26)";ctx.shadowBlur=24;ctx.shadowOffsetY=12;
+  ctx.drawImage(img,sx,sy,sw,sh,cx-dw/2,cy-dh/2,dw,dh);
   ctx.restore();
 }
 function creatorZeichnen(){
   const canvas=$("creatorCanvas"),ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height;
   creatorBg(ctx,w,h);creatorProduktFotoZeichnen(ctx,w,h);
-  if($("creator360Out")) $("creator360Out").textContent=Math.round(creatorState.angle||0)+"°";
-  if($("creator360") && document.activeElement!==$("creator360")) $("creator360").value=Math.round(creatorState.angle||0);
+  const frame=creatorAktuellerFrame();
+  if($("creator360Out")) $("creator360Out").textContent=creatorHatEchte360()?Math.round(frame.angle)+"°":"FRONT";
+  if($("creator360Hinweis")) $("creator360Hinweis").textContent=creatorHatEchte360()?`${frame.total} echte Rundum-Frames · mit dem Finger drehen`:"Hochauflösende Frontansicht · keine künstliche Verzerrung";
+  if($("creator360Status")) $("creator360Status").classList.toggle("bereit",creatorHatEchte360());
   if(creatorImg){
     const b=creatorDesignBounds();ctx.save();ctx.translate(b.cx,b.cy);ctx.rotate(creatorState.rot*Math.PI/180);ctx.scale(creatorState.flipX,creatorState.flipY);ctx.drawImage(creatorImg,-b.dw/2,-b.dh/2,b.dw,b.dh);ctx.restore();
     $("creatorHinweis").classList.add("versteckt");
@@ -3421,21 +3429,32 @@ $("creatorReset").onclick=creatorReset;
 $("creatorDownload").onclick=creatorDownload;
 $("creatorTeilen").onclick=()=>creatorTeilen().catch(e=>{console.error(e);alert("Vorschau konnte nicht geteilt werden.");});
 $("creatorSpeichern").onclick=creatorEntwurfSpeichern;
-$("creator360").oninput=e=>{creatorState.angle=Number(e.target.value);creatorZeichnen();};
 document.querySelectorAll("#creatorHintergruende [data-bg]").forEach(b=>b.onclick=()=>{creatorState.bg=b.dataset.bg;creatorUIRendern();creatorZeichnen();});
 const creatorCanvas=$("creatorCanvas");
 creatorCanvas.addEventListener("mousedown",creatorPointerDown);window.addEventListener("mousemove",creatorPointerMove);window.addEventListener("mouseup",creatorPointerUp);
 creatorCanvas.addEventListener("touchstart",creatorPointerDown,{passive:false});window.addEventListener("touchmove",creatorPointerMove,{passive:false});window.addEventListener("touchend",creatorPointerUp);
 
-/* v95: 360° swipe. Outside the uploaded motif, horizontal dragging rotates the article. */
+/* v96: echte framebasierte 360°-Drehung. Nur aktiv, wenn für den Artikel reale Rundum-Frames vorhanden sind. */
 let creatorRotateDrag=null;
 function creatorEventPoint(e){const t=e.touches?.[0]||e.changedTouches?.[0]||e;const r=creatorCanvas.getBoundingClientRect();return {x:(t.clientX-r.left)*creatorCanvas.width/r.width,y:(t.clientY-r.top)*creatorCanvas.height/r.height,clientX:t.clientX};}
-creatorCanvas.addEventListener("touchstart",e=>{const p=creatorEventPoint(e),b=creatorImg?creatorDesignBounds():null;const onDesign=b&&Math.abs(p.x-b.cx)<=b.dw/2&&Math.abs(p.y-b.cy)<=b.dh/2;if(!onDesign){creatorRotateDrag={x:p.clientX,a:creatorState.angle||0};e.preventDefault();e.stopImmediatePropagation();}},{passive:false,capture:true});
-window.addEventListener("touchmove",e=>{if(!creatorRotateDrag)return;const t=e.touches?.[0];if(!t)return;creatorState.angle=(creatorRotateDrag.a+(t.clientX-creatorRotateDrag.x)*.75+3600)%360;creatorZeichnen();e.preventDefault();e.stopImmediatePropagation();},{passive:false,capture:true});
-window.addEventListener("touchend",e=>{if(creatorRotateDrag){creatorRotateDrag=null;e.preventDefault();e.stopImmediatePropagation();}},{passive:false,capture:true});
-creatorCanvas.addEventListener("mousedown",e=>{const p=creatorEventPoint(e),b=creatorImg?creatorDesignBounds():null;const onDesign=b&&Math.abs(p.x-b.cx)<=b.dw/2&&Math.abs(p.y-b.cy)<=b.dh/2;if(!onDesign){creatorRotateDrag={x:e.clientX,a:creatorState.angle||0};e.preventDefault();e.stopImmediatePropagation();}},{capture:true});
-window.addEventListener("mousemove",e=>{if(!creatorRotateDrag)return;creatorState.angle=(creatorRotateDrag.a+(e.clientX-creatorRotateDrag.x)*.75+3600)%360;creatorZeichnen();e.preventDefault();e.stopImmediatePropagation();},{capture:true});
-window.addEventListener("mouseup",e=>{if(creatorRotateDrag){creatorRotateDrag=null;e.preventDefault();e.stopImmediatePropagation();}},{capture:true});
+function creatorRotationStart(e){
+  if(!creatorHatEchte360())return;
+  const p=creatorEventPoint(e),b=creatorImg?creatorDesignBounds():null;
+  const onDesign=b&&Math.abs(p.x-b.cx)<=b.dw/2&&Math.abs(p.y-b.cy)<=b.dh/2;
+  if(!onDesign){creatorRotateDrag={x:p.clientX,a:creatorState.angle||0};e.preventDefault();e.stopImmediatePropagation();}
+}
+function creatorRotationMove(e){
+  if(!creatorRotateDrag)return; const t=e.touches?.[0]||e;
+  creatorState.angle=(creatorRotateDrag.a+(t.clientX-creatorRotateDrag.x)*.55+3600)%360; creatorZeichnen();
+  e.preventDefault();e.stopImmediatePropagation();
+}
+function creatorRotationEnd(e){if(creatorRotateDrag){creatorRotateDrag=null;e.preventDefault();e.stopImmediatePropagation();}}
+creatorCanvas.addEventListener("touchstart",creatorRotationStart,{passive:false,capture:true});
+window.addEventListener("touchmove",creatorRotationMove,{passive:false,capture:true});
+window.addEventListener("touchend",creatorRotationEnd,{passive:false,capture:true});
+creatorCanvas.addEventListener("mousedown",creatorRotationStart,{capture:true});
+window.addEventListener("mousemove",creatorRotationMove,{capture:true});
+window.addEventListener("mouseup",creatorRotationEnd,{capture:true});
 
 /* ONLINE / OFFLINE */
 

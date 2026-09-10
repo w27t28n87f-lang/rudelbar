@@ -8,7 +8,7 @@
   <title>Rudelbar</title>
 
   <link rel="manifest" href="manifest.json?v=94">
-  <link rel="stylesheet" href="style.css?v=95">
+  <link rel="stylesheet" href="style.css?v=96">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -138,15 +138,15 @@
 
       <main class="creator-buehne">
         <div class="creator-360-kopf">
-          <div><strong>↻ 360° Ansicht</strong><small>Am Kleidungsstück nach links oder rechts ziehen</small></div>
-          <output id="creator360Out">0°</output>
+          <div><strong>↻ 360° Ansicht</strong><small id="creator360Hinweis">Echte Rundum-Frames, keine Bild-Verzerrung</small></div>
+          <output id="creator360Out">FRONT</output>
         </div>
         <div id="creatorCanvasWrap" class="creator-canvas-wrap">
           <canvas id="creatorCanvas" width="900" height="900"></canvas>
           <div id="creatorHinweis" class="creator-canvas-hinweis">PNG hochladen und direkt auf dem Artikel verschieben</div>
         </div>
-        <div class="creator-360-regler"><span>↺</span><input id="creator360" type="range" min="0" max="359" value="0" step="1" aria-label="360 Grad Drehung"><span>↻</span></div>
-        <p class="creator-tipp">Auf dem Kleidungsstück ziehen = 360° drehen. Direkt auf dem hochgeladenen Motiv ziehen = Motiv verschieben.</p>
+        <div id="creator360Status" class="creator-360-status">360° wird nur mit echten Rundum-Aufnahmen aktiviert. Keine künstlich plattgedrückten Seitenansichten.</div>
+        <p class="creator-tipp">Direkt auf dem hochgeladenen Motiv ziehen = Motiv verschieben. Sobald ein echter Rundum-Bildsatz hinterlegt ist, dreht Wischen den Artikel frameweise.</p>
       </main>
 
       <aside class="creator-panel creator-optionen">
@@ -700,7 +700,7 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="app.js?v=95"></script>
+<script src="app.js?v=96"></script>
 
 </body>
 </html>
