@@ -7,8 +7,8 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json?v=70">
-  <link rel="stylesheet" href="style.css?v=93">
+  <link rel="manifest" href="manifest.json?v=94">
+  <link rel="stylesheet" href="style.css?v=94">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -370,6 +370,54 @@
       <label class="settings-check"><input id="settingsAnimationen" type="checkbox" checked> Animationen verwenden</label>
     </section>
 
+    <section class="settings-section settings-rechnungen">
+      <div class="settings-section-head">
+        <div>
+          <h3>Rechnungen</h3>
+          <p class="settings-hinweis">Kontakt- und Kontodaten einmal hinterlegen und auf die gewünschten Rechnungsvorlagen anwenden.</p>
+        </div>
+      </div>
+
+      <div class="rechnung-settings-card">
+        <h4>Gemeinsame Rechnungsdaten</h4>
+        <div class="settings-form-grid">
+          <label>Inhaber<input id="rechnungSharedInhaber" type="text" autocomplete="name"></label>
+          <label>Telefon<input id="rechnungSharedTelefon" type="tel" autocomplete="tel"></label>
+          <label class="span-2">Straße &amp; Hausnummer<input id="rechnungSharedStrasse" type="text" autocomplete="street-address"></label>
+          <label class="span-2">PLZ &amp; Ort<input id="rechnungSharedOrt" type="text"></label>
+          <label>E-Mail<input id="rechnungSharedEmail" type="email" autocomplete="email"></label>
+          <label>Webseite<input id="rechnungSharedWebsite" type="text" placeholder="www.rudelbar.de"></label>
+          <label class="span-2">IBAN<input id="rechnungSharedIban" type="text" inputmode="text"></label>
+          <label>BIC<input id="rechnungSharedBic" type="text"></label>
+          <label>Kreditinstitut<input id="rechnungSharedBank" type="text"></label>
+          <label>Steuernummer<input id="rechnungSharedSteuernummer" type="text"></label>
+          <label>USt-IdNr.<input id="rechnungSharedUstid" type="text"></label>
+        </div>
+
+        <h4 class="settings-subtitle">Diese Daten verwenden für</h4>
+        <div class="rechnung-apply-grid">
+          <label><input id="rechnungApplyMode" type="checkbox" checked> Mode</label>
+          <label><input id="rechnungApplyService" type="checkbox" checked> Facility Service</label>
+          <label><input id="rechnungApplySecurity" type="checkbox" checked> Security</label>
+        </div>
+      </div>
+
+      <details id="rechnungOverrideMode" class="rechnung-override versteckt">
+        <summary>Eigene Daten für Mode</summary>
+        <div class="settings-form-grid" data-rechnung-area="mode"></div>
+      </details>
+      <details id="rechnungOverrideService" class="rechnung-override versteckt">
+        <summary>Eigene Daten für Facility Service</summary>
+        <div class="settings-form-grid" data-rechnung-area="service"></div>
+      </details>
+      <details id="rechnungOverrideSecurity" class="rechnung-override versteckt">
+        <summary>Eigene Daten für Security</summary>
+        <div class="settings-form-grid" data-rechnung-area="security"></div>
+      </details>
+
+      <button id="rechnungSettingsSpeichern" class="hauptbutton voll" type="button">Rechnungsdaten speichern</button>
+    </section>
+
     <section class="settings-section">
       <h3>Weiterleiten &amp; Team</h3>
       <p class="settings-hinweis">Neue Mitglieder können sich nur über einen persönlichen Einladungslink registrieren. Danach melden sie sich mit ihrer eigenen E-Mail-Adresse und ihrem eigenen Passwort an.</p>
@@ -653,7 +701,7 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="app.js?v=93"></script>
+<script src="app.js?v=94"></script>
 
 </body>
 </html>
