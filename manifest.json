@@ -1,7 +1,7 @@
 {
   "name": "Rudelbar",
   "short_name": "Rudelbar",
-  "description": "Rudelbar Unternehmens-App",
+  "description": "Rudelbar Unternehmens-App mit Mobile Kneipe, Mode, Facility Service und Security",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
