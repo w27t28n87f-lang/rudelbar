@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#171717">
+
+  <title>Rudelbar</title>
+
+  <link rel="manifest" href="manifest.json?v=70">
+  <link rel="stylesheet" href="style.css?v=92">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+
+<body>
+
+<!-- STARTSEITE NACH LOGIN -->
+<section id="bereichStart" class="bereich-start versteckt" aria-label="Rudelbar Bereiche">
+  <div class="bereich-start-inhalt">
+    <img src="Logo-Haupt.png" class="bereich-hauptlogo" alt="Rudelbar">
+    <button id="settingsBtn" class="settings-trigger" type="button" aria-label="Einstellungen öffnen" title="Einstellungen">⚙</button>
+
+    <div class="bereich-grid">
+      <button class="bereich-karte" data-bereich="kneipe">
+        <img src="Logo-Mobile_Kneipe.png" alt="Rudelbar Die mobile Kneipe">
+      </button>
+
+      <button class="bereich-karte" data-bereich="mode">
+        <img src="Logo-Mode.png" alt="Rudelbar Mode">
+      </button>
+
+      <button class="bereich-karte" data-bereich="service">
+        <img src="Logo-Service.png" alt="Rudelbar Facility Service">
+      </button>
+
+      <button class="bereich-karte security-karte" data-bereich="security">
+        <img src="Logo-Haupt.png" alt="Rudelbar Security">
+        <span>SECURITY</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- BEREICHSMENÜ -->
+<section id="bereichMenu" class="modul-seite versteckt" aria-label="Bereichsmenü">
+  <div class="modul-wrap">
+    <header class="modul-kopf">
+      <button class="nav-zurueck" id="bereichMenuZurueck" aria-label="Zurück zu den Bereichen">←</button>
+      <div class="modul-branding">
+        <img id="bereichMenuLogo" src="Logo-Haupt.png" alt="Rudelbar">
+        <div>
+          <h1 id="bereichMenuTitel">RUDELBAR</h1>
+          <p id="bereichMenuSubtitel">BEREICH</p>
+        </div>
+      </div>
+    </header>
+
+    <div id="bereichMenuGrid" class="modul-grid"></div>
+  </div>
+</section>
+
+<!-- DATENMODUL -->
+<section id="modulAnsicht" class="modul-seite versteckt" aria-label="Rudelbar Modul">
+  <div class="modul-wrap">
+    <header class="modul-kopf">
+      <button class="nav-zurueck" id="modulZurueck" aria-label="Zurück zum Bereichsmenü">←</button>
+      <div class="modul-branding">
+        <img id="modulLogo" src="Logo-Haupt.png" alt="Rudelbar">
+        <div>
+          <h1 id="modulTitel">RUDELBAR</h1>
+          <p id="modulBereich">MODUL</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="datenmodul-toolbar">
+      <div>
+        <h2 id="modulInhaltTitel">Modul</h2>
+        <p id="modulInhaltText">Daten verwalten</p>
+      </div>
+      <div class="datenmodul-aktionen">
+        <button class="sekundaer versteckt" id="modulMonatExport">Monatsauszug</button>
+        <button class="sekundaer" id="modulExport">CSV Export</button>
+        <button class="hauptbutton" id="modulNeu">+ Neu</button>
+      </div>
+    </div>
+
+    <div id="modulStatistik" class="modul-statistik"></div>
+    <div id="modulListe" class="datenmodul-liste"></div>
+  </div>
+</section>
+
+<!-- MODE CREATOR -->
+<section id="creatorAnsicht" class="creator-seite versteckt" aria-label="Rudelbar Mode Creator">
+  <div class="creator-wrap">
+    <header class="creator-kopf">
+      <button class="nav-zurueck" id="creatorZurueck" aria-label="Zurück zu Mode">←</button>
+      <div class="creator-brand">
+        <img src="Logo-Mode.png" alt="Rudelbar Mode">
+        <div>
+          <h1>CREATOR MODUS</h1>
+          <p>DESIGN. VISION. RUDELBAR.</p>
+        </div>
+      </div>
+      <div class="creator-head-actions">
+        <button id="creatorSpeichern" class="sekundaer" type="button">Entwurf speichern</button>
+        <button id="creatorTeilen" class="hauptbutton" type="button">Vorschau teilen</button>
+      </div>
+    </header>
+
+    <div class="creator-layout">
+      <aside class="creator-panel creator-produkte">
+        <h2><span>1</span> Produkt wählen</h2>
+        <div id="creatorProduktGrid" class="creator-produkt-grid"></div>
+
+        <h2><span>2</span> Design hochladen</h2>
+        <label class="creator-upload" for="creatorDatei">
+          <strong>PNG-Datei auswählen</strong>
+          <small>Transparenter Hintergrund empfohlen</small>
+          <input id="creatorDatei" type="file" accept="image/png">
+        </label>
+        <button id="creatorDateiBtn" class="hauptbutton creator-full" type="button">PNG auswählen</button>
+
+        <h2><span>3</span> Design anpassen</h2>
+        <div class="creator-regler">
+          <label>Größe <output id="creatorScaleOut">100 %</output><input id="creatorScale" type="range" min="20" max="180" value="100"></label>
+          <label>Position X <output id="creatorXOut">0</output><input id="creatorX" type="range" min="-260" max="260" value="0"></label>
+          <label>Position Y <output id="creatorYOut">0</output><input id="creatorY" type="range" min="-260" max="260" value="0"></label>
+          <label>Drehung <output id="creatorRotOut">0°</output><input id="creatorRot" type="range" min="-180" max="180" value="0"></label>
+        </div>
+        <div class="creator-mini-actions">
+          <button id="creatorFlipX" type="button">↔ Spiegeln</button>
+          <button id="creatorFlipY" type="button">↕ Spiegeln</button>
+          <button id="creatorReset" type="button">↺ Reset</button>
+        </div>
+      </aside>
+
+      <main class="creator-buehne">
+        <div class="creator-ansichten" id="creatorAnsichten">
+          <button class="aktiv" data-view="front" type="button">Vorderseite</button>
+          <button data-view="back" type="button">Rückseite</button>
+          <button data-view="left" type="button">Linker Ärmel</button>
+          <button data-view="right" type="button">Rechter Ärmel</button>
+        </div>
+        <div id="creatorCanvasWrap" class="creator-canvas-wrap">
+          <canvas id="creatorCanvas" width="900" height="900"></canvas>
+          <div id="creatorHinweis" class="creator-canvas-hinweis">PNG hochladen und direkt auf dem Artikel verschieben</div>
+        </div>
+        <p class="creator-tipp">Tipp: Das Motiv kann direkt auf dem Kleidungsstück mit dem Finger verschoben werden.</p>
+      </main>
+
+      <aside class="creator-panel creator-optionen">
+        <h2>Farbe wählen</h2>
+        <div id="creatorFarben" class="creator-farben"></div>
+        <h2>Größe wählen</h2>
+        <div id="creatorGroessen" class="creator-groessen"></div>
+        <h2>Hintergrund</h2>
+        <div id="creatorHintergruende" class="creator-hintergruende">
+          <button class="aktiv" data-bg="dark" type="button">Dunkel</button>
+          <button data-bg="light" type="button">Hell</button>
+          <button data-bg="transparent" type="button">Transparent</button>
+        </div>
+        <button id="creatorDownload" class="sekundaer creator-full" type="button">Vorschau als PNG</button>
+
+        <h2>Gespeicherte Entwürfe</h2>
+        <div id="creatorEntwuerfe" class="creator-entwuerfe"></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- BESTEHENDE KASSEN-APP -->
+<main class="app versteckt" id="kassenApp">
+
+  <header class="kopf">
+
+    <button class="zurueck-button" id="zurBereichsauswahl" aria-label="Zurück zur Bereichsauswahl" title="Bereiche">
+      ←
+    </button>
+
+    <div class="branding">
+      <img src="Logo-Mobile_Kneipe.png" class="logo" alt="Rudelbar Die mobile Kneipe">
+
+      <div>
+        <h1>RUDELBAR</h1>
+        <p>DIE MOBILE KNEIPE</p>
+      </div>
+    </div>
+
+    <div class="kopf-rechts">
+
+      <div id="syncStatus" class="sync-status offline">
+        <span class="sync-punkt"></span>
+        <span id="syncText">Offline</span>
+      </div>
+
+      <div class="kopf-buttons">
+
+        <button class="iconbutton" id="statistikBtn" aria-label="Tagesübersicht" title="Tagesübersicht">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 20V10"/>
+            <path d="M10 20V4"/>
+            <path d="M16 20v-7"/>
+            <path d="M22 20H2"/>
+          </svg>
+        </button>
+
+        <button class="iconbutton abschluss-button" id="abschlussBtn" aria-label="Tagesabschluss" title="Tagesabschluss">
+          <svg viewBox="0 0 24 24">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+        </button>
+
+        <button class="hauptbutton" id="getraenkHinzufuegen">
+          + Getränk
+        </button>
+
+      </div>
+    </div>
+
+  </header>
+
+
+  <section class="inhalt">
+
+    <section class="produkte">
+      <div id="getraenkeListe" class="getraenke-grid"></div>
+    </section>
+
+    <aside class="bestellung">
+
+      <h2>Bestellung</h2>
+
+      <div id="warenkorb" class="warenkorb"></div>
+
+      <div class="gesamt-zeile">
+        <strong>GESAMT</strong>
+        <strong id="gesamtpreis">0,00 €</strong>
+      </div>
+
+      <div class="zahlung">
+        <button id="barButton" class="zahlung-button bar">BAR</button>
+        <button id="karteButton" class="zahlung-button karte">KARTE</button>
+      </div>
+
+      <button id="bestellungLoeschen" class="loeschen-button">
+        Bestellung löschen
+      </button>
+
+    </aside>
+
+  </section>
+
+</main>
+
+
+<!-- LOGIN -->
+
+<dialog id="loginDialog">
+
+  <div class="dialogbox login-box">
+
+    <img src="Logo-Haupt.png" class="login-logo" alt="Rudelbar">
+
+    <h2>RUDELBAR</h2>
+
+    <p class="login-hinweis">
+      Ein System. Ein Rudel. Viele Möglichkeiten.
+    </p>
+
+    <label>
+      E-Mail
+      <input id="loginEmail" type="email" autocomplete="username">
+    </label>
+
+    <label>
+      Passwort
+      <input id="loginPasswort" type="password" autocomplete="current-password">
+    </label>
+
+    <div id="loginFehler" class="login-fehler"></div>
+
+    <button class="hauptbutton voll" id="loginButton">
+      Anmelden
+    </button>
+
+    <button class="link-button versteckt" id="registrierenOeffnen" type="button">
+      Einladung erhalten? Jetzt registrieren
+    </button>
+
+  </div>
+
+</dialog>
+
+<!-- REGISTRIERUNG NUR PER EINLADUNG -->
+<dialog id="registrierungDialog">
+  <div class="dialogbox login-box">
+    <img src="Logo-Haupt.png" class="login-logo" alt="Rudelbar">
+    <h2>RUDELBAR</h2>
+    <p class="login-hinweis">Registrierung per persönlicher Einladung</p>
+
+    <label>
+      Name
+      <input id="registerName" type="text" autocomplete="name" placeholder="Vor- und Nachname">
+    </label>
+
+    <label>
+      E-Mail
+      <input id="registerEmail" type="email" autocomplete="email">
+    </label>
+
+    <label>
+      Passwort
+      <input id="registerPasswort" type="password" autocomplete="new-password" minlength="8">
+    </label>
+
+    <label>
+      Passwort wiederholen
+      <input id="registerPasswort2" type="password" autocomplete="new-password" minlength="8">
+    </label>
+
+    <div id="registerFehler" class="login-fehler"></div>
+    <div id="registerErfolg" class="login-erfolg"></div>
+
+    <button class="hauptbutton voll" id="registerButton" type="button">
+      Konto erstellen
+    </button>
+
+    <button class="link-button" id="registerZurLogin" type="button">Zur Anmeldung</button>
+  </div>
+</dialog>
+
+<!-- EINSTELLUNGEN -->
+<dialog id="einstellungenDialog">
+  <div class="dialogbox gross settings-box">
+    <div class="dialog-kopf">
+      <div>
+        <h2>Einstellungen</h2>
+        <p class="login-hinweis links">Konto, Anzeige und Teamzugang verwalten.</p>
+      </div>
+      <button class="sekundaer" id="settingsSchliessen" type="button">Fertig</button>
+    </div>
+
+    <section class="settings-section">
+      <h3>Mein Konto</h3>
+      <div class="settings-info">
+        <div><span>Angemeldet als</span><strong id="settingsEmail">–</strong></div>
+        <div><span>Rolle</span><strong id="settingsRolle">Mitglied</strong></div>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <h3>App</h3>
+      <label>Startbereich nach der Anmeldung
+        <select id="settingsStartbereich">
+          <option value="start">Bereichsauswahl</option>
+          <option value="kneipe">Mobile Kneipe</option>
+          <option value="mode">Mode</option>
+          <option value="service">Facility Service</option>
+          <option value="security">Security</option>
+        </select>
+      </label>
+      <label>Creator-Produktkarten auf dem Handy
+        <select id="settingsCreatorSpalten">
+          <option value="2">2 Spalten, größere Vorschau</option>
+          <option value="3">3 Spalten, kompakter</option>
+        </select>
+      </label>
+      <label class="settings-check"><input id="settingsAnimationen" type="checkbox" checked> Animationen verwenden</label>
+    </section>
+
+    <section class="settings-section">
+      <h3>Weiterleiten &amp; Team</h3>
+      <p class="settings-hinweis">Neue Mitglieder können sich nur über einen persönlichen Einladungslink registrieren. Danach melden sie sich mit ihrer eigenen E-Mail-Adresse und ihrem eigenen Passwort an.</p>
+      <button id="settingsInviteBtn" class="hauptbutton voll versteckt" type="button">👥 Einladungslink erstellen / weiterleiten</button>
+      <button id="settingsAppTeilenBtn" class="sekundaer voll" type="button">🔗 App-Adresse an bestehende Mitglieder teilen</button>
+    </section>
+
+    <section class="settings-section settings-danger">
+      <button id="settingsLogoutBtn" class="sekundaer voll" type="button">Abmelden</button>
+    </section>
+  </div>
+</dialog>
+
+<!-- EINLADUNGSVERWALTUNG NUR ADMIN -->
+<dialog id="einladungDialog">
+  <div class="dialogbox gross">
+    <div class="dialog-kopf">
+      <h2>Einladungen</h2>
+      <button class="sekundaer" id="einladungSchliessen" type="button">Fertig</button>
+    </div>
+
+    <p class="login-hinweis links">Nur Personen mit einem gültigen, unbenutzten Einladungslink können sich registrieren.</p>
+
+    <div class="einladung-form">
+      <label>
+        Für wen?
+        <input id="einladungName" type="text" placeholder="z. B. John J Rambo">
+      </label>
+      <label>
+        Gültigkeit
+        <select id="einladungTage">
+          <option value="1">1 Tag</option>
+          <option value="3">3 Tage</option>
+          <option value="7" selected>7 Tage</option>
+          <option value="14">14 Tage</option>
+          <option value="30">30 Tage</option>
+        </select>
+      </label>
+    </div>
+
+    <button class="hauptbutton voll" id="einladungErstellen" type="button">+ Einladungslink erstellen</button>
+
+    <div id="einladungErgebnis" class="einladung-ergebnis versteckt">
+      <label>Einladungslink
+        <textarea id="einladungLink" readonly></textarea>
+      </label>
+      <div class="einladung-aktionen">
+        <button class="sekundaer" id="einladungKopieren" type="button">Link kopieren</button>
+        <button class="hauptbutton" id="einladungTeilen" type="button">Teilen</button>
+      </div>
+    </div>
+
+    <h3 class="zwischenueberschrift">Aktive Einladungen</h3>
+    <div id="einladungListe" class="einladung-liste"></div>
+  </div>
+</dialog>
+
+
+<!-- GETRÄNK -->
+
+<dialog id="getraenkDialog">
+
+  <div class="dialogbox">
+
+    <div class="dialog-kopf">
+      <h2 id="dialogTitel">Getränk hinzufügen</h2>
+
+      <button class="sekundaer" id="getraenkAbbrechen">
+        Abbrechen
+      </button>
+    </div>
+
+    <label>
+      Name
+      <input id="nameInput" autocomplete="off">
+    </label>
+
+    <label>
+      Preis
+      <input id="preisInput" inputmode="decimal" placeholder="3,50">
+    </label>
+
+    <label>
+      Foto
+      <input id="bildInput" type="file" accept="image/*">
+    </label>
+
+    <div id="bildVorschau" class="bild-vorschau"></div>
+
+    <button class="hauptbutton voll" id="getraenkSpeichern">
+      Speichern
+    </button>
+
+  </div>
+
+</dialog>
+
+
+<!-- TAGESÜBERSICHT -->
+
+<dialog id="statistikDialog">
+
+  <div class="dialogbox gross">
+
+    <div class="dialog-kopf">
+      <h2>Tagesübersicht</h2>
+
+      <div class="dialog-aktionen">
+        <button class="teilenBtn" id="getraenkeTeilen">Teilen</button>
+        <button class="sekundaer" id="statistikSchliessen">Fertig</button>
+      </div>
+    </div>
+
+    <div id="statistikInhalt"></div>
+
+  </div>
+
+</dialog>
+
+
+<!-- VERKAUF BEARBEITEN -->
+
+<dialog id="verkaufDialog">
+
+  <div class="dialogbox gross">
+
+    <div class="dialog-kopf">
+      <h2>Verkauf bearbeiten</h2>
+      <button class="sekundaer" id="verkaufAbbrechen">Abbrechen</button>
+    </div>
+
+    <label>
+      Zahlungsart
+
+      <select id="verkaufZahlungsart">
+        <option value="Bar">Bar</option>
+        <option value="Karte">Karte</option>
+      </select>
+    </label>
+
+    <h3 class="zwischenueberschrift">Getränke</h3>
+
+    <div id="verkaufPositionen"></div>
+
+    <div class="verkauf-edit-gesamt">
+      <strong>GESAMT</strong>
+      <strong id="verkaufEditGesamt">0,00 €</strong>
+    </div>
+
+    <div class="verkauf-edit-buttons">
+
+      <button class="hauptbutton" id="verkaufSpeichern">
+        Änderungen speichern
+      </button>
+
+      <button class="loeschen-button" id="verkaufLoeschen">
+        Verkauf löschen
+      </button>
+
+    </div>
+
+  </div>
+
+</dialog>
+
+
+<!-- TAGESABSCHLUSS -->
+
+<dialog id="abschlussDialog">
+
+  <div class="dialogbox gross">
+
+    <div class="dialog-kopf">
+
+      <h2>Tagesabschluss</h2>
+
+      <div class="dialog-aktionen">
+        <button class="teilenBtn" id="abschlussTeilen">Teilen</button>
+        <button class="sekundaer" id="abschlussSchliessen">Fertig</button>
+      </div>
+
+    </div>
+
+    <div class="abschluss-form">
+
+      <label>
+        Veranstaltung
+        <input id="veranstaltungInput" placeholder="z. B. Dorffest">
+      </label>
+
+      <label>
+        Anfangsbestand
+        <input id="anfangsbestandInput" inputmode="decimal" value="0">
+      </label>
+
+      <label>
+        Einlagen
+        <input id="einlagenInput" inputmode="decimal" value="0">
+      </label>
+
+      <label>
+        Entnahmen
+        <input id="entnahmenInput" inputmode="decimal" value="0">
+      </label>
+
+      <label>
+        Ausgaben
+        <input id="ausgabenInput" inputmode="decimal" value="0">
+      </label>
+
+      <label>
+        Ist-Kassenbestand
+        <input id="istKasseInput" inputmode="decimal" value="0">
+      </label>
+
+    </div>
+
+    <div id="abschlussInhalt"></div>
+
+    <button class="hauptbutton voll" id="abschlussSpeichern">
+      Tagesabschluss speichern
+    </button>
+
+  </div>
+
+</dialog>
+
+
+<!-- RECHNUNGSFORMULAR -->
+<dialog id="rechnungDialog">
+  <div class="dialogbox gross rechnung-dialogbox">
+    <div class="dialog-kopf">
+      <div>
+        <h2 id="rechnungFormTitel">Rechnung</h2>
+        <p id="rechnungNummerHinweis" class="login-hinweis"></p>
+      </div>
+      <button class="sekundaer" id="rechnungAbbrechen">Abbrechen</button>
+    </div>
+
+    <form id="rechnungForm" class="modul-form rechnung-form">
+      <label class="ganz">Kunde / Firma<input id="rechnungKunde" required></label>
+      <label class="ganz">Anschrift<textarea id="rechnungAdresse" rows="2" required></textarea></label>
+      <label>Rechnungsdatum<input id="rechnungDatum" type="date" required></label>
+      <label>Leistungsdatum<input id="rechnungLeistungsdatum" type="date"></label>
+      <label>Zahlungsziel<input id="rechnungFaellig" type="date"></label>
+      <label>Status<select id="rechnungStatus"><option>Entwurf</option><option>Offen</option><option>Bezahlt</option><option>Storniert</option></select></label>
+      <label class="ganz">Betreff<input id="rechnungBetreff" placeholder="z. B. Facility Service am 10.09.2026"></label>
+    </form>
+
+    <div class="rechnung-positionen-kopf">
+      <h3>Positionen</h3>
+      <button class="sekundaer" id="rechnungPositionNeu" type="button">+ Position</button>
+    </div>
+    <div id="rechnungPositionen" class="rechnung-positionen"></div>
+
+    <div class="rechnung-summen">
+      <div><span>Netto</span><strong id="rechnungNetto">0,00 €</strong></div>
+      <div><span>Umsatzsteuer</span><strong id="rechnungMwst">0,00 €</strong></div>
+      <div class="rechnung-gesamt"><span>Gesamt</span><strong id="rechnungGesamt">0,00 €</strong></div>
+    </div>
+
+    <label class="rechnung-notiz">Hinweis / Zahlungsinformation<textarea id="rechnungNotiz" rows="3" placeholder="Vielen Dank für Ihren Auftrag."></textarea></label>
+
+    <div class="rechnung-dialog-aktionen">
+      <button class="sekundaer" id="rechnungNeuStarten" type="button">Neu starten</button>
+      <button class="hauptbutton" id="rechnungSpeichern" type="button">Rechnung speichern</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- GENERISCHES DATENMODUL-FORMULAR -->
+<dialog id="modulFormDialog">
+  <div class="dialogbox gross">
+    <div class="dialog-kopf">
+      <h2 id="modulFormTitel">Eintrag</h2>
+      <button class="sekundaer" id="modulFormAbbrechen">Abbrechen</button>
+    </div>
+    <form id="modulForm" class="modul-form"></form>
+    <button class="hauptbutton voll" id="modulFormSpeichern" type="button">Speichern</button>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="app.js?v=92"></script>
+
+</body>
+</html>
