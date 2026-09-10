@@ -1716,42 +1716,152 @@ async function tagesabschlussTeilen() {
 
 /* BEREICHSNAVIGATION */
 
+const BEREICHE = {
+  kneipe: {
+    titel: "RUDELBAR",
+    subtitel: "DIE MOBILE KNEIPE",
+    logo: "Logo-Mobile_Kneipe.png",
+    module: [
+      { id: "kasse", icon: "💶", titel: "Kasse", text: "Verkauf und Bezahlung" },
+      { id: "veranstaltungen", icon: "📅", titel: "Veranstaltungen", text: "Aufträge und Einsätze" },
+      { id: "abschluss", icon: "✓", titel: "Tagesabschluss", text: "Kasse prüfen und abschließen" },
+      { id: "archiv", icon: "🗂️", titel: "Archiv", text: "Abschlüsse und Unterlagen" },
+      { id: "auswertung", icon: "📊", titel: "Auswertung", text: "Verkäufe und Umsätze" }
+    ]
+  },
+  mode: {
+    titel: "RUDELBAR",
+    subtitel: "MODE",
+    logo: "Logo-Mode.png",
+    module: [
+      { id: "auftraege", icon: "📦", titel: "Aufträge", text: "Bestellungen verwalten" },
+      { id: "artikel", icon: "👕", titel: "Artikel", text: "Produkte und Bestand" },
+      { id: "kunden", icon: "👥", titel: "Kunden", text: "Kundendaten verwalten" },
+      { id: "angebote", icon: "📝", titel: "Angebote", text: "Angebote erstellen" },
+      { id: "rechnungen", icon: "🧾", titel: "Rechnungen", text: "Rechnungen verwalten" },
+      { id: "kalkulation", icon: "🧮", titel: "Kalkulation", text: "Preise und Marge" }
+    ]
+  },
+  service: {
+    titel: "RUDELBAR",
+    subtitel: "FACILITY SERVICE",
+    logo: "Logo-Service.png",
+    module: [
+      { id: "auftraege", icon: "🛠️", titel: "Aufträge", text: "Einsätze planen" },
+      { id: "kunden", icon: "👥", titel: "Kunden", text: "Kundendaten verwalten" },
+      { id: "angebote", icon: "📝", titel: "Angebote", text: "Leistungen anbieten" },
+      { id: "rechnungen", icon: "🧾", titel: "Rechnungen", text: "Abrechnung verwalten" },
+      { id: "kalkulation", icon: "🧮", titel: "Kalkulation", text: "Kosten und Preise" },
+      { id: "auswertung", icon: "📊", titel: "Auswertung", text: "Umsätze und Aufträge" }
+    ]
+  },
+  security: {
+    titel: "RUDELBAR",
+    subtitel: "SECURITY",
+    logo: "Logo-Haupt.png",
+    module: [
+      { id: "auftraege", icon: "🛡️", titel: "Aufträge", text: "Security-Einsätze" },
+      { id: "personal", icon: "👥", titel: "Personal", text: "Mitarbeiter und Qualifikationen" },
+      { id: "dienstplan", icon: "📅", titel: "Dienstplan", text: "Einsatzplanung" },
+      { id: "kunden", icon: "🤝", titel: "Kunden", text: "Veranstalter und Auftraggeber" },
+      { id: "angebote", icon: "📝", titel: "Angebote", text: "Angebote erstellen" },
+      { id: "rechnungen", icon: "🧾", titel: "Rechnungen", text: "Abrechnung verwalten" }
+    ]
+  }
+};
+
+let aktiverBereich = null;
+
+function alleHauptansichtenVerstecken() {
+  ["bereichStart", "bereichMenu", "modulAnsicht", "kassenApp"].forEach(id => {
+    $(id)?.classList.add("versteckt");
+  });
+}
+
+function nachOben() {
+  window.scrollTo({ top: 0, behavior: "auto" });
+}
+
 function startseiteZeigen() {
-  $("kassenApp").classList.add("versteckt");
+  alleHauptansichtenVerstecken();
   $("bereichStart").classList.remove("versteckt");
-  window.scrollTo({ top: 0, behavior: "instant" });
+  aktiverBereich = null;
+  nachOben();
+}
+
+function bereichMenuZeigen(bereich) {
+  const daten = BEREICHE[bereich];
+  if (!daten) return;
+
+  aktiverBereich = bereich;
+  $("bereichMenuLogo").src = daten.logo;
+  $("bereichMenuLogo").alt = `${daten.titel} ${daten.subtitel}`;
+  $("bereichMenuTitel").textContent = daten.titel;
+  $("bereichMenuSubtitel").textContent = daten.subtitel;
+
+  $("bereichMenuGrid").innerHTML = daten.module.map(modul => `
+    <button class="modul-karte" data-modul="${modul.id}">
+      <span class="modul-icon">${modul.icon}</span>
+      <strong>${modul.titel}</strong>
+      <small>${modul.text}</small>
+    </button>
+  `).join("");
+
+  document.querySelectorAll("[data-modul]").forEach(button => {
+    button.onclick = () => modulOeffnen(button.dataset.modul);
+  });
+
+  alleHauptansichtenVerstecken();
+  $("bereichMenu").classList.remove("versteckt");
+  nachOben();
 }
 
 function kasseZeigen() {
-  $("bereichStart").classList.add("versteckt");
+  alleHauptansichtenVerstecken();
   $("kassenApp").classList.remove("versteckt");
-  window.scrollTo({ top: 0, behavior: "instant" });
+  nachOben();
   render();
 }
 
-function platzhalterBereich(name) {
-  alert(`${name} wird als nächster Bereich aufgebaut.`);
+function modulPlatzhalterZeigen(modulId) {
+  const bereich = BEREICHE[aktiverBereich];
+  const modul = bereich?.module.find(m => m.id === modulId);
+  if (!bereich || !modul) return;
+
+  $("modulLogo").src = bereich.logo;
+  $("modulTitel").textContent = modul.titel.toUpperCase();
+  $("modulBereich").textContent = bereich.subtitel;
+  $("modulInhaltTitel").textContent = modul.titel;
+  $("modulInhaltText").textContent = `${modul.text}. Das Modul ist bereits in die Navigation eingebunden und wird im nächsten Ausbauschritt mit den zugehörigen Daten und Funktionen gefüllt.`;
+
+  alleHauptansichtenVerstecken();
+  $("modulAnsicht").classList.remove("versteckt");
+  nachOben();
 }
 
-function bereichOeffnen(bereich) {
-  if (bereich === "kneipe") {
+function modulOeffnen(modulId) {
+  if (aktiverBereich === "kneipe" && modulId === "kasse") {
     kasseZeigen();
     return;
   }
 
-  if (bereich === "mode") {
-    platzhalterBereich("Mode");
+  if (aktiverBereich === "kneipe" && modulId === "abschluss") {
+    bereichMenuZeigen("kneipe");
+    abschlussOeffnen();
     return;
   }
 
-  if (bereich === "service") {
-    platzhalterBereich("Facility Service");
+  if (aktiverBereich === "kneipe" && modulId === "auswertung") {
+    bereichMenuZeigen("kneipe");
+    statistikOeffnen();
     return;
   }
 
-  if (bereich === "security") {
-    platzhalterBereich("Security");
-  }
+  modulPlatzhalterZeigen(modulId);
+}
+
+function bereichOeffnen(bereich) {
+  bereichMenuZeigen(bereich);
 }
 
 /* BUTTONS */
@@ -1762,7 +1872,9 @@ document.querySelectorAll(".bereich-karte").forEach(button => {
   });
 });
 
-$("zurBereichsauswahl").onclick = startseiteZeigen;
+$("zurBereichsauswahl").onclick = () => bereichMenuZeigen("kneipe");
+$("bereichMenuZurueck").onclick = startseiteZeigen;
+$("modulZurueck").onclick = () => bereichMenuZeigen(aktiverBereich);
 
 $("loginButton").onclick = anmelden;
 
