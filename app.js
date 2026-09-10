@@ -2618,9 +2618,9 @@ const FIRMEN_DATEN = {
 };
 
 const RECHNUNGS_BEREICHE = {
-  mode: { name: "Rudelbar Mode", prefix: "RBM", logo: "Logo-Mode.png" },
-  service: { name: "Rudelbar Facility Service", prefix: "RBF", logo: "Logo-Service.png" },
-  security: { name: "Rudelbar Security", prefix: "RBS", logo: "Logo-Haupt.png" }
+  mode: { name: "Rudelbar Mode", prefix: "RBM", logo: "Logo-Mode.png", accent: [230,166,35], claim: "TRAG DAS RUDEL." },
+  service: { name: "Rudelbar Facility Service", prefix: "RBF", logo: "Logo-Service.png", accent: [65,190,75], claim: "ZUVERLÄSSIG. FLEXIBEL. STARK." },
+  security: { name: "Rudelbar Security", prefix: "RBS", logo: "Logo-Haupt.png", accent: [220,55,55], claim: "SICHERHEIT. VERTRAUEN. RUDEL." }
 };
 
 let rechnungEditID = null;
@@ -2767,37 +2767,129 @@ function rechnungStornieren(id){
 function bildAlsDataURL(src){ return new Promise((resolve,reject)=>{ const img=new Image(); img.onload=()=>{ const c=document.createElement("canvas"); c.width=img.naturalWidth; c.height=img.naturalHeight; c.getContext("2d").drawImage(img,0,0); resolve(c.toDataURL("image/png")); }; img.onerror=reject; img.src=src; }); }
 
 async function rechnungPDFBlob(r){
-  if(!window.jspdf?.jsPDF) throw new Error("PDF-Bibliothek konnte nicht geladen werden. Bitte Internetverbindung prüfen und die App neu öffnen.");
-  const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:"mm",format:"a4"});
-  const cfg=RECHNUNGS_BEREICHE[aktiverBereich]||RECHNUNGS_BEREICHE[r.bereich];
-  doc.setFillColor(12,12,12); doc.rect(0,0,210,42,"F"); doc.setDrawColor(230,166,35); doc.setLineWidth(0.7); doc.line(0,42,210,42);
-  try{ const logo=await bildAlsDataURL(cfg.logo); doc.addImage(logo,"PNG",12,5,31,31); }catch{}
-  doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(19); doc.text(cfg.name.toUpperCase(),49,18);
-  doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.text(`${FIRMEN_DATEN.inhaber} | ${FIRMEN_DATEN.strasse} | ${FIRMEN_DATEN.ort}`,49,26); doc.text(`Tel. ${FIRMEN_DATEN.telefon}`,49,31);
-  doc.setTextColor(20,20,20); doc.setFont("helvetica","bold"); doc.setFontSize(22); doc.text("RECHNUNG",14,58);
-  doc.setFontSize(9); doc.setFont("helvetica","normal"); const adr=doc.splitTextToSize(`${r.kunde}\n${r.adresse}`,80); doc.text(adr,14,69);
-  doc.setFillColor(242,242,242); doc.roundedRect(126,50,70,35,1.5,1.5,"F"); doc.setFont("helvetica","bold"); doc.text("Rechnungsnummer:",130,57); doc.text("Rechnungsdatum:",130,63); doc.text("Leistungsdatum:",130,69); doc.text("Zahlungsziel:",130,75); doc.setFont("helvetica","normal"); doc.text(String(r.nummer||""),165,57); doc.text(datumDE(r.datum),165,63); doc.text(datumDE(r.leistungsdatum||r.datum),165,69); doc.text(datumDE(r.faellig),165,75);
-  let y=96; doc.setFillColor(20,20,20); doc.rect(14,y,182,8,"F"); doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.text("Pos.",17,y+5.5); doc.text("Beschreibung",29,y+5.5); doc.text("Menge",117,y+5.5); doc.text("Einzelpreis",143,y+5.5); doc.text("Gesamt",177,y+5.5);
-  doc.setTextColor(20,20,20); doc.setFont("helvetica","normal"); y+=8;
-  (r.positionen||[]).forEach((p,i)=>{ const line=Number(p.menge||0)*Number(p.einzelpreis||0); const desc=doc.splitTextToSize(String(p.beschreibung||""),80); const h=Math.max(9,desc.length*4.3+3); if(y+h>250){doc.addPage(); y=20;} doc.setDrawColor(220,220,220); doc.rect(14,y,182,h); doc.text(String(i+1),18,y+5.5); doc.text(desc,29,y+5.5); doc.text(`${p.menge} ${p.einheit||""}`,117,y+5.5); doc.text(euro(p.einzelpreis).replace(/\s/g," "),143,y+5.5); doc.text(euro(line).replace(/\s/g," "),177,y+5.5,{align:"right"}); y+=h; });
-  const netto=Number(r.netto??0), mwst=Number(r.mwst??0), gesamt=Number(r.betrag??(netto+mwst)); y+=5; doc.setFillColor(245,245,245); doc.rect(120,y,76,22,"F"); doc.setFont("helvetica","normal"); doc.text("Netto",124,y+6); doc.text(euro(netto),192,y+6,{align:"right"}); doc.text("Umsatzsteuer",124,y+12); doc.text(euro(mwst),192,y+12,{align:"right"}); doc.setFillColor(20,20,20); doc.rect(120,y+14,76,8,"F"); doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.text("Gesamtbetrag",124,y+19.5); doc.text(euro(gesamt),192,y+19.5,{align:"right"});
-  doc.setTextColor(20,20,20); doc.setFont("helvetica","normal"); doc.setFontSize(9); const note=doc.splitTextToSize(r.notiz||"Vielen Dank für Ihren Auftrag.",180); doc.text(note,14,Math.min(278,y+34));
-  doc.setDrawColor(230,166,35); doc.line(14,286,196,286); doc.setFontSize(8); doc.text(`${cfg.name} | ${FIRMEN_DATEN.inhaber} | ${FIRMEN_DATEN.strasse}, ${FIRMEN_DATEN.ort} | ${FIRMEN_DATEN.telefon}`,14,291);
+  if(!window.jspdf?.jsPDF) throw new Error("PDF-Bibliothek konnte nicht geladen werden. Bitte App mit Internetverbindung neu öffnen.");
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:"mm",format:"a4",compress:true});
+  const bereich=r.bereich||aktiverBereich;
+  const cfg=RECHNUNGS_BEREICHE[bereich]||RECHNUNGS_BEREICHE.mode;
+  const accent=cfg.accent||[230,166,35];
+  const schwarz=[12,12,12];
+
+  // Kopf im Rudelbar-Stil
+  doc.setFillColor(...schwarz); doc.rect(0,0,210,48,"F");
+  doc.setFillColor(...accent); doc.rect(0,47,210,1.2,"F");
+  try{
+    const logo=await bildAlsDataURL(cfg.logo);
+    doc.addImage(logo,"PNG",10,4,39,39,undefined,"FAST");
+  }catch(e){}
+  doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(20);
+  doc.text(cfg.name.toUpperCase(),54,17);
+  doc.setFontSize(9); doc.setFont("helvetica","normal");
+  doc.text(cfg.claim||"EIN RUDEL.",54,24);
+  doc.setTextColor(...accent); doc.setFont("helvetica","bold"); doc.setFontSize(10);
+  doc.text("RUDELBAR",54,33);
+  doc.setTextColor(220,220,220); doc.setFont("helvetica","normal"); doc.setFontSize(8);
+  doc.text(`${FIRMEN_DATEN.inhaber} | ${FIRMEN_DATEN.strasse} | ${FIRMEN_DATEN.ort} | Tel. ${FIRMEN_DATEN.telefon}`,54,39);
+
+  // Absenderzeile und Empfänger
+  doc.setTextColor(90,90,90); doc.setFontSize(7.5);
+  doc.text(`${cfg.name} · ${FIRMEN_DATEN.inhaber} · ${FIRMEN_DATEN.strasse} · ${FIRMEN_DATEN.ort}`,14,58);
+  doc.setTextColor(20,20,20); doc.setFontSize(10); doc.setFont("helvetica","normal");
+  const adr=doc.splitTextToSize(`${r.kunde}\n${r.adresse}`,82);
+  doc.text(adr,14,68);
+
+  // Rechnungsdaten rechts
+  doc.setFillColor(244,244,244); doc.roundedRect(122,57,74,38,2,2,"F");
+  const meta=[
+    ["Rechnungsnummer",String(r.nummer||"")],
+    ["Rechnungsdatum",datumDE(r.datum)],
+    ["Leistungsdatum",datumDE(r.leistungsdatum||r.datum)],
+    ["Zahlungsziel",datumDE(r.faellig)]
+  ];
+  let my=64; doc.setFontSize(8.5);
+  meta.forEach(([k,v])=>{ doc.setFont("helvetica","bold"); doc.text(`${k}:`,126,my); doc.setFont("helvetica","normal"); doc.text(v,161,my); my+=7; });
+
+  doc.setFont("helvetica","bold"); doc.setFontSize(23); doc.text("RECHNUNG",14,108);
+  if(r.titel){ doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.text(doc.splitTextToSize(r.titel,180),14,115); }
+
+  // Positionstabelle
+  let y=124;
+  const tableHead=()=>{
+    doc.setFillColor(...schwarz); doc.rect(14,y,182,9,"F");
+    doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(8);
+    doc.text("Pos.",17,y+6); doc.text("Beschreibung",29,y+6); doc.text("Menge",119,y+6);
+    doc.text("Einzelpreis",151,y+6,{align:"right"}); doc.text("Gesamt",192,y+6,{align:"right"});
+    y+=9; doc.setTextColor(20,20,20); doc.setFont("helvetica","normal");
+  };
+  tableHead();
+  (r.positionen||[]).forEach((p,i)=>{
+    const line=Number(p.menge||0)*Number(p.einzelpreis||0);
+    const desc=doc.splitTextToSize(String(p.beschreibung||""),82);
+    const h=Math.max(10,desc.length*4.2+3);
+    if(y+h>246){ doc.addPage(); y=18; tableHead(); }
+    doc.setDrawColor(218,218,218); doc.rect(14,y,182,h);
+    doc.setFontSize(8.5); doc.text(String(i+1),18,y+6); doc.text(desc,29,y+6);
+    doc.text(`${p.menge} ${p.einheit||""}`,119,y+6);
+    doc.text(euro(p.einzelpreis).replace(/\s/g," "),151,y+6,{align:"right"});
+    doc.text(euro(line).replace(/\s/g," "),192,y+6,{align:"right"});
+    y+=h;
+  });
+
+  // Summen
+  const netto=Number(r.netto??0), mwst=Number(r.mwst??0), gesamt=Number(r.betrag??(netto+mwst));
+  y+=5; if(y>247){ doc.addPage(); y=25; }
+  doc.setFillColor(245,245,245); doc.rect(116,y,80,23,"F"); doc.setFontSize(9);
+  doc.text("Nettobetrag",121,y+6); doc.text(euro(netto),192,y+6,{align:"right"});
+  doc.text("Umsatzsteuer",121,y+12); doc.text(euro(mwst),192,y+12,{align:"right"});
+  doc.setFillColor(...schwarz); doc.rect(116,y+15,80,9,"F"); doc.setTextColor(255,255,255); doc.setFont("helvetica","bold");
+  doc.text("Gesamtbetrag",121,y+21); doc.text(euro(gesamt),192,y+21,{align:"right"});
+
+  // Hinweis und Footer
+  doc.setTextColor(25,25,25); doc.setFont("helvetica","normal"); doc.setFontSize(9);
+  const note=doc.splitTextToSize(r.notiz||"Vielen Dank für Ihren Auftrag.",180);
+  const noteY=Math.min(270,y+36); doc.text(note,14,noteY);
+  doc.setFillColor(...accent); doc.rect(0,284,210,1,"F");
+  doc.setFillColor(...schwarz); doc.rect(0,285,210,12,"F");
+  doc.setTextColor(255,255,255); doc.setFontSize(7.5);
+  doc.text(`${cfg.name} | ${FIRMEN_DATEN.inhaber} | ${FIRMEN_DATEN.strasse}, ${FIRMEN_DATEN.ort} | ${FIRMEN_DATEN.telefon}`,14,292);
   return doc.output("blob");
 }
 
+function istIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1); }
+
 async function rechnungPDFAktion(id,art){
   const r=modulDatenLaden().find(x=>x.id===id); if(!r) return;
-  try{ const blob=await rechnungPDFBlob(r); const file=new File([blob],`${r.nummer}.pdf`,{type:"application/pdf"});
-    if(art==="share" && navigator.canShare?.({files:[file]})){ await navigator.share({title:`Rechnung ${r.nummer}`,text:`Rechnung ${r.nummer} von ${RECHNUNGS_BEREICHE[aktiverBereich].name}`,files:[file]}); return; }
-    const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=`${r.nummer}.pdf`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),2000);
+  try{
+    const blob=await rechnungPDFBlob(r);
+    const file=new File([blob],`${r.nummer}.pdf`,{type:"application/pdf"});
+    const cfg=RECHNUNGS_BEREICHE[r.bereich||aktiverBereich]||RECHNUNGS_BEREICHE.mode;
+    if(art==="share" && navigator.share && navigator.canShare?.({files:[file]})){
+      await navigator.share({title:`Rechnung ${r.nummer}`,text:`Rechnung ${r.nummer} von ${cfg.name}`,files:[file]});
+      return;
+    }
+    const url=URL.createObjectURL(blob);
+    if(istIOS()){
+      // iPhone/iPad: PDF direkt öffnen. Von dort über das iOS-Teilen-Menü speichern, senden oder drucken.
+      const w=window.open(url,"_blank");
+      if(!w) location.href=url;
+      setTimeout(()=>URL.revokeObjectURL(url),60000);
+      return;
+    }
+    const a=document.createElement("a"); a.href=url; a.download=`${r.nummer}.pdf`; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
   }catch(e){ alert(`PDF konnte nicht erstellt werden: ${e.message||e}`); }
 }
 
-function rechnungDrucken(id){
+async function rechnungDrucken(id){
   const r=modulDatenLaden().find(x=>x.id===id); if(!r) return;
-  const cfg=RECHNUNGS_BEREICHE[aktiverBereich]; const pos=(r.positionen||[]).map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.beschreibung)}</td><td>${p.menge} ${esc(p.einheit||"")}</td><td>${euro(p.einzelpreis)}</td><td>${euro(Number(p.menge||0)*Number(p.einzelpreis||0))}</td></tr>`).join("");
-  const w=window.open("","_blank"); if(!w){alert("Druckfenster wurde blockiert.");return;} w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(r.nummer)}</title><style>body{font:14px Arial;padding:28px;color:#111}.head{background:#111;color:#fff;padding:18px;border-bottom:3px solid #e6a623}.head img{height:90px;float:left;margin-right:20px}.clearfix{clear:both}table{width:100%;border-collapse:collapse;margin-top:24px}th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#111;color:#fff}.sum{width:340px;margin:18px 0 0 auto}.sum div{display:flex;justify-content:space-between;padding:7px;border-bottom:1px solid #ccc}.total{background:#111;color:#fff;font-weight:bold}.foot{margin-top:40px;border-top:2px solid #e6a623;padding-top:10px}@media print{button{display:none}}</style></head><body><div class="head"><img src="${cfg.logo}"><h1>${esc(cfg.name)}</h1><div>${esc(FIRMEN_DATEN.inhaber)} · ${esc(FIRMEN_DATEN.strasse)} · ${esc(FIRMEN_DATEN.ort)} · ${esc(FIRMEN_DATEN.telefon)}</div><div class="clearfix"></div></div><h1>RECHNUNG</h1><p><b>${esc(r.kunde)}</b><br>${esc(r.adresse).replaceAll("\n","<br>")}</p><p><b>Rechnungsnummer:</b> ${esc(r.nummer)}<br><b>Rechnungsdatum:</b> ${datumDE(r.datum)}<br><b>Leistungsdatum:</b> ${datumDE(r.leistungsdatum||r.datum)}<br><b>Zahlungsziel:</b> ${datumDE(r.faellig)}</p><h3>${esc(r.titel||"")}</h3><table><thead><tr><th>Pos.</th><th>Beschreibung</th><th>Menge</th><th>Einzelpreis</th><th>Gesamt</th></tr></thead><tbody>${pos}</tbody></table><div class="sum"><div><span>Netto</span><b>${euro(r.netto||0)}</b></div><div><span>Umsatzsteuer</span><b>${euro(r.mwst||0)}</b></div><div class="total"><span>Gesamtbetrag</span><b>${euro(r.betrag||0)}</b></div></div><p>${esc(r.notiz||"")}</p><div class="foot">${esc(cfg.name)} · ${esc(FIRMEN_DATEN.inhaber)} · ${esc(FIRMEN_DATEN.strasse)}, ${esc(FIRMEN_DATEN.ort)} · ${esc(FIRMEN_DATEN.telefon)}</div><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`); w.document.close();
+  try{
+    const blob=await rechnungPDFBlob(r); const url=URL.createObjectURL(blob);
+    const w=window.open(url,"_blank");
+    if(!w){ location.href=url; return; }
+    // Desktop-Browser können nach dem Laden den Druckdialog öffnen. Auf iOS öffnet sich die PDF zum Drucken über Teilen.
+    if(!istIOS()) setTimeout(()=>{ try{ w.print(); }catch(e){} },1200);
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }catch(e){ alert(`Druck-PDF konnte nicht erstellt werden: ${e.message||e}`); }
 }
 
 function rechnungenMonatsauszug(){
