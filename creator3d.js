@@ -8,15 +8,15 @@ const $ = id => document.getElementById(id);
 const viewport = $('creator3DViewport');
 if (!viewport) throw new Error('Creator-3D-Viewport fehlt.');
 
-const STATE_KEY = 'rudelbar_creator3d_v99';
-const DRAFT_KEY = 'rudelbar_creator3d_entwuerfe_v99';
+const STATE_KEY = 'rudelbar_creator3d_v100';
+const DRAFT_KEY = 'rudelbar_creator3d_entwuerfe_v100';
 const state = Object.assign({ color:'#111111', scale:1, x:0, y:0, rot:0, flipX:1, flipY:1, bg:'light' }, safeJSON(localStorage.getItem(STATE_KEY), {}));
 
 const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true, preserveDrawingBuffer:true, powerPreference:'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.18;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 viewport.replaceChildren(renderer.domElement);
@@ -74,7 +74,7 @@ function updateBackground(){
 }
 function fabricMaterial(mult=1){
   const c=new THREE.Color(currentColor()).multiplyScalar(mult);
-  return new THREE.MeshPhysicalMaterial({color:c,roughness:.91,metalness:0,clearcoat:.04,clearcoatRoughness:.92,sheen:1,sheenRoughness:.8,sheenColor:new THREE.Color(c).multiplyScalar(1.08)});
+  return new THREE.MeshPhysicalMaterial({color:c,roughness:.82,metalness:0,clearcoat:.025,clearcoatRoughness:.95,sheen:1,sheenRoughness:.72,sheenColor:new THREE.Color(c).multiplyScalar(1.08)});
 }
 function disposeMaterial(m){ if(!m)return; [m.map,m.normalMap,m.roughnessMap,m.metalnessMap,m.aoMap,m.alphaMap].forEach(t=>t?.dispose?.()); m.dispose?.(); }
 function clearModel(){
@@ -140,7 +140,7 @@ function loadExternal(file){
 function applyColor(){ if(!root)return;state.color=currentColor();persist(); const c=new THREE.Color(state.color);root.traverse(o=>{if(o.isMesh&&o!==decal&&o.material?.color){o.material.color.copy(c);o.material.needsUpdate=true}}); }
 function readDesign(file){
   if(!file)return;if(file.type!=='image/png'){status('Bitte eine PNG-Datei mit transparentem Hintergrund verwenden.');return}
-  const url=URL.createObjectURL(file);textureLoader.load(url,t=>{URL.revokeObjectURL(url);designTexture?.dispose?.();designTexture=t;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());rebuildDecal();status('PNG geladen. Motiv ist auf der Brust verankert.',true)},undefined,()=>{URL.revokeObjectURL(url);status('PNG konnte nicht geladen werden.')});
+  const url=URL.createObjectURL(file);textureLoader.load(url,t=>{URL.revokeObjectURL(url);designTexture?.dispose?.();designTexture=t;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());rebuildDecal();status('PNG geladen. Motiv direkt anfassen und auf dem Hoodie verschieben.',true)},undefined,()=>{URL.revokeObjectURL(url);status('PNG konnte nicht geladen werden.')});
 }
 function rebuildDecal(){
   removeDecal(); if(!printableMesh||!designTexture)return;
@@ -159,6 +159,63 @@ function rebuildDecal(){
     decal.scale.x=state.flipX;decal.scale.y=state.flipY;
   }catch(e){ console.warn('Decal fallback',e); }
 }
+// v100: Druckmotiv direkt auf dem 3D-Hoodie mit dem Finger verschieben.
+const designRaycaster = new THREE.Raycaster();
+const designPointer = new THREE.Vector2();
+let designDragging = false;
+let designPointerId = null;
+let designLastX = 0;
+let designLastY = 0;
+let designDragRAF = 0;
+
+function eventHitsDesign(event){
+  if(!decal || !designTexture) return false;
+  const rect = renderer.domElement.getBoundingClientRect();
+  designPointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  designPointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  designRaycaster.setFromCamera(designPointer,camera);
+  return designRaycaster.intersectObject(decal,true).length > 0;
+}
+function clampSlider(id,value){
+  const el=$(id); if(!el) return;
+  const min=Number(el.min||-260),max=Number(el.max||260);
+  el.value=Math.max(min,Math.min(max,value));
+}
+function scheduleDesignRebuild(){
+  if(designDragRAF) return;
+  designDragRAF=requestAnimationFrame(()=>{designDragRAF=0;rebuildDecal()});
+}
+renderer.domElement.style.touchAction='none';
+renderer.domElement.addEventListener('pointerdown',event=>{
+  if(!eventHitsDesign(event)) return;
+  designDragging=true;
+  designPointerId=event.pointerId;
+  designLastX=event.clientX; designLastY=event.clientY;
+  controls.enabled=false;
+  viewport.classList.add('design-dragging');
+  try{renderer.domElement.setPointerCapture(event.pointerId)}catch{}
+  event.preventDefault(); event.stopPropagation();
+},{capture:true});
+renderer.domElement.addEventListener('pointermove',event=>{
+  if(!designDragging || event.pointerId!==designPointerId) return;
+  const dx=event.clientX-designLastX,dy=event.clientY-designLastY;
+  designLastX=event.clientX; designLastY=event.clientY;
+  const rect=renderer.domElement.getBoundingClientRect();
+  const factor=Math.max(.72,560/Math.max(rect.width,320));
+  clampSlider('creatorX',val('creatorX',0)+dx*factor);
+  clampSlider('creatorY',val('creatorY',0)+dy*factor);
+  updateOutputs(); scheduleDesignRebuild();
+  event.preventDefault(); event.stopPropagation();
+},{capture:true});
+function endDesignDrag(event){
+  if(!designDragging || (event && event.pointerId!==designPointerId)) return;
+  designDragging=false; designPointerId=null; controls.enabled=true;
+  viewport.classList.remove('design-dragging'); persist(); rebuildDecal();
+}
+renderer.domElement.addEventListener('pointerup',endDesignDrag,{capture:true});
+renderer.domElement.addEventListener('pointercancel',endDesignDrag,{capture:true});
+renderer.domElement.addEventListener('lostpointercapture',()=>endDesignDrag(),{capture:true});
+
 function resize(){const w=Math.max(1,viewport.clientWidth),h=Math.max(1,viewport.clientHeight);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
 new ResizeObserver(resize).observe(viewport);resize();
 function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)}animate();

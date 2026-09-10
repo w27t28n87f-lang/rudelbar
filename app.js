@@ -542,16 +542,26 @@ function startNachLogin(){
 
 const INVITE_TOKEN_KEY = "rudelbar_invite_token";
 function einladungsTokenAusURL() {
+  // v100: Invite-Tokens robust aus URL, Hash, Session- und LocalStorage lesen.
+  // iOS/PWA-Navigation kann Query-Parameter beim Öffnen der installierten App verlieren.
+  let token = "";
   try {
-    const ausUrl = new URL(window.location.href).searchParams.get("invite")?.trim() || "";
-    if (ausUrl) {
-      sessionStorage.setItem(INVITE_TOKEN_KEY, ausUrl);
-      return ausUrl;
+    const url = new URL(window.location.href);
+    token = (url.searchParams.get("invite") || "").trim();
+    if (!token && url.hash) {
+      const raw = url.hash.replace(/^#/, "");
+      const params = new URLSearchParams(raw.includes("?") ? raw.split("?").pop() : raw);
+      token = (params.get("invite") || "").trim();
     }
-    return sessionStorage.getItem(INVITE_TOKEN_KEY) || "";
-  } catch {
-    return sessionStorage.getItem(INVITE_TOKEN_KEY) || "";
+    if (token) {
+      sessionStorage.setItem(INVITE_TOKEN_KEY, token);
+      localStorage.setItem(INVITE_TOKEN_KEY, token);
+      return token;
+    }
+  } catch (e) {
+    console.warn("Einladungslink konnte nicht gelesen werden:", e);
   }
+  return sessionStorage.getItem(INVITE_TOKEN_KEY) || localStorage.getItem(INVITE_TOKEN_KEY) || "";
 }
 
 function basisAppURL() {
@@ -591,10 +601,13 @@ function registrierungOeffnen() {
       : "Für ein neues Konto brauchst du den persönlichen Einladungslink vom Administrator.";
     status.classList.toggle("ok", Boolean(token));
   }
+  // Eingabefelder bleiben immer bedienbar. Der Invite-Token wird erst beim Absenden geprüft.
+  // Dadurch kann ein iPhone den Nutzer nicht mehr in einem scheinbar "eingefrorenen" Formular festhalten.
   ["registerName","registerEmail","registerPasswort","registerPasswort2","registerButton"].forEach(id=>{
-    const el=$(id); if(el) el.disabled=!token;
+    const el=$(id); if(el) el.disabled=false;
   });
   $("registrierungDialog").showModal();
+  setTimeout(() => $("registerName")?.focus(), 120);
 }
 
 function registrierungZurLogin() {
@@ -656,6 +669,7 @@ async function registrierenMitEinladung() {
 
     localStorage.setItem(EMAIL_KEY, email);
     sessionStorage.removeItem(INVITE_TOKEN_KEY);
+    localStorage.removeItem(INVITE_TOKEN_KEY);
     angemeldet = true;
     const sessionResult = await sb.auth.getSession();
     aktuellerUser = sessionResult.data.session?.user || null;
