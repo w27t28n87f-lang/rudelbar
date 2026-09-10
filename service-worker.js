@@ -1,4 +1,4 @@
-const CACHE_NAME = "rudelbar-v21";
+const CACHE_NAME = "rudelbar-v22-phase1";
 
 const APP_FILES = [
   "./",
@@ -6,7 +6,10 @@ const APP_FILES = [
   "./style.css",
   "./app.js",
   "./manifest.json",
-  "./rudelbar-icon.png"
+  "./assets/rudelbar-hauptlogo.png",
+  "./assets/rudelbar-kneipe.png",
+  "./assets/rudelbar-mode.png",
+  "./assets/rudelbar-service.png"
 ];
 
 self.addEventListener("install", event => {

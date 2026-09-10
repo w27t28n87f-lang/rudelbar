@@ -788,3 +788,163 @@ dialog::backdrop {
     height: 39px;
   }
 }
+/* =========================================================
+   RUDELBAR PHASE 1: BEREICHSAUSWAHL
+   Bestehende Kasse bleibt funktional unverändert.
+   ========================================================= */
+
+.versteckt {
+  display: none !important;
+}
+
+.bereich-start {
+  min-height: calc(100dvh - 28px);
+  display: grid;
+  place-items: center;
+}
+
+.bereich-start-inhalt {
+  width: min(100%, 720px);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.bereich-hauptlogo {
+  width: min(48vw, 250px);
+  height: auto;
+  display: block;
+  margin: 0 auto 8px;
+  object-fit: contain;
+}
+
+.bereich-start h1 {
+  font-size: clamp(28px, 7vw, 46px);
+  font-weight: 950;
+  letter-spacing: 1px;
+}
+
+.bereich-subline {
+  margin-top: 4px;
+  margin-bottom: 22px;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.bereich-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.bereich-karte {
+  position: relative;
+  min-height: 220px;
+  padding: 10px;
+  border: 1.5px solid var(--gold);
+  border-radius: 20px;
+  background: #090909;
+  color: white;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+
+.bereich-karte:active {
+  transform: scale(.985);
+}
+
+.bereich-karte img {
+  width: 100%;
+  height: 100%;
+  max-height: 210px;
+  object-fit: contain;
+  display: block;
+}
+
+.security-karte {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  justify-items: center;
+  padding-bottom: 18px;
+}
+
+.security-karte img {
+  max-height: 170px;
+}
+
+.security-karte span {
+  margin-top: -6px;
+  color: white;
+  font-size: clamp(17px, 4vw, 24px);
+  font-weight: 950;
+  letter-spacing: 2px;
+}
+
+.zurueck-button {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #2b2b2b;
+  color: var(--gold);
+  font-size: 25px;
+  font-weight: 900;
+}
+
+.login-logo {
+  width: min(66vw, 290px) !important;
+  height: auto !important;
+  border-radius: 0 !important;
+  object-fit: contain !important;
+  margin: 0 auto 10px;
+  display: block;
+}
+
+.login-box h2 {
+  text-align: center;
+}
+
+.login-hinweis {
+  text-align: center;
+  color: var(--gold) !important;
+}
+
+@media (max-width: 760px) {
+  .bereich-start {
+    align-items: start;
+    padding-top: 12px;
+  }
+
+  .bereich-hauptlogo {
+    width: min(42vw, 190px);
+  }
+
+  .bereich-grid {
+    gap: 10px;
+  }
+
+  .bereich-karte {
+    min-height: 165px;
+    border-radius: 16px;
+    padding: 6px;
+  }
+
+  .bereich-karte img {
+    max-height: 155px;
+  }
+
+  .security-karte img {
+    max-height: 120px;
+  }
+}
+
+@media (max-width: 390px) {
+  .bereich-karte {
+    min-height: 145px;
+  }
+}

@@ -349,12 +349,14 @@ async function nachLogin() {
 
     if (syncQueue.length) {
       realtimeStarten();
+      startseiteZeigen();
       return;
     }
   }
 
   await ersteSynchronisierung();
   realtimeStarten();
+  startseiteZeigen();
 }
 
 
@@ -1711,7 +1713,56 @@ async function tagesabschlussTeilen() {
 }
 
 
+
+/* BEREICHSNAVIGATION */
+
+function startseiteZeigen() {
+  $("kassenApp").classList.add("versteckt");
+  $("bereichStart").classList.remove("versteckt");
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+
+function kasseZeigen() {
+  $("bereichStart").classList.add("versteckt");
+  $("kassenApp").classList.remove("versteckt");
+  window.scrollTo({ top: 0, behavior: "instant" });
+  render();
+}
+
+function platzhalterBereich(name) {
+  alert(`${name} wird als nächster Bereich aufgebaut.`);
+}
+
+function bereichOeffnen(bereich) {
+  if (bereich === "kneipe") {
+    kasseZeigen();
+    return;
+  }
+
+  if (bereich === "mode") {
+    platzhalterBereich("Mode");
+    return;
+  }
+
+  if (bereich === "service") {
+    platzhalterBereich("Facility Service");
+    return;
+  }
+
+  if (bereich === "security") {
+    platzhalterBereich("Security");
+  }
+}
+
 /* BUTTONS */
+
+document.querySelectorAll(".bereich-karte").forEach(button => {
+  button.addEventListener("click", () => {
+    bereichOeffnen(button.dataset.bereich);
+  });
+});
+
+$("zurBereichsauswahl").onclick = startseiteZeigen;
 
 $("loginButton").onclick = anmelden;
 

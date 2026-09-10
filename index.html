@@ -15,12 +15,45 @@
 
 <body>
 
-<main class="app">
+<!-- STARTSEITE NACH LOGIN -->
+<section id="bereichStart" class="bereich-start versteckt" aria-label="Rudelbar Bereiche">
+  <div class="bereich-start-inhalt">
+    <img src="assets/rudelbar-hauptlogo.png" class="bereich-hauptlogo" alt="Rudelbar">
+    <h1>RUDELBAR</h1>
+    <p class="bereich-subline">Wähle deinen Bereich</p>
+
+    <div class="bereich-grid">
+      <button class="bereich-karte" data-bereich="kneipe">
+        <img src="assets/rudelbar-kneipe.png" alt="Rudelbar Die mobile Kneipe">
+      </button>
+
+      <button class="bereich-karte" data-bereich="mode">
+        <img src="assets/rudelbar-mode.png" alt="Rudelbar Mode">
+      </button>
+
+      <button class="bereich-karte" data-bereich="service">
+        <img src="assets/rudelbar-service.png" alt="Rudelbar Facility Service">
+      </button>
+
+      <button class="bereich-karte security-karte" data-bereich="security">
+        <img src="assets/rudelbar-hauptlogo.png" alt="Rudelbar Security">
+        <span>SECURITY</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- BESTEHENDE KASSEN-APP -->
+<main class="app versteckt" id="kassenApp">
 
   <header class="kopf">
 
+    <button class="zurueck-button" id="zurBereichsauswahl" aria-label="Zurück zur Bereichsauswahl" title="Bereiche">
+      ←
+    </button>
+
     <div class="branding">
-      <img src="rudelbar-icon.png" class="logo" alt="Rudelbar">
+      <img src="assets/rudelbar-kneipe.png" class="logo" alt="Rudelbar Die mobile Kneipe">
 
       <div>
         <h1>RUDELBAR</h1>
@@ -101,12 +134,12 @@
 
   <div class="dialogbox login-box">
 
-    <img src="rudelbar-icon.png" class="login-logo" alt="Rudelbar">
+    <img src="assets/rudelbar-hauptlogo.png" class="login-logo" alt="Rudelbar">
 
-    <h2>Rudelbar anmelden</h2>
+    <h2>RUDELBAR</h2>
 
     <p class="login-hinweis">
-      Einmal anmelden, danach bleibt dieses Gerät verbunden.
+      Ein System. Ein Rudel. Viele Möglichkeiten.
     </p>
 
     <label>
