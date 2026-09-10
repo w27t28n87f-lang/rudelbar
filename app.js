@@ -176,6 +176,120 @@ function abschlussVonDB(a) {
 }
 
 
+
+/* MODUL-DATEN: SUPABASE */
+
+function modulZuDB(bereich, modul, eintrag) {
+  return {
+    id: eintrag.id,
+    bereich,
+    modul,
+    daten: eintrag,
+    updated_at: eintrag.updatedAt || new Date().toISOString()
+  };
+}
+
+function modulVonDB(row) {
+  const daten = row.daten && typeof row.daten === "object" ? row.daten : {};
+  return {
+    ...daten,
+    id: row.id,
+    createdAt: daten.createdAt || row.created_at || new Date().toISOString(),
+    updatedAt: daten.updatedAt || row.updated_at || new Date().toISOString()
+  };
+}
+
+function lokaleModulSammlung() {
+  const sammlung = [];
+  const prefix = "rudelbar_modul_";
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith(prefix)) continue;
+
+    const rest = key.slice(prefix.length);
+    const pos = rest.indexOf("_");
+    if (pos < 1) continue;
+
+    const bereich = rest.slice(0, pos);
+    const modul = rest.slice(pos + 1);
+    const daten = laden(key, []);
+
+    if (!Array.isArray(daten)) continue;
+    daten.forEach(eintrag => {
+      if (eintrag?.id) sammlung.push({ bereich, modul, eintrag });
+    });
+  }
+
+  return sammlung;
+}
+
+function modulLokalspeicherLeeren() {
+  const prefix = "rudelbar_modul_";
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith(prefix)) keys.push(key);
+  }
+  keys.forEach(key => localStorage.removeItem(key));
+}
+
+function remoteModuldatenLokalSpeichern(rows) {
+  modulLokalspeicherLeeren();
+  const gruppen = new Map();
+
+  (rows || []).forEach(row => {
+    const key = modulKey(row.bereich, row.modul);
+    if (!gruppen.has(key)) gruppen.set(key, []);
+    gruppen.get(key).push(modulVonDB(row));
+  });
+
+  gruppen.forEach((daten, key) => {
+    localStorage.setItem(key, JSON.stringify(daten));
+  });
+
+  if (!$('modulAnsicht').classList.contains('versteckt') && aktiverBereich && aktivesModul) {
+    modulRendern();
+  }
+}
+
+async function moduldatenErstSynchronisieren(remoteRows) {
+  const lokale = lokaleModulSammlung();
+  const remoteMap = new Map((remoteRows || []).map(row => [row.id, row]));
+  const ergebnis = new Map();
+
+  function setze(bereich, modul, eintrag) {
+    const key = modulKey(bereich, modul);
+    if (!ergebnis.has(key)) ergebnis.set(key, new Map());
+    ergebnis.get(key).set(eintrag.id, eintrag);
+  }
+
+  (remoteRows || []).forEach(row => setze(row.bereich, row.modul, modulVonDB(row)));
+
+  lokale.forEach(({ bereich, modul, eintrag }) => {
+    const remote = remoteMap.get(eintrag.id);
+
+    if (!remote) {
+      setze(bereich, modul, eintrag);
+      queueUpsert("moduldaten", modulZuDB(bereich, modul, eintrag));
+      return;
+    }
+
+    const lokalZeit = Date.parse(eintrag.updatedAt || eintrag.createdAt || 0) || 0;
+    const remoteZeit = Date.parse(remote.updated_at || remote.daten?.updatedAt || remote.created_at || 0) || 0;
+
+    if (lokalZeit > remoteZeit) {
+      setze(bereich, modul, eintrag);
+      queueUpsert("moduldaten", modulZuDB(bereich, modul, eintrag));
+    }
+  });
+
+  modulLokalspeicherLeeren();
+  ergebnis.forEach((map, key) => {
+    localStorage.setItem(key, JSON.stringify([...map.values()]));
+  });
+}
+
 /* SYNC STATUS */
 
 function syncStatus(status, text) {
@@ -373,22 +487,26 @@ async function ersteSynchronisierung() {
   const [
     remoteGetraenke,
     remoteVerkaeufe,
-    remoteAbschluesse
+    remoteAbschluesse,
+    remoteModuldaten
   ] = await Promise.all([
     sb.from("getraenke").select("*").eq("aktiv", true),
     sb.from("verkaeufe").select("*"),
-    sb.from("tagesabschluesse").select("*")
+    sb.from("tagesabschluesse").select("*"),
+    sb.from("moduldaten").select("*")
   ]);
 
   if (
     remoteGetraenke.error ||
     remoteVerkaeufe.error ||
-    remoteAbschluesse.error
+    remoteAbschluesse.error ||
+    remoteModuldaten.error
   ) {
     console.error(
       remoteGetraenke.error,
       remoteVerkaeufe.error,
-      remoteAbschluesse.error
+      remoteAbschluesse.error,
+      remoteModuldaten.error
     );
 
     syncStatus("fehler", "Verbindung fehlerhaft");
@@ -415,6 +533,8 @@ async function ersteSynchronisierung() {
     abschluesse = remoteAbschluesse.data.map(abschlussVonDB);
   }
 
+  await moduldatenErstSynchronisieren(remoteModuldaten.data || []);
+
   speichernLokal();
   render();
 
@@ -428,17 +548,19 @@ async function ersteSynchronisierung() {
 async function remoteNeuLaden() {
   if (!angemeldet || !navigator.onLine || syncQueue.length) return;
 
-  const [g, v, a] = await Promise.all([
+  const [g, v, a, m] = await Promise.all([
     sb.from("getraenke").select("*").eq("aktiv", true),
     sb.from("verkaeufe").select("*"),
-    sb.from("tagesabschluesse").select("*")
+    sb.from("tagesabschluesse").select("*"),
+    sb.from("moduldaten").select("*")
   ]);
 
-  if (g.error || v.error || a.error) return;
+  if (g.error || v.error || a.error || m.error) return;
 
   getraenke = g.data.map(getraenkVonDB);
   verkaeufe = v.data.map(verkaufVonDB);
   abschluesse = a.data.map(abschlussVonDB);
+  remoteModuldatenLokalSpeichern(m.data || []);
 
   speichernLokal();
   render();
@@ -482,6 +604,16 @@ function realtimeStarten() {
         event: "*",
         schema: "public",
         table: "tagesabschluesse"
+      },
+      () => remoteNeuLaden()
+    )
+
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "moduldaten"
       },
       () => remoteNeuLaden()
     )
@@ -2099,6 +2231,7 @@ function modulFormSpeichern() {
   }
 
   modulDatenSpeichern(daten);
+  queueUpsert("moduldaten", modulZuDB(aktiverBereich, aktivesModul, neu));
   $("modulFormDialog").close();
   modulEditID = null;
   modulRendern();
@@ -2108,6 +2241,7 @@ function modulEintragLoeschen(id) {
   if (!confirm("Diesen Eintrag wirklich löschen?")) return;
   const daten = modulDatenLaden().filter(x => x.id !== id);
   modulDatenSpeichern(daten);
+  queueDelete("moduldaten", id);
   modulRendern();
 }
 
