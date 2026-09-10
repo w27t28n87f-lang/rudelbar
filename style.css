@@ -810,10 +810,10 @@ dialog::backdrop {
 }
 
 .bereich-hauptlogo {
-  width: min(48vw, 250px);
+  width: min(62vw, 340px);
   height: auto;
   display: block;
-  margin: 0 auto 8px;
+  margin: 0 auto 28px;
   object-fit: contain;
 }
 
@@ -834,15 +834,17 @@ dialog::backdrop {
 }
 
 .bereich-grid {
+  width: min(100%, 620px);
+  margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 
 .bereich-karte {
   position: relative;
-  min-height: 220px;
-  padding: 10px;
+  min-height: 190px;
+  padding: 8px;
   border: 1.5px solid var(--gold);
   border-radius: 20px;
   background: #090909;
@@ -858,7 +860,7 @@ dialog::backdrop {
 .bereich-karte img {
   width: 100%;
   height: 100%;
-  max-height: 210px;
+  max-height: 178px;
   object-fit: contain;
   display: block;
 }
@@ -872,7 +874,7 @@ dialog::backdrop {
 }
 
 .security-karte img {
-  max-height: 170px;
+  max-height: 140px;
 }
 
 .security-karte span {
@@ -921,7 +923,8 @@ dialog::backdrop {
   }
 
   .bereich-hauptlogo {
-    width: min(42vw, 190px);
+    width: min(58vw, 270px);
+    margin-bottom: 24px;
   }
 
   .bereich-grid {
@@ -929,23 +932,35 @@ dialog::backdrop {
   }
 
   .bereich-karte {
-    min-height: 165px;
+    min-height: 145px;
     border-radius: 16px;
-    padding: 6px;
+    padding: 5px;
   }
 
   .bereich-karte img {
-    max-height: 155px;
+    max-height: 134px;
   }
 
   .security-karte img {
-    max-height: 120px;
+    max-height: 100px;
   }
 }
 
 @media (max-width: 390px) {
+  .bereich-hauptlogo {
+    width: min(60vw, 245px);
+  }
+
   .bereich-karte {
-    min-height: 145px;
+    min-height: 132px;
+  }
+
+  .bereich-karte img {
+    max-height: 120px;
+  }
+
+  .security-karte img {
+    max-height: 90px;
   }
 }
 
