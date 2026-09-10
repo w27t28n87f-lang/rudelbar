@@ -1823,41 +1823,354 @@ function kasseZeigen() {
   render();
 }
 
-function modulPlatzhalterZeigen(modulId) {
+const MODUL_FELDER = {
+  kneipe: {
+    veranstaltungen: [
+      { key: "titel", label: "Veranstaltung", type: "text", required: true, full: true },
+      { key: "datum", label: "Datum", type: "date", required: true },
+      { key: "ort", label: "Ort", type: "text" },
+      { key: "kunde", label: "Auftraggeber", type: "text" },
+      { key: "status", label: "Status", type: "select", options: ["Anfrage", "Geplant", "Bestätigt", "Erledigt"] },
+      { key: "betrag", label: "Geplanter Umsatz €", type: "number" },
+      { key: "notiz", label: "Notizen", type: "textarea", full: true }
+    ]
+  },
+  mode: {
+    auftraege: [
+      { key: "titel", label: "Auftrag / Bestellung", type: "text", required: true, full: true },
+      { key: "datum", label: "Datum", type: "date" },
+      { key: "kunde", label: "Kunde", type: "text" },
+      { key: "status", label: "Status", type: "select", options: ["Offen", "Bestellt", "In Produktion", "Fertig", "Ausgeliefert"] },
+      { key: "betrag", label: "Auftragswert €", type: "number" },
+      { key: "notiz", label: "Artikel / Größen / Hinweise", type: "textarea", full: true }
+    ],
+    artikel: [
+      { key: "titel", label: "Artikel", type: "text", required: true, full: true },
+      { key: "variante", label: "Größe / Variante", type: "text" },
+      { key: "bestand", label: "Bestand", type: "number" },
+      { key: "ek", label: "Einkaufspreis €", type: "number" },
+      { key: "betrag", label: "Verkaufspreis €", type: "number" },
+      { key: "status", label: "Status", type: "select", options: ["Aktiv", "Nachbestellen", "Ausverkauft", "Inaktiv"] },
+      { key: "notiz", label: "Notizen", type: "textarea", full: true }
+    ],
+    kunden: kundenFelder(),
+    angebote: dokumentFelder("Angebot"),
+    rechnungen: dokumentFelder("Rechnung"),
+    kalkulation: kalkulationsFelder()
+  },
+  service: {
+    auftraege: [
+      { key: "titel", label: "Auftrag", type: "text", required: true, full: true },
+      { key: "datum", label: "Einsatzdatum", type: "date" },
+      { key: "kunde", label: "Kunde", type: "text" },
+      { key: "ort", label: "Einsatzort", type: "text" },
+      { key: "status", label: "Status", type: "select", options: ["Anfrage", "Geplant", "In Arbeit", "Erledigt", "Abgerechnet"] },
+      { key: "betrag", label: "Auftragswert €", type: "number" },
+      { key: "notiz", label: "Leistungsumfang", type: "textarea", full: true }
+    ],
+    kunden: kundenFelder(),
+    angebote: dokumentFelder("Angebot"),
+    rechnungen: dokumentFelder("Rechnung"),
+    kalkulation: kalkulationsFelder(),
+    auswertung: [
+      { key: "titel", label: "Auswertungsposition", type: "text", required: true, full: true },
+      { key: "datum", label: "Datum", type: "date" },
+      { key: "status", label: "Kategorie", type: "select", options: ["Umsatz", "Material", "Fahrt", "Fremdleistung", "Sonstiges"] },
+      { key: "betrag", label: "Betrag €", type: "number" },
+      { key: "notiz", label: "Notizen", type: "textarea", full: true }
+    ]
+  },
+  security: {
+    auftraege: [
+      { key: "titel", label: "Security-Auftrag", type: "text", required: true, full: true },
+      { key: "datum", label: "Einsatzdatum", type: "date" },
+      { key: "kunde", label: "Veranstalter", type: "text" },
+      { key: "ort", label: "Einsatzort", type: "text" },
+      { key: "status", label: "Status", type: "select", options: ["Anfrage", "Geplant", "Bestätigt", "Erledigt", "Abgerechnet"] },
+      { key: "betrag", label: "Auftragswert €", type: "number" },
+      { key: "notiz", label: "Aufgaben / Besonderheiten", type: "textarea", full: true }
+    ],
+    personal: [
+      { key: "titel", label: "Name", type: "text", required: true, full: true },
+      { key: "telefon", label: "Telefon", type: "tel" },
+      { key: "qualifikation", label: "Qualifikation", type: "text" },
+      { key: "status", label: "Status", type: "select", options: ["Verfügbar", "Eingeplant", "Nicht verfügbar"] },
+      { key: "datum", label: "§34a / Nachweis gültig bis", type: "date" },
+      { key: "notiz", label: "Notizen", type: "textarea", full: true }
+    ],
+    dienstplan: [
+      { key: "titel", label: "Einsatz / Veranstaltung", type: "text", required: true, full: true },
+      { key: "datum", label: "Datum", type: "date", required: true },
+      { key: "kunde", label: "Mitarbeiter", type: "text" },
+      { key: "ort", label: "Ort", type: "text" },
+      { key: "start", label: "Beginn", type: "time" },
+      { key: "ende", label: "Ende", type: "time" },
+      { key: "status", label: "Status", type: "select", options: ["Geplant", "Bestätigt", "Erledigt"] },
+      { key: "notiz", label: "Hinweise", type: "textarea", full: true }
+    ],
+    kunden: kundenFelder(),
+    angebote: dokumentFelder("Angebot"),
+    rechnungen: dokumentFelder("Rechnung")
+  }
+};
+
+function kundenFelder() {
+  return [
+    { key: "titel", label: "Name / Firma", type: "text", required: true, full: true },
+    { key: "ansprechpartner", label: "Ansprechpartner", type: "text" },
+    { key: "telefon", label: "Telefon", type: "tel" },
+    { key: "email", label: "E-Mail", type: "email" },
+    { key: "ort", label: "Ort / Adresse", type: "text", full: true },
+    { key: "status", label: "Status", type: "select", options: ["Aktiv", "Interessent", "Inaktiv"] },
+    { key: "notiz", label: "Notizen", type: "textarea", full: true }
+  ];
+}
+
+function dokumentFelder(art) {
+  return [
+    { key: "titel", label: `${art} / Betreff`, type: "text", required: true, full: true },
+    { key: "nummer", label: `${art}nummer`, type: "text" },
+    { key: "datum", label: "Datum", type: "date" },
+    { key: "kunde", label: "Kunde", type: "text" },
+    { key: "status", label: "Status", type: "select", options: art === "Angebot" ? ["Entwurf", "Versendet", "Angenommen", "Abgelehnt"] : ["Entwurf", "Offen", "Bezahlt", "Storniert"] },
+    { key: "betrag", label: "Betrag €", type: "number" },
+    { key: "notiz", label: "Leistung / Positionen / Notizen", type: "textarea", full: true }
+  ];
+}
+
+function kalkulationsFelder() {
+  return [
+    { key: "titel", label: "Kalkulation", type: "text", required: true, full: true },
+    { key: "datum", label: "Datum", type: "date" },
+    { key: "ek", label: "Kosten / EK €", type: "number" },
+    { key: "betrag", label: "Verkaufspreis €", type: "number" },
+    { key: "menge", label: "Menge / Stunden", type: "number" },
+    { key: "status", label: "Status", type: "select", options: ["Entwurf", "Freigegeben", "Archiviert"] },
+    { key: "notiz", label: "Berechnung / Notizen", type: "textarea", full: true }
+  ];
+}
+
+let aktivesModul = null;
+let modulEditID = null;
+
+function modulKey(bereich, modul) {
+  return `rudelbar_modul_${bereich}_${modul}`;
+}
+
+function modulDatenLaden() {
+  return laden(modulKey(aktiverBereich, aktivesModul), []);
+}
+
+function modulDatenSpeichern(daten) {
+  localStorage.setItem(modulKey(aktiverBereich, aktivesModul), JSON.stringify(daten));
+}
+
+function modulDefinition() {
+  return MODUL_FELDER[aktiverBereich]?.[aktivesModul] || [
+    { key: "titel", label: "Bezeichnung", type: "text", required: true, full: true },
+    { key: "datum", label: "Datum", type: "date" },
+    { key: "status", label: "Status", type: "text" },
+    { key: "betrag", label: "Betrag €", type: "number" },
+    { key: "notiz", label: "Notizen", type: "textarea", full: true }
+  ];
+}
+
+function modulDatenZeigen(modulId) {
   const bereich = BEREICHE[aktiverBereich];
   const modul = bereich?.module.find(m => m.id === modulId);
   if (!bereich || !modul) return;
 
+  aktivesModul = modulId;
   $("modulLogo").src = bereich.logo;
   $("modulTitel").textContent = modul.titel.toUpperCase();
   $("modulBereich").textContent = bereich.subtitel;
   $("modulInhaltTitel").textContent = modul.titel;
-  $("modulInhaltText").textContent = `${modul.text}. Das Modul ist bereits in die Navigation eingebunden und wird im nächsten Ausbauschritt mit den zugehörigen Daten und Funktionen gefüllt.`;
+  $("modulInhaltText").textContent = modul.text;
 
   alleHauptansichtenVerstecken();
   $("modulAnsicht").classList.remove("versteckt");
+  modulRendern();
   nachOben();
 }
 
+function modulRendern() {
+  if (aktiverBereich === "kneipe" && aktivesModul === "archiv") {
+    archivModulRendern();
+    return;
+  }
+
+  const daten = modulDatenLaden();
+  const betragSumme = daten.reduce((s, x) => s + Number(x.betrag || 0), 0);
+  const offen = daten.filter(x => !["Erledigt", "Bezahlt", "Ausgeliefert", "Archiviert", "Inaktiv"].includes(x.status)).length;
+
+  $("modulStatistik").innerHTML = `
+    <div class="statbox"><span>Einträge</span><strong>${daten.length}</strong></div>
+    <div class="statbox"><span>Aktiv / offen</span><strong>${offen}</strong></div>
+    <div class="statbox"><span>Summe</span><strong>${euro(betragSumme)}</strong></div>`;
+
+  if (!daten.length) {
+    $("modulListe").innerHTML = `<div class="daten-leer"><strong>Noch keine Einträge</strong><span>Mit „+ Neu“ legst du den ersten Datensatz an.</span></div>`;
+    return;
+  }
+
+  const sortiert = [...daten].sort((a,b) => String(b.datum || b.createdAt || "").localeCompare(String(a.datum || a.createdAt || "")));
+  $("modulListe").innerHTML = sortiert.map(x => datenKarteHTML(x)).join("");
+
+  document.querySelectorAll("[data-mod-edit]").forEach(btn => btn.onclick = () => modulFormOeffnen(btn.dataset.modEdit));
+  document.querySelectorAll("[data-mod-del]").forEach(btn => btn.onclick = () => modulEintragLoeschen(btn.dataset.modDel));
+}
+
+function datenKarteHTML(x) {
+  const titel = esc(x.titel || x.name || "Eintrag");
+  const meta = [];
+  if (x.datum) meta.push(`📅 ${esc(x.datum)}`);
+  if (x.kunde) meta.push(`👤 ${esc(x.kunde)}`);
+  if (x.ort) meta.push(`📍 ${esc(x.ort)}`);
+  if (x.status) meta.push(`<span class="status-chip">${esc(x.status)}</span>`);
+  if (x.nummer) meta.push(`# ${esc(x.nummer)}`);
+  if (x.bestand !== undefined && x.bestand !== "") meta.push(`Bestand: ${esc(x.bestand)}`);
+  if (x.qualifikation) meta.push(`Qualifikation: ${esc(x.qualifikation)}`);
+  if (x.start || x.ende) meta.push(`⏱ ${esc(x.start || "")}–${esc(x.ende || "")}`);
+
+  let zusatz = "";
+  if (x.ek !== undefined && x.ek !== "") zusatz += `EK/Kosten: ${euro(Number(x.ek || 0))}`;
+  if (x.menge !== undefined && x.menge !== "") zusatz += `${zusatz ? " · " : ""}Menge: ${esc(x.menge)}`;
+  if (x.ek && x.betrag) {
+    const marge = Number(x.betrag) - Number(x.ek);
+    zusatz += `${zusatz ? " · " : ""}Marge: ${euro(marge)}`;
+  }
+
+  return `
+    <article class="daten-karte">
+      <div class="daten-karte-kopf">
+        <div><h3>${titel}</h3><div class="meta">${meta.join("<span> · </span>")}</div></div>
+        ${x.betrag !== undefined && x.betrag !== "" ? `<div class="betrag">${euro(Number(x.betrag || 0))}</div>` : ""}
+      </div>
+      ${zusatz ? `<div class="meta"><span>${zusatz}</span></div>` : ""}
+      ${x.notiz ? `<div class="notiz">${esc(x.notiz)}</div>` : ""}
+      <div class="daten-karte-aktionen">
+        <button class="daten-bearbeiten" data-mod-edit="${x.id}">Bearbeiten</button>
+        <button class="daten-loeschen" data-mod-del="${x.id}">Löschen</button>
+      </div>
+    </article>`;
+}
+
+function modulFormOeffnen(id = null) {
+  modulEditID = id;
+  const daten = modulDatenLaden();
+  const eintrag = id ? daten.find(x => x.id === id) || {} : {};
+  const felder = modulDefinition();
+  const modul = BEREICHE[aktiverBereich]?.module.find(m => m.id === aktivesModul);
+  $("modulFormTitel").textContent = id ? `${modul?.titel || "Eintrag"} bearbeiten` : `${modul?.titel || "Eintrag"} anlegen`;
+
+  $("modulForm").innerHTML = felder.map(f => {
+    const value = eintrag[f.key] ?? "";
+    const cls = f.full ? "ganz" : "";
+    if (f.type === "textarea") {
+      return `<label class="${cls}">${esc(f.label)}<textarea name="${f.key}" ${f.required ? "required" : ""}>${esc(value)}</textarea></label>`;
+    }
+    if (f.type === "select") {
+      return `<label class="${cls}">${esc(f.label)}<select name="${f.key}">${(f.options || []).map(o => `<option value="${esc(o)}" ${o === value ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></label>`;
+    }
+    const step = f.type === "number" ? ' step="0.01" inputmode="decimal"' : "";
+    return `<label class="${cls}">${esc(f.label)}<input name="${f.key}" type="${f.type || "text"}" value="${esc(value)}" ${f.required ? "required" : ""}${step}></label>`;
+  }).join("");
+
+  $("modulFormDialog").showModal();
+}
+
+function modulFormSpeichern() {
+  const form = $("modulForm");
+  if (!form.reportValidity()) return;
+  const daten = modulDatenLaden();
+  const alt = modulEditID ? daten.find(x => x.id === modulEditID) : null;
+  const neu = { ...(alt || {}), id: modulEditID || neueID(), createdAt: alt?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
+
+  new FormData(form).forEach((value, key) => {
+    if (["betrag", "ek", "bestand", "menge"].includes(key)) neu[key] = value === "" ? "" : Number(String(value).replace(",", "."));
+    else neu[key] = String(value).trim();
+  });
+
+  if (modulEditID) {
+    const i = daten.findIndex(x => x.id === modulEditID);
+    if (i >= 0) daten[i] = neu;
+  } else {
+    daten.push(neu);
+  }
+
+  modulDatenSpeichern(daten);
+  $("modulFormDialog").close();
+  modulEditID = null;
+  modulRendern();
+}
+
+function modulEintragLoeschen(id) {
+  if (!confirm("Diesen Eintrag wirklich löschen?")) return;
+  const daten = modulDatenLaden().filter(x => x.id !== id);
+  modulDatenSpeichern(daten);
+  modulRendern();
+}
+
+function archivModulRendern() {
+  const daten = [...abschluesse].sort((a,b) => String(b.datum).localeCompare(String(a.datum)));
+  const summe = daten.reduce((s,x) => s + Number(x.gesamt || 0), 0);
+  $("modulStatistik").innerHTML = `
+    <div class="statbox"><span>Abschlüsse</span><strong>${daten.length}</strong></div>
+    <div class="statbox"><span>Gesamtumsatz</span><strong>${euro(summe)}</strong></div>
+    <div class="statbox"><span>Letzter</span><strong>${daten[0]?.datum ? esc(daten[0].datum.slice(0,10)) : "–"}</strong></div>`;
+  $("modulNeu").style.display = "none";
+  if (!daten.length) {
+    $("modulListe").innerHTML = `<div class="daten-leer"><strong>Noch kein Tagesabschluss</strong><span>Gespeicherte Abschlüsse erscheinen automatisch hier.</span></div>`;
+    return;
+  }
+  $("modulListe").innerHTML = daten.map(x => `
+    <article class="daten-karte">
+      <div class="daten-karte-kopf">
+        <div><h3>${esc(x.veranstaltung || "Tagesabschluss")}</h3><div class="meta"><span>📅 ${esc(String(x.datum).slice(0,10))}</span><span>Bar: ${euro(x.bar)}</span><span>Karte: ${euro(x.karte)}</span></div></div>
+        <div class="betrag">${euro(x.gesamt)}</div>
+      </div>
+      <div class="notiz">Kassendifferenz: ${euro(x.diff ?? x.differenz ?? 0)}</div>
+    </article>`).join("");
+}
+
+function csvWert(wert) {
+  return `"${String(wert ?? "").replaceAll('"','""')}"`;
+}
+
+function modulExportieren() {
+  let daten;
+  if (aktiverBereich === "kneipe" && aktivesModul === "archiv") daten = abschluesse;
+  else daten = modulDatenLaden();
+  if (!daten.length) { alert("Keine Daten zum Exportieren vorhanden."); return; }
+
+  const keys = [...new Set(daten.flatMap(Object.keys))].filter(k => !["createdAt", "updatedAt"].includes(k));
+  const csv = "\uFEFF" + [keys.join(";"), ...daten.map(x => keys.map(k => csvWert(x[k])).join(";"))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Rudelbar_${aktiverBereich}_${aktivesModul}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function modulOeffnen(modulId) {
+  $("modulNeu").style.display = "";
   if (aktiverBereich === "kneipe" && modulId === "kasse") {
     kasseZeigen();
     return;
   }
-
   if (aktiverBereich === "kneipe" && modulId === "abschluss") {
     bereichMenuZeigen("kneipe");
     abschlussOeffnen();
     return;
   }
-
   if (aktiverBereich === "kneipe" && modulId === "auswertung") {
     bereichMenuZeigen("kneipe");
     statistikOeffnen();
     return;
   }
-
-  modulPlatzhalterZeigen(modulId);
+  modulDatenZeigen(modulId);
 }
 
 function bereichOeffnen(bereich) {
@@ -1875,6 +2188,10 @@ document.querySelectorAll(".bereich-karte").forEach(button => {
 $("zurBereichsauswahl").onclick = () => bereichMenuZeigen("kneipe");
 $("bereichMenuZurueck").onclick = startseiteZeigen;
 $("modulZurueck").onclick = () => bereichMenuZeigen(aktiverBereich);
+$("modulNeu").onclick = () => modulFormOeffnen();
+$("modulExport").onclick = modulExportieren;
+$("modulFormAbbrechen").onclick = () => $("modulFormDialog").close();
+$("modulFormSpeichern").onclick = modulFormSpeichern;
 
 $("loginButton").onclick = anmelden;
 

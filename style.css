@@ -1365,3 +1365,238 @@ dialog::backdrop {
     height: 142px !important;
   }
 }
+
+/* =========================================================
+   RUDELBAR v50 – FUNKTIONALE FACHMODULE
+   ========================================================= */
+
+.datenmodul-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.datenmodul-toolbar h2 {
+  font-size: clamp(24px, 5vw, 34px);
+  color: var(--gold);
+}
+
+.datenmodul-toolbar p {
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.datenmodul-aktionen {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.modul-statistik {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.modul-statistik .statbox {
+  background: var(--card);
+  border: 1px solid #343434;
+  border-radius: 15px;
+  padding: 14px;
+}
+
+.modul-statistik .statbox span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+}
+
+.modul-statistik .statbox strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--gold);
+  font-size: 22px;
+}
+
+.datenmodul-liste {
+  display: grid;
+  gap: 10px;
+}
+
+.daten-karte {
+  background: var(--card);
+  border: 1px solid #363636;
+  border-left: 3px solid var(--gold2);
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.daten-karte-kopf {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.daten-karte h3 {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.daten-karte .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.daten-karte .betrag {
+  color: var(--gold);
+  font-size: 18px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.daten-karte .notiz {
+  margin-top: 9px;
+  color: #d3d3d3;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.daten-karte-aktionen {
+  display: flex;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.daten-karte-aktionen button {
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.daten-bearbeiten {
+  background: #555;
+  color: var(--cyan);
+}
+
+.daten-loeschen {
+  background: #4b292c;
+  color: #ff777d;
+}
+
+.daten-leer {
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 24px;
+  border: 1.5px dashed #444;
+  border-radius: 18px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.daten-leer strong {
+  color: var(--gold);
+  font-size: 20px;
+}
+
+.modul-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 12px;
+}
+
+.modul-form label.ganz {
+  grid-column: 1 / -1;
+}
+
+.modul-form textarea {
+  width: 100%;
+  min-height: 110px;
+  margin-top: 5px;
+  padding: 12px;
+  border: 1px solid #555;
+  background: #181818;
+  color: white;
+  border-radius: 10px;
+  resize: vertical;
+  font: inherit;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #333;
+  color: #ddd;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* Startseite exakt nach bestätigtem Entwurf */
+#bereichStart .bereich-hauptlogo {
+  width: min(82vw, 450px) !important;
+  max-width: 450px !important;
+  margin-bottom: 18px !important;
+}
+
+#bereichStart .bereich-grid {
+  width: min(82vw, 520px) !important;
+  gap: 10px !important;
+}
+
+#bereichStart .bereich-karte {
+  height: clamp(120px, 31vw, 170px) !important;
+}
+
+#bereichStart h1,
+#bereichStart .bereich-subline {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  .datenmodul-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .datenmodul-aktionen {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .modul-statistik {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .modul-form {
+    grid-template-columns: 1fr;
+  }
+
+  .modul-form label.ganz {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .modul-statistik {
+    grid-template-columns: 1fr;
+  }
+}

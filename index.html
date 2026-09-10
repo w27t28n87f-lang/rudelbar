@@ -7,8 +7,8 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json?v=40">
-  <link rel="stylesheet" href="style.css?v=40">
+  <link rel="manifest" href="manifest.json?v=50">
+  <link rel="stylesheet" href="style.css?v=50">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -58,7 +58,7 @@
   </div>
 </section>
 
-<!-- GENERISCHE MODULANSICHT -->
+<!-- DATENMODUL -->
 <section id="modulAnsicht" class="modul-seite versteckt" aria-label="Rudelbar Modul">
   <div class="modul-wrap">
     <header class="modul-kopf">
@@ -72,11 +72,19 @@
       </div>
     </header>
 
-    <div class="modul-platzhalter">
-      <div class="modul-platzhalter-icon">🐺</div>
-      <h2 id="modulInhaltTitel">Modul</h2>
-      <p id="modulInhaltText">Dieses Modul ist vorbereitet und wird im nächsten Ausbauschritt mit Funktionen gefüllt.</p>
+    <div class="datenmodul-toolbar">
+      <div>
+        <h2 id="modulInhaltTitel">Modul</h2>
+        <p id="modulInhaltText">Daten verwalten</p>
+      </div>
+      <div class="datenmodul-aktionen">
+        <button class="sekundaer" id="modulExport">CSV Export</button>
+        <button class="hauptbutton" id="modulNeu">+ Neu</button>
+      </div>
     </div>
+
+    <div id="modulStatistik" class="modul-statistik"></div>
+    <div id="modulListe" class="datenmodul-liste"></div>
   </div>
 </section>
 
@@ -370,7 +378,19 @@
 </dialog>
 
 
-<script src="app.js?v=40"></script>
+<!-- GENERISCHES DATENMODUL-FORMULAR -->
+<dialog id="modulFormDialog">
+  <div class="dialogbox gross">
+    <div class="dialog-kopf">
+      <h2 id="modulFormTitel">Eintrag</h2>
+      <button class="sekundaer" id="modulFormAbbrechen">Abbrechen</button>
+    </div>
+    <form id="modulForm" class="modul-form"></form>
+    <button class="hauptbutton voll" id="modulFormSpeichern" type="button">Speichern</button>
+  </div>
+</dialog>
+
+<script src="app.js?v=50"></script>
 
 </body>
 </html>
