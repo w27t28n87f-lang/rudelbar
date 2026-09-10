@@ -1,4 +1,4 @@
-const CACHE_NAME = "rudelbar-v90";
+const CACHE_NAME = "rudelbar-v91";
 
 const APP_SHELL = [
   "./",
@@ -9,7 +9,19 @@ const APP_SHELL = [
   "./Logo-Haupt.png",
   "./Logo-Mobile_Kneipe.png",
   "./Logo-Mode.png",
-  "./Logo-Service.png"
+  "./Logo-Service.png",
+  "./assets/invoice-mode-header.jpg",
+  "./assets/invoice-service-header.jpg",
+  "./assets/invoice-security-header.jpg",
+  "./assets/creator/hoodie.jpg",
+  "./assets/creator/tshirt.jpg",
+  "./assets/creator/polo.jpg",
+  "./assets/creator/sweat.jpg",
+  "./assets/creator/zip.jpg",
+  "./assets/creator/softshell.jpg",
+  "./assets/creator/tank.jpg",
+  "./assets/creator/cap.jpg",
+  "./assets/creator/bag.jpg"
 ];
 
 self.addEventListener("install", event => {

@@ -2616,16 +2616,16 @@ function bereichOeffnen(bereich) {
 
 /* ===== RUDELBAR v90: MODE CREATOR ===== */
 const CREATOR_PRODUKTE = [
-  {id:"hoodie",name:"Hoodie",icon:"🧥"},
-  {id:"tshirt",name:"T-Shirt",icon:"👕"},
-  {id:"polo",name:"Poloshirt",icon:"👔"},
-  {id:"sweat",name:"Sweatshirt",icon:"🧶"},
-  {id:"zip",name:"Zip-Hoodie",icon:"🧥"},
-  {id:"softshell",name:"Softshell",icon:"🧥"},
-  {id:"tank",name:"Tanktop",icon:"👕"},
-  {id:"cap",name:"Cap",icon:"🧢"},
-  {id:"bag",name:"Tasche",icon:"👜"},
-  {id:"custom",name:"Weiterer Artikel",icon:"＋"}
+  {id:"hoodie",name:"Hoodie",thumb:"assets/creator/hoodie.jpg"},
+  {id:"tshirt",name:"T-Shirt",thumb:"assets/creator/tshirt.jpg"},
+  {id:"polo",name:"Poloshirt",thumb:"assets/creator/polo.jpg"},
+  {id:"sweat",name:"Sweatshirt",thumb:"assets/creator/sweat.jpg"},
+  {id:"zip",name:"Zip-Hoodie",thumb:"assets/creator/zip.jpg"},
+  {id:"softshell",name:"Softshell",thumb:"assets/creator/softshell.jpg"},
+  {id:"tank",name:"Tanktop",thumb:"assets/creator/tank.jpg"},
+  {id:"cap",name:"Cap",thumb:"assets/creator/cap.jpg"},
+  {id:"bag",name:"Tasche",thumb:"assets/creator/bag.jpg"},
+  {id:"custom",name:"Weiterer Artikel",thumb:""}
 ];
 const CREATOR_FARBEN=["#111111","#444444","#b9b9b9","#f2f2f2","#173a64","#214d38","#9f1f24","#d7c7a6"];
 const CREATOR_GROESSEN=["XS","S","M","L","XL","XXL","3XL"];
@@ -2643,7 +2643,7 @@ function creatorOeffnen(){
   nachOben();
 }
 function creatorUIRendern(){
-  $("creatorProduktGrid").innerHTML=CREATOR_PRODUKTE.map(p=>`<button type="button" data-cprod="${p.id}" class="${creatorState.produkt===p.id?'aktiv':''}"><span>${p.icon}</span><strong>${p.name}</strong></button>`).join("");
+  $("creatorProduktGrid").innerHTML=CREATOR_PRODUKTE.map(p=>`<button type="button" data-cprod="${p.id}" class="${creatorState.produkt===p.id?'aktiv':''}">${p.thumb?`<img src="${p.thumb}" alt="${p.name}">`:`<span class="creator-plus">＋</span>`}<strong>${p.name}</strong></button>`).join("");
   document.querySelectorAll("[data-cprod]").forEach(b=>b.onclick=()=>{creatorState.produkt=b.dataset.cprod;creatorState.x=0;creatorState.y=0;creatorUIRendern();creatorZeichnen();});
   $("creatorFarben").innerHTML=CREATOR_FARBEN.map(c=>`<button type="button" aria-label="Farbe ${c}" data-cfarbe="${c}" class="${creatorState.farbe===c?'aktiv':''}" style="--creator-farbe:${c}"></button>`).join("");
   document.querySelectorAll("[data-cfarbe]").forEach(b=>b.onclick=()=>{creatorState.farbe=b.dataset.cfarbe;creatorUIRendern();creatorZeichnen();});
@@ -2662,48 +2662,100 @@ function creatorBg(ctx,w,h){
   ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
 }
 function creatorKleidungsstueck(ctx,w,h){
-  const c=creatorState.farbe, hi=creatorShade(c,28), lo=creatorShade(c,-24), side=creatorState.view;
-  ctx.save();ctx.translate(w/2,h/2+10);
-  if(side==="left"||side==="right"){ctx.scale(side==="left"?-1:1,1);}
-  ctx.lineJoin="round";ctx.lineCap="round";ctx.strokeStyle=hi;ctx.lineWidth=6;ctx.fillStyle=c;
-  const prod=creatorState.produkt;
+  const c=creatorState.farbe, side=creatorState.view, prod=creatorState.produkt;
+  const hi=creatorShade(c,42), mid=creatorShade(c,14), lo=creatorShade(c,-34), seam=creatorShade(c,-52);
+  ctx.save();
+  ctx.translate(w/2,h/2+18);
+  ctx.lineJoin="round"; ctx.lineCap="round";
+
+  // weicher Produktschatten für mehr Tiefe
+  ctx.save(); ctx.globalAlpha=.42; ctx.filter="blur(20px)"; ctx.fillStyle="#000";
+  ctx.beginPath(); ctx.ellipse(0,315,230,38,0,0,Math.PI*2); ctx.fill(); ctx.restore();
+
+  if(side==="left"||side==="right") ctx.scale(side==="left"?-1:1,1);
+
+  const fillBody=()=>{
+    const g=ctx.createLinearGradient(-240,-250,250,270);
+    g.addColorStop(0,lo); g.addColorStop(.28,c); g.addColorStop(.55,hi); g.addColorStop(.74,c); g.addColorStop(1,lo);
+    ctx.fillStyle=g; ctx.strokeStyle=seam; ctx.lineWidth=5;
+  };
+  const stoffFalten=(xs,ys,xe,ye,count=4)=>{
+    ctx.save(); ctx.globalAlpha=.22; ctx.strokeStyle=hi; ctx.lineWidth=3;
+    for(let i=1;i<=count;i++){ const t=i/(count+1); ctx.beginPath(); ctx.moveTo(xs+(xe-xs)*t-8,ys); ctx.quadraticCurveTo(xs+(xe-xs)*t+18,(ys+ye)/2,xs+(xe-xs)*t,ye); ctx.stroke(); }
+    ctx.restore();
+  };
+
   if(prod==="cap"){
-    ctx.beginPath();ctx.ellipse(0,-30,235,150,0,Math.PI,Math.PI*2);ctx.quadraticCurveTo(210,-35,285,45);ctx.quadraticCurveTo(80,80,-35,45);ctx.closePath();ctx.fill();ctx.stroke();
-    ctx.beginPath();ctx.moveTo(-225,-22);ctx.quadraticCurveTo(-100,-140,90,-105);ctx.strokeStyle=lo;ctx.lineWidth=10;ctx.stroke();ctx.restore();return;
+    fillBody();
+    ctx.beginPath(); ctx.moveTo(-220,25); ctx.quadraticCurveTo(-185,-155,10,-160); ctx.quadraticCurveTo(190,-155,225,5); ctx.quadraticCurveTo(95,65,-80,58); ctx.quadraticCurveTo(-165,52,-220,25); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=creatorShade(c,4); ctx.beginPath(); ctx.moveTo(40,18); ctx.quadraticCurveTo(240,5,310,70); ctx.quadraticCurveTo(150,105,-25,64); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle=hi; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(0,-150); ctx.lineTo(5,52); ctx.stroke();
+    ctx.restore(); return;
   }
   if(prod==="bag"){
-    ctx.beginPath();ctx.roundRect(-235,-245,470,520,24);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(0,-245,145,Math.PI,0);ctx.strokeStyle=hi;ctx.lineWidth=24;ctx.stroke();ctx.restore();return;
+    fillBody(); ctx.beginPath(); ctx.roundRect(-235,-245,470,520,26); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle=hi; ctx.lineWidth=24; ctx.beginPath(); ctx.arc(0,-245,145,Math.PI,0); ctx.stroke();
+    ctx.strokeStyle=seam; ctx.lineWidth=3; ctx.strokeRect(-210,-215,420,455); stoffFalten(-180,-195,180,215,5); ctx.restore(); return;
   }
   if(prod==="custom"){
-    ctx.beginPath();ctx.roundRect(-270,-310,540,620,30);ctx.fill();ctx.stroke();ctx.setLineDash([18,14]);ctx.strokeStyle=hi;ctx.strokeRect(-230,-270,460,540);ctx.setLineDash([]);ctx.restore();return;
+    fillBody(); ctx.beginPath(); ctx.roundRect(-270,-310,540,620,30); ctx.fill(); ctx.stroke();
+    ctx.setLineDash([18,14]); ctx.strokeStyle=hi; ctx.strokeRect(-230,-270,460,540); ctx.setLineDash([]); ctx.restore(); return;
   }
+
   if(side==="left"||side==="right"){
-    ctx.beginPath();ctx.moveTo(-90,-310);ctx.quadraticCurveTo(30,-350,115,-265);ctx.lineTo(205,235);ctx.quadraticCurveTo(170,285,105,275);ctx.lineTo(25,-125);ctx.lineTo(5,300);ctx.lineTo(-150,300);ctx.lineTo(-175,-185);ctx.closePath();ctx.fill();ctx.stroke();
-    if(prod==="hoodie"||prod==="zip"){ctx.beginPath();ctx.arc(-25,-285,105,Math.PI*1.05,Math.PI*1.95);ctx.strokeStyle=lo;ctx.lineWidth=22;ctx.stroke();}
-    ctx.restore();return;
+    fillBody(); ctx.beginPath(); ctx.moveTo(-82,-305); ctx.quadraticCurveTo(20,-348,120,-260); ctx.lineTo(212,226); ctx.quadraticCurveTo(175,286,112,278); ctx.lineTo(24,-118); ctx.lineTo(8,302); ctx.lineTo(-153,302); ctx.lineTo(-176,-178); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle=hi; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(68,-210); ctx.quadraticCurveTo(100,0,130,210); ctx.stroke();
+    if(prod==="hoodie"||prod==="zip"){ctx.strokeStyle=lo;ctx.lineWidth=24;ctx.beginPath();ctx.arc(-20,-287,108,Math.PI*1.04,Math.PI*1.96);ctx.stroke();}
+    ctx.restore(); return;
   }
-  // Front/back body and sleeves
-  ctx.beginPath();ctx.moveTo(-155,-300);ctx.quadraticCurveTo(0,-355,155,-300);ctx.lineTo(300,-195);ctx.lineTo(220,-65);ctx.lineTo(168,-103);ctx.lineTo(168,300);ctx.lineTo(-168,300);ctx.lineTo(-168,-103);ctx.lineTo(-220,-65);ctx.lineTo(-300,-195);ctx.closePath();ctx.fill();ctx.stroke();
+
+  // Torso mit natürlicher Schulter- und Ärmelkontur
+  fillBody();
+  ctx.beginPath();
+  ctx.moveTo(-148,-296); ctx.quadraticCurveTo(-72,-337,0,-334); ctx.quadraticCurveTo(72,-337,148,-296);
+  ctx.quadraticCurveTo(222,-270,302,-194); ctx.lineTo(228,-58); ctx.lineTo(170,-96);
+  ctx.quadraticCurveTo(177,65,168,303); ctx.quadraticCurveTo(0,325,-168,303);
+  ctx.quadraticCurveTo(-177,65,-170,-96); ctx.lineTo(-228,-58); ctx.lineTo(-302,-194);
+  ctx.quadraticCurveTo(-222,-270,-148,-296); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Ärmel-Schatten und Nähte
+  ctx.save(); ctx.globalAlpha=.32; ctx.fillStyle=lo;
+  ctx.beginPath();ctx.moveTo(-175,-250);ctx.lineTo(-300,-190);ctx.lineTo(-228,-58);ctx.lineTo(-170,-96);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(175,-250);ctx.lineTo(300,-190);ctx.lineTo(228,-58);ctx.lineTo(170,-96);ctx.closePath();ctx.fill();ctx.restore();
+  ctx.strokeStyle=hi;ctx.lineWidth=2.6;ctx.globalAlpha=.35;ctx.beginPath();ctx.moveTo(-145,-285);ctx.quadraticCurveTo(-175,-80,-160,260);ctx.moveTo(145,-285);ctx.quadraticCurveTo(175,-80,160,260);ctx.stroke();ctx.globalAlpha=1;
+  stoffFalten(-130,-225,130,250,5);
+
   if(prod==="tshirt"||prod==="polo"||prod==="tank"){
-    ctx.fillStyle=creatorShade(c,5);ctx.beginPath();ctx.ellipse(0,-294,70,34,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle=lo;ctx.lineWidth=5;ctx.stroke();
+    ctx.fillStyle=creatorShade(c,3);ctx.strokeStyle=seam;ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(0,-294,72,35,0,0,Math.PI*2);ctx.fill();ctx.stroke();
   }
   if(prod==="tank"){
-    // visually mask sleeves for tank top
-    creatorBgPatch(ctx,c,-280,-205,120,170);creatorBgPatch(ctx,c,160,-205,120,170);
+    const bg=creatorState.bg==="light"?"#efefef":creatorState.bg==="transparent"?"rgba(0,0,0,0)":"#151515";
+    ctx.fillStyle=bg; ctx.beginPath();ctx.moveTo(-175,-274);ctx.lineTo(-305,-192);ctx.lineTo(-230,-50);ctx.lineTo(-145,-110);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.moveTo(175,-274);ctx.lineTo(305,-192);ctx.lineTo(230,-50);ctx.lineTo(145,-110);ctx.closePath();ctx.fill();
   }
   if(prod==="hoodie"||prod==="zip"){
-    ctx.fillStyle=creatorShade(c,-8);ctx.beginPath();ctx.moveTo(-130,-292);ctx.quadraticCurveTo(0,-440,130,-292);ctx.quadraticCurveTo(75,-210,0,-230);ctx.quadraticCurveTo(-75,-210,-130,-292);ctx.fill();ctx.strokeStyle=hi;ctx.stroke();
-    ctx.beginPath();ctx.moveTo(-62,-255);ctx.lineTo(-55,-105);ctx.moveTo(62,-255);ctx.lineTo(55,-105);ctx.strokeStyle=creatorShade(c,55);ctx.lineWidth=4;ctx.stroke();
-    if(side==="front"){ctx.fillStyle=creatorShade(c,-10);ctx.beginPath();ctx.roundRect(-115,120,230,90,28);ctx.fill();ctx.strokeStyle=lo;ctx.stroke();}
+    const hg=ctx.createRadialGradient(0,-350,20,0,-290,150); hg.addColorStop(0,hi); hg.addColorStop(.45,c); hg.addColorStop(1,lo);
+    ctx.fillStyle=hg;ctx.strokeStyle=seam;ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(-132,-290);ctx.quadraticCurveTo(0,-445,132,-290);ctx.quadraticCurveTo(78,-214,0,-228);ctx.quadraticCurveTo(-78,-214,-132,-290);ctx.fill();ctx.stroke();
+    ctx.strokeStyle=creatorShade(c,70);ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-58,-256);ctx.lineTo(-53,-105);ctx.moveTo(58,-256);ctx.lineTo(53,-105);ctx.stroke();
+    if(side==="front"){ctx.fillStyle=lo;ctx.strokeStyle=seam;ctx.lineWidth=3;ctx.beginPath();ctx.roundRect(-118,118,236,94,30);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(0,118);ctx.lineTo(0,208);ctx.strokeStyle=hi;ctx.globalAlpha=.25;ctx.stroke();ctx.globalAlpha=1;}
   }
-  if(prod==="zip"||prod==="softshell"){ctx.beginPath();ctx.moveTo(0,-260);ctx.lineTo(0,300);ctx.strokeStyle=creatorShade(c,70);ctx.lineWidth=5;ctx.stroke();}
+  if(prod==="zip"||prod==="softshell"){
+    ctx.strokeStyle=creatorShade(c,76);ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(0,-260);ctx.lineTo(0,300);ctx.stroke();
+    ctx.fillStyle=hi;ctx.fillRect(-3,-12,6,18);
+  }
   if(prod==="polo"){
-    ctx.fillStyle=creatorShade(c,12);ctx.beginPath();ctx.moveTo(-72,-300);ctx.lineTo(-8,-235);ctx.lineTo(0,-278);ctx.lineTo(8,-235);ctx.lineTo(72,-300);ctx.closePath();ctx.fill();ctx.strokeStyle=lo;ctx.stroke();
+    ctx.fillStyle=mid;ctx.strokeStyle=seam;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-75,-298);ctx.lineTo(-10,-232);ctx.lineTo(0,-278);ctx.lineTo(10,-232);ctx.lineTo(75,-298);ctx.closePath();ctx.fill();ctx.stroke();
     ctx.beginPath();ctx.moveTo(0,-278);ctx.lineTo(0,-175);ctx.stroke();
+    for(let y=-238;y<-185;y+=20){ctx.fillStyle=hi;ctx.beginPath();ctx.arc(7,y,4,0,Math.PI*2);ctx.fill();}
   }
-  if(prod==="sweat"||prod==="softshell"){ctx.beginPath();ctx.ellipse(0,-298,75,37,0,0,Math.PI*2);ctx.strokeStyle=lo;ctx.lineWidth=8;ctx.stroke();}
+  if(prod==="sweat"||prod==="softshell"){
+    ctx.strokeStyle=seam;ctx.lineWidth=8;ctx.beginPath();ctx.ellipse(0,-298,76,37,0,0,Math.PI*2);ctx.stroke();
+  }
+  // Bündchen und Saum
+  ctx.strokeStyle=seam;ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(-162,294);ctx.quadraticCurveTo(0,314,162,294);ctx.stroke();
   ctx.restore();
 }
+
 function creatorBgPatch(ctx,c,x,y,w,h){ctx.save();ctx.fillStyle=c;ctx.fillRect(x,y,w,h);ctx.restore();}
 function creatorDesignBounds(){
   if(!creatorImg) return null;
@@ -2765,9 +2817,9 @@ const FIRMEN_DATEN = {
 };
 
 const RECHNUNGS_BEREICHE = {
-  mode: { name: "Rudelbar Mode", prefix: "RBM", logo: "Logo-Mode.png", accent: [230,166,35], claim: "TRAG DAS RUDEL." },
-  service: { name: "Rudelbar Facility Service", prefix: "RBF", logo: "Logo-Service.png", accent: [65,190,75], claim: "ZUVERLÄSSIG. FLEXIBEL. STARK." },
-  security: { name: "Rudelbar Security", prefix: "RBS", logo: "Logo-Haupt.png", accent: [220,55,55], claim: "SICHERHEIT. VERTRAUEN. RUDEL." }
+  mode: { name: "Rudelbar Mode", prefix: "RBM", logo: "Logo-Mode.png", header: "assets/invoice-mode-header.jpg", accent: [230,166,35], claim: "TRAG DAS RUDEL." },
+  service: { name: "Rudelbar Facility Service", prefix: "RBF", logo: "Logo-Service.png", header: "assets/invoice-service-header.jpg", accent: [65,190,75], claim: "ZUVERLÄSSIG. FLEXIBEL. STARK." },
+  security: { name: "Rudelbar Security", prefix: "RBS", logo: "Logo-Haupt.png", header: "assets/invoice-security-header.jpg", accent: [220,55,55], claim: "SICHERHEIT. VERTRAUEN. RUDEL." }
 };
 
 let rechnungEditID = null;
@@ -2922,21 +2974,27 @@ async function rechnungPDFBlob(r){
   const accent=cfg.accent||[230,166,35];
   const schwarz=[12,12,12];
 
-  // Kopf im Rudelbar-Stil
-  doc.setFillColor(...schwarz); doc.rect(0,0,210,48,"F");
+  // Bildbasierter Briefkopf im Stil der freigegebenen Rudelbar-Rechnungsentwürfe.
+  // Die Motive liegen lokal in der App, damit keine fremden Bildserver oder Stockfotos benötigt werden.
+  let headerGeladen=false;
+  if(cfg.header){
+    try{
+      const header=await bildAlsDataURL(cfg.header);
+      doc.addImage(header,"PNG",0,0,210,48,undefined,"FAST");
+      headerGeladen=true;
+    }catch(e){ console.warn("Rechnungs-Briefkopf konnte nicht geladen werden",e); }
+  }
+  if(!headerGeladen){
+    doc.setFillColor(...schwarz); doc.rect(0,0,210,48,"F");
+    try{
+      const logo=await bildAlsDataURL(cfg.logo);
+      doc.addImage(logo,"PNG",10,4,39,39,undefined,"FAST");
+    }catch(e){}
+    doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(20);
+    doc.text(cfg.name.toUpperCase(),54,17);
+    doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.text(cfg.claim||"EIN RUDEL.",54,24);
+  }
   doc.setFillColor(...accent); doc.rect(0,47,210,1.2,"F");
-  try{
-    const logo=await bildAlsDataURL(cfg.logo);
-    doc.addImage(logo,"PNG",10,4,39,39,undefined,"FAST");
-  }catch(e){}
-  doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(20);
-  doc.text(cfg.name.toUpperCase(),54,17);
-  doc.setFontSize(9); doc.setFont("helvetica","normal");
-  doc.text(cfg.claim||"EIN RUDEL.",54,24);
-  doc.setTextColor(...accent); doc.setFont("helvetica","bold"); doc.setFontSize(10);
-  doc.text("RUDELBAR",54,33);
-  doc.setTextColor(220,220,220); doc.setFont("helvetica","normal"); doc.setFontSize(8);
-  doc.text(`${FIRMEN_DATEN.inhaber} | ${FIRMEN_DATEN.strasse} | ${FIRMEN_DATEN.ort} | Tel. ${FIRMEN_DATEN.telefon}`,54,39);
 
   // Absenderzeile und Empfänger
   doc.setTextColor(90,90,90); doc.setFontSize(7.5);
