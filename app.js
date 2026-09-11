@@ -604,7 +604,7 @@ function inviteTokenSpeichern(token) {
 }
 
 function einladungsTokenAusURL() {
-  // v110: Query + Hash + Session + LocalStorage. Query und Hash werden beim
+  // v111: Query + Hash + Session + LocalStorage. Query und Hash werden beim
   // Erstellen absichtlich gleichzeitig gesetzt, damit iOS/WhatsApp mindestens
   // eine der beiden Varianten transportiert.
   let token = "";
@@ -753,30 +753,78 @@ async function registrierenMitEinladung() {
   $("registerButton").textContent = "Konto wird erstellt…";
 
   try {
-    // supabase-js setzt die für Edge Functions benötigten API-/Auth-Header sauber selbst.
-    // Das ist robuster als ein handgebauter fetch, besonders mit aktuellen Publishable Keys.
-    const { data: result, error: invokeError } = await sb.functions.invoke("register-invite", {
-      body: { token, name, email, password: passwort }
-    });
+    // v111: Zuerst die vorhandene Edge Function nutzen. Falls sie im Projekt
+    // nicht deployt wurde, fällt die App automatisch auf den sicheren
+    // Auth-Trigger-Workflow zurück (siehe supabase_v111_invite_setup.sql).
+    let kontoErstellt = false;
+    let edgeNichtVorhanden = false;
 
-    if (invokeError) {
-      let detail = invokeError.message || "Registrierung fehlgeschlagen.";
-      try {
-        const ctx = invokeError.context;
-        if (ctx && typeof ctx.json === "function") {
-          const payload = await ctx.json();
-          detail = payload?.error || payload?.message || detail;
-        }
-      } catch (_) {}
-      throw new Error(detail);
+    try {
+      const { data: result, error: invokeError } = await sb.functions.invoke("register-invite", {
+        body: { token, name, email, password: passwort }
+      });
+
+      if (invokeError) {
+        let detail = invokeError.message || "Registrierung fehlgeschlagen.";
+        try {
+          const ctx = invokeError.context;
+          if (ctx && typeof ctx.json === "function") {
+            const payload = await ctx.json();
+            detail = payload?.error || payload?.message || detail;
+          }
+        } catch (_) {}
+
+        edgeNichtVorhanden = /requested function was not found|function.*not found|404/i.test(detail);
+        if (!edgeNichtVorhanden) throw new Error(detail);
+      } else {
+        if (result?.error) throw new Error(result.error);
+        kontoErstellt = true;
+      }
+    } catch (edgeError) {
+      const detail = edgeError?.message || "";
+      edgeNichtVorhanden = /requested function was not found|function.*not found|404/i.test(detail);
+      if (!edgeNichtVorhanden) throw edgeError;
     }
 
-    if (result?.error) throw new Error(result.error);
+    if (!kontoErstellt && edgeNichtVorhanden) {
+      // Fallback ohne Edge Function. Der DB-Trigger prüft und verbraucht den
+      // Einladungscode serverseitig, bevor auth.users angelegt wird.
+      const { data: signUpData, error: signUpError } = await sb.auth.signUp({
+        email,
+        password: passwort,
+        options: {
+          data: {
+            name,
+            rudelbar_invite_token: token
+          }
+        }
+      });
+
+      if (signUpError) {
+        let detail = signUpError.message || "Registrierung fehlgeschlagen.";
+        if (/database error saving new user/i.test(detail)) {
+          detail = "Einladung ungültig/abgelaufen oder Supabase v111 wurde noch nicht eingerichtet.";
+        }
+        throw new Error(detail);
+      }
+      kontoErstellt = Boolean(signUpData?.user);
+
+      // Wenn E-Mail-Bestätigung aktiv ist, liefert Supabase noch keine Session.
+      if (!signUpData?.session) {
+        $("registerErfolg").textContent = "Konto erstellt. Bitte bestätige ggf. die E-Mail und melde dich anschließend an.";
+        sessionStorage.removeItem(INVITE_TOKEN_KEY);
+        localStorage.removeItem(INVITE_TOKEN_KEY);
+        return;
+      }
+    }
 
     $("registerErfolg").textContent = "Konto erstellt. Du wirst angemeldet…";
 
-    const { error } = await sb.auth.signInWithPassword({ email, password: passwort });
-    if (error) throw error;
+    const sessionVorhanden = (await sb.auth.getSession()).data.session;
+    if (!sessionVorhanden) {
+      const { error } = await sb.auth.signInWithPassword({ email, password: passwort });
+      if (error) throw error;
+    }
 
     localStorage.setItem(EMAIL_KEY, email);
     sessionStorage.removeItem(INVITE_TOKEN_KEY);
