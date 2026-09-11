@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#171717">
+
+  <title>Rudelbar</title>
+
+  <link rel="manifest" href="manifest.json?v=122">
+  <link rel="stylesheet" href="style.css?v=122">
+
+
+  <script>
+    // v112: Einladung so früh wie möglich sichern. iOS/WhatsApp können URL-Parameter
+    // bei Weiterleitungen oder beim Öffnen als PWA verändern.
+    (() => {
+      const KEY = "rudelbar_invite_token";
+      try {
+        const url = new URL(window.location.href);
+        let token = (url.searchParams.get("invite") || "").trim();
+        if (!token && url.hash) {
+          const hash = url.hash.replace(/^#/, "");
+          const params = new URLSearchParams(hash.includes("?") ? hash.split("?").pop() : hash);
+          token = (params.get("invite") || "").trim();
+        }
+        if (token) {
+          sessionStorage.setItem(KEY, token);
+          localStorage.setItem(KEY, token);
+        }
+      } catch (_) {}
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+
+<body>
+
+<!-- STARTSEITE NACH LOGIN -->
+<section id="bereichStart" class="bereich-start versteckt" aria-label="Rudelbar Bereiche">
+  <div class="bereich-start-inhalt">
+    <div class="start-wolf-bg" aria-hidden="true"></div>
+    <img src="Logo-Haupt.png" class="bereich-hauptlogo" alt="Rudelbar">
+    <button id="settingsBtn" class="settings-trigger" type="button" aria-label="Einstellungen öffnen" title="Einstellungen">⚙</button>
+
+    <div class="bereich-grid">
+      <button class="bereich-karte" data-bereich="kneipe">
+        <img src="Logo-Mobile_Kneipe.png" alt="Rudelbar Die mobile Kneipe">
+      </button>
+
+      <button class="bereich-karte" data-bereich="mode">
+        <img src="Logo-Mode.png" alt="Rudelbar Mode">
+      </button>
+
+      <button class="bereich-karte" data-bereich="service">
+        <img src="Logo-Service.png" alt="Rudelbar Facility Service">
+      </button>
+
+      <button class="bereich-karte security-karte" data-bereich="security">
+        <img src="Logo-Haupt.png" alt="Rudelbar Security">
+        <span>SECURITY</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- BEREICHSMENÜ -->
+<section id="bereichMenu" class="modul-seite versteckt" aria-label="Bereichsmenü">
+  <div class="modul-wrap">
+    <header class="modul-kopf">
+      <button class="nav-zurueck" id="bereichMenuZurueck" aria-label="Zurück zu den Bereichen">←</button>
+      <div class="modul-branding">
+        <img id="bereichMenuLogo" src="Logo-Haupt.png" alt="Rudelbar">
+        <div>
+          <h1 id="bereichMenuTitel">RUDELBAR</h1>
+          <p id="bereichMenuSubtitel">BEREICH</p>
+        </div>
+      </div>
+    </header>
+
+    <div id="bereichMenuGrid" class="modul-grid"></div>
+  </div>
+</section>
+
+<!-- DATENMODUL -->
+<section id="modulAnsicht" class="modul-seite versteckt" aria-label="Rudelbar Modul">
+  <div class="modul-wrap">
+    <header class="modul-kopf">
+      <button class="nav-zurueck" id="modulZurueck" aria-label="Zurück zum Bereichsmenü">←</button>
+      <div class="modul-branding">
+        <img id="modulLogo" src="Logo-Haupt.png" alt="Rudelbar">
+        <div>
+          <h1 id="modulTitel">RUDELBAR</h1>
+          <p id="modulBereich">MODUL</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="datenmodul-toolbar">
+      <div>
+        <h2 id="modulInhaltTitel">Modul</h2>
+        <p id="modulInhaltText">Daten verwalten</p>
+      </div>
+      <div class="datenmodul-aktionen">
+        <button class="sekundaer versteckt" id="modulMonatExport">Monatsauszug</button>
+        <button class="sekundaer" id="modulExport">CSV Export</button>
+        <button class="hauptbutton" id="modulNeu">+ Neu</button>
+      </div>
+    </div>
+
+    <div id="modulStatistik" class="modul-statistik"></div>
+    <div id="modulListe" class="datenmodul-liste"></div>
+  </div>
+</section>
+
+<!-- MODE CREATOR -->
+<section id="creatorAnsicht" class="creator-seite versteckt" aria-label="Rudelbar Mode Creator">
+  <div class="creator-wrap">
+    <header class="creator-kopf">
+      <button class="nav-zurueck" id="creatorZurueck" aria-label="Zurück zu Mode">←</button>
+      <div class="creator-brand">
+        <img src="Logo-Mode.png" alt="Rudelbar Mode">
+        <div>
+          <h1>CREATOR MODUS</h1>
+          <p>DESIGN. VISION. RUDELBAR.</p>
+        </div>
+      </div>
+      <div class="creator-head-actions">
+        <button id="creatorSpeichern" class="sekundaer" type="button">Entwurf speichern</button>
+        <button id="creatorTeilen" class="hauptbutton" type="button">Vorschau teilen</button>
+      </div>
+    </header>
+
+    <div class="creator-layout">
+      <aside class="creator-panel creator-produkte">
+        <h2><span>1</span> Produkt wählen</h2>
+        <div id="creatorProduktGrid" class="creator-produkt-grid"></div>
+
+        <h2><span>2</span> Design hochladen</h2>
+        <label class="creator-upload" for="creatorDatei">
+          <strong>PNG-Datei auswählen</strong>
+          <small>Transparenter Hintergrund empfohlen</small>
+          <input id="creatorDatei" type="file" accept="image/png">
+        </label>
+        <button id="creatorDateiBtn" class="hauptbutton creator-full" type="button">PNG auswählen</button>
+
+        <h2><span>3</span> Design anpassen</h2>
+        <div class="creator-regler">
+          <label>Größe <output id="creatorScaleOut">100 %</output><input id="creatorScale" type="range" min="20" max="180" value="100"></label>
+          <label>Position X <output id="creatorXOut">0</output><input id="creatorX" type="range" min="-260" max="260" value="0"></label>
+          <label>Position Y <output id="creatorYOut">0</output><input id="creatorY" type="range" min="-260" max="260" value="0"></label>
+          <label>Drehung <output id="creatorRotOut">0°</output><input id="creatorRot" type="range" min="-180" max="180" value="0"></label>
+        </div>
+        <div class="creator-mini-actions">
+          <button id="creatorFlipX" type="button">↔ Spiegeln</button>
+          <button id="creatorFlipY" type="button">↕ Spiegeln</button>
+          <button id="creatorReset" type="button">↺ Reset</button>
+        </div>
+      </aside>
+
+      <main class="creator-buehne creator-2d-buehne">
+        <div class="creator-360-kopf creator-2d-kopf">
+          <div><strong>2D Produktstudio</strong><small id="creator360Hinweis">Realistische Vorderansicht · Motiv direkt mit dem Finger verschieben</small></div>
+          <output id="creator360Out">FRONT</output>
+        </div>
+        <div id="creatorCanvasWrap" class="creator-canvas-wrap creator-2d-wrap">
+          <canvas id="creatorCanvas" class="creator-2d-studio" width="900" height="900" aria-label="2D Produktansicht"></canvas>
+          <div id="creatorHinweis" class="creator-canvas-hinweis">PNG hochladen und direkt auf dem Kleidungsstück platzieren.</div>
+        </div>
+        <div id="creator360Status" class="creator-360-status bereit">2D-Studio bereit · Hoodie, T-Shirt, Polo, Sweatshirt, Zip-Hoodie, Softshell, Tanktop, Cap und Tasche.</div>
+        <p class="creator-tipp">Motiv anfassen und verschieben. Größe und Drehung kannst du zusätzlich über die Regler einstellen.</p>
+      </main>
+
+      <aside class="creator-panel creator-optionen">
+        <h2>Farbe wählen</h2>
+        <div id="creatorFarben" class="creator-farben"></div>
+        <h2>Größe wählen</h2>
+        <div id="creatorGroessen" class="creator-groessen"></div>
+        <h2>Hintergrund</h2>
+        <div id="creatorHintergruende" class="creator-hintergruende">
+          <button class="aktiv" data-bg="dark" type="button">Dunkel</button>
+          <button data-bg="light" type="button">Hell</button>
+          <button data-bg="transparent" type="button">Transparent</button>
+        </div>
+        <button id="creatorDownload" class="sekundaer creator-full" type="button">Vorschau als PNG</button>
+
+        <h2>Gespeicherte Entwürfe</h2>
+        <div id="creatorEntwuerfe" class="creator-entwuerfe"></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- BESTEHENDE KASSEN-APP -->
+<main class="app versteckt" id="kassenApp">
+
+  <header class="kopf">
+
+    <button class="zurueck-button" id="zurBereichsauswahl" aria-label="Zurück zur Bereichsauswahl" title="Bereiche">
+      ←
+    </button>
+
+    <div class="branding">
+      <img src="Logo-Mobile_Kneipe.png" class="logo" alt="Rudelbar Die mobile Kneipe">
+
+      <div>
+        <h1>RUDELBAR</h1>
+        <p>DIE MOBILE KNEIPE</p>
+      </div>
+    </div>
+
+    <div class="kopf-rechts">
+
+      <div id="syncStatus" class="sync-status offline">
+        <span class="sync-punkt"></span>
+        <span id="syncText">Offline</span>
+      </div>
+
+      <div class="kopf-buttons">
+
+        <button class="iconbutton" id="statistikBtn" aria-label="Tagesübersicht" title="Tagesübersicht">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 20V10"/>
+            <path d="M10 20V4"/>
+            <path d="M16 20v-7"/>
+            <path d="M22 20H2"/>
+          </svg>
+        </button>
+
+        <button class="iconbutton abschluss-button" id="abschlussBtn" aria-label="Tagesabschluss" title="Tagesabschluss">
+          <svg viewBox="0 0 24 24">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+        </button>
+
+        <button class="hauptbutton" id="getraenkHinzufuegen">
+          + Getränk
+        </button>
+
+      </div>
+    </div>
+
+  </header>
+
+
+  <section class="inhalt">
+
+    <section class="produkte">
+      <div id="getraenkeListe" class="getraenke-grid"></div>
+    </section>
+
+    <aside class="bestellung">
+
+      <h2>Bestellung</h2>
+
+      <div class="bestellung-kompakt" aria-live="polite">
+        <span>🛒 <strong id="artikelAnzahl">0 Artikel</strong></span>
+        <strong id="kompaktGesamt">0,00 €</strong>
+      </div>
+
+      <div id="warenkorb" class="warenkorb"></div>
+
+      <div class="gesamt-zeile">
+        <strong>GESAMT</strong>
+        <strong id="gesamtpreis">0,00 €</strong>
+      </div>
+
+      <div class="zahlung">
+        <button id="barButton" class="zahlung-button bar">BAR</button>
+        <button id="karteButton" class="zahlung-button karte">KARTE</button>
+      </div>
+
+      <button id="bestellungLoeschen" class="loeschen-button">
+        Bestellung löschen
+      </button>
+
+    </aside>
+
+  </section>
+
+</main>
+
+
+<!-- LOGIN -->
+
+<dialog id="loginDialog">
+
+  <div class="dialogbox login-box">
+
+    <img src="Logo-Haupt.png" class="login-logo" alt="Rudelbar">
+
+    <h2>RUDELBAR</h2>
+
+    <p class="login-hinweis">
+      Ein System. Ein Rudel. Viele Möglichkeiten.
+    </p>
+
+    <label>
+      E-Mail
+      <input id="loginEmail" type="email" autocomplete="username">
+    </label>
+
+    <label>
+      Passwort
+      <input id="loginPasswort" type="password" autocomplete="current-password">
+    </label>
+
+    <div id="loginFehler" class="login-fehler"></div>
+
+    <button class="hauptbutton voll" id="loginButton">
+      Anmelden
+    </button>
+
+    <button class="link-button" id="registrierenOeffnen" type="button">
+      Registrieren
+    </button>
+
+  </div>
+
+</dialog>
+
+<!-- REGISTRIERUNG NUR PER EINLADUNG -->
+<section id="registrierungDialog" class="register-page versteckt" aria-label="Registrierung">
+  <div class="dialogbox login-box">
+    <img src="Logo-Haupt.png" class="login-logo" alt="Rudelbar">
+    <h2>RUDELBAR</h2>
+    <p class="login-hinweis">Eigenes Rudelbar-Konto erstellen</p>
+    <div id="registerInviteStatus" class="invite-status">Persönlicher Einladungslink wird geprüft…</div>
+
+    <div id="registerInviteFallback" class="invite-fallback versteckt">
+      <label>
+        Einladungscode oder Einladungslink
+        <input id="registerInviteManuell" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Link oder Code hier einfügen">
+      </label>
+      <button class="sekundaer voll" id="registerInviteUebernehmen" type="button">Einladung übernehmen</button>
+      <small>Falls WhatsApp oder Safari den Link gekürzt hat, kann der vollständige Link oder nur der Einladungscode hier eingefügt werden.</small>
+    </div>
+
+    <label>
+      Name
+      <input id="registerName" type="text" autocomplete="name" placeholder="Vor- und Nachname">
+    </label>
+
+    <label>
+      E-Mail
+      <input id="registerEmail" type="email" autocomplete="email">
+    </label>
+
+    <label>
+      Passwort
+      <input id="registerPasswort" type="password" autocomplete="new-password" minlength="8">
+    </label>
+
+    <label>
+      Passwort wiederholen
+      <input id="registerPasswort2" type="password" autocomplete="new-password" minlength="8">
+    </label>
+
+    <div id="registerFehler" class="login-fehler"></div>
+    <div id="registerErfolg" class="login-erfolg"></div>
+
+    <button class="hauptbutton voll" id="registerButton" type="button">
+      Konto erstellen
+    </button>
+
+    <button class="link-button" id="registerZurLogin" type="button">Zur Anmeldung</button>
+  </div>
+</section>
+
+<!-- EINSTELLUNGEN -->
+<dialog id="einstellungenDialog">
+  <div class="dialogbox gross settings-box settings-shell">
+    <div class="dialog-kopf settings-topbar">
+      <div><h2>Einstellungen</h2><p class="login-hinweis links">Rudelbar verwalten.</p></div>
+      <button class="sekundaer" id="settingsSchliessen" type="button">Fertig</button>
+    </div>
+
+    <div id="settingsHome" class="settings-page aktiv">
+      <div class="settings-menu-group">
+        <span class="settings-group-title">KONTO</span>
+        <button class="settings-menu-row" type="button" data-settings-page="konto"><span class="settings-menu-icon">👤</span><span><strong>Konto &amp; Benutzer</strong><small>Profil, E-Mail und Rolle</small></span><b>›</b></button>
+      </div>
+      <div class="settings-menu-group superuser-only">
+        <span class="settings-group-title">TEAM</span>
+        <button class="settings-menu-row" type="button" data-settings-page="team"><span class="settings-menu-icon">👥</span><span><strong>Team &amp; Einladungen</strong><small>Mitglieder und App-Zugang</small></span><b>›</b></button>
+      </div>
+      <div class="settings-menu-group superuser-only">
+        <span class="settings-group-title">UNTERNEHMEN</span>
+        <button class="settings-menu-row" type="button" data-settings-page="unternehmen"><span class="settings-menu-icon">🏢</span><span><strong>Unternehmensdaten</strong><small>Kontakt, Bank und Steuer</small></span><b>›</b></button>
+        <button class="settings-menu-row" type="button" data-settings-page="rechnungen"><span class="settings-menu-icon">📄</span><span><strong>Rechnungen</strong><small>Mode, Facility Service, Security</small></span><b>›</b></button>
+      </div>
+      <div class="settings-menu-group superuser-only">
+        <span class="settings-group-title">APP</span>
+        <button class="settings-menu-row" type="button" data-settings-page="darstellung"><span class="settings-menu-icon">🎨</span><span><strong>Darstellung</strong><small>Startbereich, Ansicht, Animationen</small></span><b>›</b></button>
+      </div>
+      <div class="settings-menu-group">
+        <span class="settings-group-title">INFO</span>
+        <button class="settings-menu-row" type="button" data-settings-page="info"><span class="settings-menu-icon">ℹ️</span><span><strong>App-Informationen</strong><small>Version und Hinweise</small></span><b>›</b></button>
+      </div>
+      <button id="settingsLogoutBtn" class="settings-logout" type="button">↪ Abmelden</button>
+    </div>
+
+    <div id="settingsPageKonto" class="settings-page">
+      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Konto &amp; Benutzer</h3>
+      <section class="settings-section">
+        <div class="settings-info">
+          <div><span>Name</span><strong id="settingsName">–</strong></div>
+          <div><span>E-Mail</span><strong id="settingsEmail">–</strong></div>
+          <div><span>Rolle</span><strong id="settingsRolle">Mitarbeiter</strong></div>
+        </div>
+      </section>
+      <section class="settings-section konto-gefahr">
+        <h4 class="settings-subtitle">Konto verwalten</h4>
+        <p class="settings-hinweis">Das Löschen entfernt dein Rudelbar-Benutzerkonto dauerhaft. Diese Aktion kann nicht rückgängig gemacht werden.</p>
+        <button id="settingsKontoLoeschen" class="danger-button voll" type="button">🗑 Konto löschen</button>
+      </section>
+    </div>
+
+    <div id="settingsPageTeam" class="settings-page superuser-only-page">
+      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Team &amp; Einladungen</h3>
+      <section class="settings-section"><p class="settings-hinweis">Neue Mitglieder erhalten einen persönlichen Einladungslink und melden sich danach mit ihrem eigenen Konto an.</p><button id="settingsInviteBtn" class="hauptbutton voll versteckt" type="button">👥 Einladungslink erstellen / weiterleiten</button><button id="settingsAppTeilenBtn" class="sekundaer voll" type="button">🔗 App-Adresse an bestehende Mitglieder teilen</button></section>
+    </div>
+
+    <div id="settingsPageUnternehmen" class="settings-page superuser-only-page">
+      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Unternehmensdaten</h3><p class="settings-page-sub">Kontaktdaten sowie finanzielle und steuerliche Nummern liegen gesammelt in diesem Bereich.</p>
+      <details class="settings-folder" open><summary>📞 <span><strong>Kontaktdaten</strong><small>Adresse, Telefon, E-Mail, Webseite</small></span></summary><div class="settings-form-grid settings-folder-body"><label>Inhaber<input id="rechnungSharedInhaber" type="text" autocomplete="name"></label><label>Telefon<input id="rechnungSharedTelefon" type="tel" autocomplete="tel"></label><label class="span-2">Straße &amp; Hausnummer<input id="rechnungSharedStrasse" type="text" autocomplete="street-address"></label><label class="span-2">PLZ &amp; Ort<input id="rechnungSharedOrt" type="text"></label><label>E-Mail<input id="rechnungSharedEmail" type="email" autocomplete="email"></label><label>Webseite<input id="rechnungSharedWebsite" type="text" placeholder="www.rudelbar.de"></label></div></details>
+      <details class="settings-folder"><summary>🏦 <span><strong>Bankverbindung</strong><small>Bank, IBAN und BIC</small></span></summary><div class="settings-form-grid settings-folder-body"><label class="span-2">IBAN<input id="rechnungSharedIban" type="text"></label><label>BIC<input id="rechnungSharedBic" type="text"></label><label>Kreditinstitut<input id="rechnungSharedBank" type="text"></label></div></details>
+      <details class="settings-folder"><summary>📋 <span><strong>Steuerdaten</strong><small>Steuernummer und Umsatzsteuer-ID</small></span></summary><div class="settings-form-grid settings-folder-body"><label>Steuernummer<input id="rechnungSharedSteuernummer" type="text"></label><label>USt-IdNr.<input id="rechnungSharedUstid" type="text"></label></div></details>
+      <button id="rechnungSettingsSpeichern" class="hauptbutton voll settings-save" type="button">Unternehmensdaten speichern</button>
+    </div>
+
+    <div id="settingsPageRechnungen" class="settings-page superuser-only-page">
+      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Rechnungen</h3><p class="settings-page-sub">Die Unternehmensdaten werden automatisch übernommen. Nur bei Bedarf kannst du je Bereich abweichende Daten verwenden.</p>
+      <section class="settings-section settings-rechnungen"><h4 class="settings-subtitle">Unternehmensdaten verwenden für</h4><div class="rechnung-apply-grid"><label><input id="rechnungApplyMode" type="checkbox" checked> Mode</label><label><input id="rechnungApplyService" type="checkbox" checked> Facility Service</label><label><input id="rechnungApplySecurity" type="checkbox" checked> Security</label></div>
+      <details id="rechnungOverrideMode" class="rechnung-override versteckt"><summary>👕 Eigene Daten für Mode</summary><div class="settings-form-grid" data-rechnung-area="mode"></div></details><details id="rechnungOverrideService" class="rechnung-override versteckt"><summary>🚚 Eigene Daten für Facility Service</summary><div class="settings-form-grid" data-rechnung-area="service"></div></details><details id="rechnungOverrideSecurity" class="rechnung-override versteckt"><summary>🛡️ Eigene Daten für Security</summary><div class="settings-form-grid" data-rechnung-area="security"></div></details>
+      <button id="rechnungSettingsSpeichernRechnung" class="hauptbutton voll settings-save" type="button">Rechnungseinstellungen speichern</button></section>
+    </div>
+
+    <div id="settingsPageDarstellung" class="settings-page superuser-only-page">
+      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Darstellung</h3><section class="settings-section"><label>Startbereich nach der Anmeldung<select id="settingsStartbereich"><option value="start">Bereichsauswahl</option><option value="kneipe">Mobile Kneipe</option><option value="mode">Mode</option><option value="service">Facility Service</option><option value="security">Security</option></select></label><label>Creator-Produktkarten auf dem Handy<select id="settingsCreatorSpalten"><option value="2">2 Spalten, größere Vorschau</option><option value="3">3 Spalten, kompakter</option></select></label><label class="settings-check"><input id="settingsAnimationen" type="checkbox" checked> Animationen verwenden</label></section>
+    </div>
+
+    <div id="settingsPageInfo" class="settings-page">
+      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">App-Informationen</h3>
+      <section class="settings-section">
+        <div class="settings-info">
+          <div><span>Version</span><strong>Rudelbar v120</strong></div>
+          <div><span>Zugang</span><strong id="settingsZugangInfo">–</strong></div>
+        </div>
+        <p class="settings-hinweis">Superuser verwalten die App vollständig. Mitarbeiter sehen in den Einstellungen ausschließlich ihr eigenes Konto und die App-Informationen.</p>
+      </section>
+    </div>
+  </div>
+</dialog>
+
+<!-- EINLADUNGSVERWALTUNG NUR ADMIN -->
+<dialog id="einladungDialog">
+  <div class="dialogbox gross">
+    <div class="dialog-kopf">
+      <h2>Einladungen</h2>
+      <button class="sekundaer" id="einladungSchliessen" type="button">Fertig</button>
+    </div>
+
+    <p class="login-hinweis links">Nur Personen mit einem gültigen, unbenutzten Einladungslink können sich registrieren. Die Rolle wird beim Erstellen des Links festgelegt.</p>
+
+    <div class="einladung-form">
+      <label>
+        Für wen?
+        <input id="einladungName" type="text" placeholder="z. B. John J Rambo">
+      </label>
+      <label>
+        Rolle
+        <select id="einladungRolle">
+          <option value="mitarbeiter" selected>Mitarbeiter</option>
+          <option value="superuser">Superuser</option>
+        </select>
+      </label>
+      <label>
+        Gültigkeit
+        <select id="einladungTage">
+          <option value="1">1 Tag</option>
+          <option value="3">3 Tage</option>
+          <option value="7" selected>7 Tage</option>
+          <option value="14">14 Tage</option>
+          <option value="30">30 Tage</option>
+        </select>
+      </label>
+    </div>
+
+    <button class="hauptbutton voll" id="einladungErstellen" type="button">+ Einladungslink erstellen</button>
+
+    <div id="einladungErgebnis" class="einladung-ergebnis versteckt">
+      <label>Einladungslink
+        <textarea id="einladungLink" readonly></textarea>
+      </label>
+      <label>Einladungscode (Fallback)
+        <input id="einladungCode" readonly>
+      </label>
+      <div class="einladung-aktionen">
+        <button class="sekundaer" id="einladungKopieren" type="button">Link kopieren</button>
+        <button class="sekundaer" id="einladungCodeKopieren" type="button">Code kopieren</button>
+        <button class="hauptbutton" id="einladungTeilen" type="button">Teilen</button>
+      </div>
+    </div>
+
+    <h3 class="zwischenueberschrift">Aktive Einladungen</h3>
+    <div id="einladungListe" class="einladung-liste"></div>
+  </div>
+</dialog>
+
+
+<!-- GETRÄNK -->
+
+<dialog id="getraenkDialog">
+
+  <div class="dialogbox">
+
+    <div class="dialog-kopf">
+      <h2 id="dialogTitel">Getränk hinzufügen</h2>
+
+      <button class="sekundaer" id="getraenkAbbrechen">
+        Abbrechen
+      </button>
+    </div>
+
+    <label>
+      Name
+      <input id="nameInput" autocomplete="off">
+    </label>
+
+    <label>
+      Preis
+      <input id="preisInput" inputmode="decimal" placeholder="3,50">
+    </label>
+
+    <label>
+      Foto
+      <input id="bildInput" type="file" accept="image/*">
+    </label>
+
+    <div id="bildVorschau" class="bild-vorschau"></div>
+
+    <button class="hauptbutton voll" id="getraenkSpeichern">
+      Speichern
+    </button>
+
+  </div>
+
+</dialog>
+
+
+<!-- TAGESÜBERSICHT -->
+
+<dialog id="statistikDialog">
+
+  <div class="dialogbox gross">
+
+    <div class="dialog-kopf">
+      <h2>Tagesübersicht</h2>
+
+      <div class="dialog-aktionen">
+        <button class="teilenBtn" id="getraenkeTeilen">Teilen</button>
+        <button class="sekundaer" id="statistikSchliessen">Fertig</button>
+      </div>
+    </div>
+
+    <div id="statistikInhalt"></div>
+
+  </div>
+
+</dialog>
+
+
+<!-- VERKAUF BEARBEITEN -->
+
+<dialog id="verkaufDialog">
+
+  <div class="dialogbox gross">
+
+    <div class="dialog-kopf">
+      <h2>Verkauf bearbeiten</h2>
+      <button class="sekundaer" id="verkaufAbbrechen">Abbrechen</button>
+    </div>
+
+    <label>
+      Zahlungsart
+
+      <select id="verkaufZahlungsart">
+        <option value="Bar">Bar</option>
+        <option value="Karte">Karte</option>
+      </select>
+    </label>
+
+    <h3 class="zwischenueberschrift">Getränke</h3>
+
+    <div id="verkaufPositionen"></div>
+
+    <div class="verkauf-edit-gesamt">
+      <strong>GESAMT</strong>
+      <strong id="verkaufEditGesamt">0,00 €</strong>
+    </div>
+
+    <div class="verkauf-edit-buttons">
+
+      <button class="hauptbutton" id="verkaufSpeichern">
+        Änderungen speichern
+      </button>
+
+      <button class="loeschen-button" id="verkaufLoeschen">
+        Verkauf löschen
+      </button>
+
+    </div>
+
+  </div>
+
+</dialog>
+
+
+<!-- TAGESABSCHLUSS -->
+
+<dialog id="abschlussDialog">
+
+  <div class="dialogbox gross">
+
+    <div class="dialog-kopf">
+
+      <h2>Tagesabschluss</h2>
+
+      <div class="dialog-aktionen">
+        <button class="teilenBtn" id="abschlussTeilen">Teilen</button>
+        <button class="sekundaer" id="abschlussSchliessen">Fertig</button>
+      </div>
+
+    </div>
+
+    <div class="abschluss-form">
+
+      <label>
+        Veranstaltung
+        <input id="veranstaltungInput" placeholder="z. B. Dorffest">
+      </label>
+
+      <label>
+        Anfangsbestand
+        <input id="anfangsbestandInput" inputmode="decimal" value="0">
+      </label>
+
+      <label>
+        Einlagen
+        <input id="einlagenInput" inputmode="decimal" value="0">
+      </label>
+
+      <label>
+        Entnahmen
+        <input id="entnahmenInput" inputmode="decimal" value="0">
+      </label>
+
+      <label>
+        Ausgaben
+        <input id="ausgabenInput" inputmode="decimal" value="0">
+      </label>
+
+      <label>
+        Ist-Kassenbestand
+        <input id="istKasseInput" inputmode="decimal" value="0">
+      </label>
+
+    </div>
+
+    <div id="abschlussInhalt"></div>
+
+    <button class="hauptbutton voll" id="abschlussSpeichern">
+      Tagesabschluss speichern
+    </button>
+
+  </div>
+
+</dialog>
+
+
+<!-- RECHNUNGSFORMULAR -->
+<dialog id="rechnungDialog">
+  <div class="dialogbox gross rechnung-dialogbox">
+    <div class="dialog-kopf">
+      <div>
+        <h2 id="rechnungFormTitel">Rechnung</h2>
+        <p id="rechnungNummerHinweis" class="login-hinweis"></p>
+      </div>
+      <button class="sekundaer" id="rechnungAbbrechen">Abbrechen</button>
+    </div>
+
+    <form id="rechnungForm" class="modul-form rechnung-form">
+      <label class="ganz">Kunde / Firma<input id="rechnungKunde" required></label>
+      <label class="ganz">Anschrift<textarea id="rechnungAdresse" rows="2" required></textarea></label>
+      <label>Rechnungsdatum<input id="rechnungDatum" type="date" required></label>
+      <label>Leistungsdatum<input id="rechnungLeistungsdatum" type="date"></label>
+      <label>Zahlungsziel<input id="rechnungFaellig" type="date"></label>
+      <label>Status<select id="rechnungStatus"><option>Entwurf</option><option>Offen</option><option>Bezahlt</option><option>Storniert</option></select></label>
+      <label class="ganz">Betreff<input id="rechnungBetreff" placeholder="z. B. Facility Service am 10.09.2026"></label>
+    </form>
+
+    <div class="rechnung-positionen-kopf">
+      <h3>Positionen</h3>
+      <button class="sekundaer" id="rechnungPositionNeu" type="button">+ Position</button>
+    </div>
+    <div id="rechnungPositionen" class="rechnung-positionen"></div>
+
+    <div class="rechnung-summen">
+      <div><span>Netto</span><strong id="rechnungNetto">0,00 €</strong></div>
+      <div><span>Umsatzsteuer</span><strong id="rechnungMwst">0,00 €</strong></div>
+      <div class="rechnung-gesamt"><span>Gesamt</span><strong id="rechnungGesamt">0,00 €</strong></div>
+    </div>
+
+    <label class="rechnung-notiz">Hinweis / Zahlungsinformation<textarea id="rechnungNotiz" rows="3" placeholder="Vielen Dank für Ihren Auftrag."></textarea></label>
+
+    <div class="rechnung-dialog-aktionen">
+      <button class="sekundaer" id="rechnungNeuStarten" type="button">Neu starten</button>
+      <button class="hauptbutton" id="rechnungSpeichern" type="button">Rechnung erstellen &amp; teilen</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- GENERISCHES DATENMODUL-FORMULAR -->
+<dialog id="modulFormDialog">
+  <div class="dialogbox gross">
+    <div class="dialog-kopf">
+      <h2 id="modulFormTitel">Eintrag</h2>
+      <button class="sekundaer" id="modulFormAbbrechen">Abbrechen</button>
+    </div>
+    <form id="modulForm" class="modul-form"></form>
+    <button class="hauptbutton voll" id="modulFormSpeichern" type="button">Speichern</button>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<dialog id="barzahlungDialog">
+  <div class="dialogbox barzahlung-dialogbox">
+    <div class="dialog-kopf">
+      <div>
+        <small class="barzahlung-kicker">BARZAHLUNG</small>
+        <h2>Bezahlung</h2>
+      </div>
+      <button type="button" class="sekundaer" id="barzahlungAbbrechen">✕</button>
+    </div>
+
+    <div class="barzahlung-gesamt">
+      <span>Zu zahlen</span>
+      <strong id="barzahlungGesamt">0,00 €</strong>
+    </div>
+
+    <label class="barzahlung-label" for="barzahlungGegeben">Kunde gibt</label>
+    <div class="barzahlung-eingabe">
+      <input id="barzahlungGegeben" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00">
+      <span>€</span>
+    </div>
+
+    <div class="barzahlung-schnellwahl" id="barzahlungSchnellwahl"></div>
+
+    <div class="barzahlung-rueckgeld" id="barzahlungRueckgeldBox">
+      <span>Rückgeld</span>
+      <strong id="barzahlungRueckgeld">0,00 €</strong>
+    </div>
+    <p class="barzahlung-hinweis" id="barzahlungHinweis"></p>
+
+    <button type="button" class="hauptbutton barzahlung-bestaetigen" id="barzahlungBestaetigen" disabled>
+      Barzahlung abschließen
+    </button>
+  </div>
+</dialog>
+
+<dialog id="kartenzahlungDialog">
+  <div class="dialogbox barzahlung-dialogbox">
+    <div class="dialog-kopf">
+      <div>
+        <small class="barzahlung-kicker">KARTENZAHLUNG</small>
+        <h2>Bezahlung</h2>
+      </div>
+      <button type="button" class="sekundaer" id="kartenzahlungAbbrechen">✕</button>
+    </div>
+
+    <div class="barzahlung-gesamt">
+      <span>Zu zahlen</span>
+      <strong id="kartenzahlungGesamt">0,00 €</strong>
+    </div>
+
+    <label class="barzahlung-label" for="kartenzahlungBetrag">Kartenbetrag</label>
+    <div class="barzahlung-eingabe">
+      <input id="kartenzahlungBetrag" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00">
+      <span>€</span>
+    </div>
+
+    <div class="barzahlung-schnellwahl kartenzahlung-schnellwahl">
+      <button type="button" id="kartenzahlungPassend">Passend</button>
+    </div>
+
+    <p class="barzahlung-hinweis" id="kartenzahlungHinweis"></p>
+
+    <button type="button" class="hauptbutton barzahlung-bestaetigen" id="kartenzahlungBestaetigen" disabled>
+      Kartenzahlung abschließen
+    </button>
+  </div>
+</dialog>
+
+<script src="app.js?v=122"></script>
+
+</body>
+</html>
