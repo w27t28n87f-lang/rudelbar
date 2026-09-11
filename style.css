@@ -2307,3 +2307,71 @@ body.register-offen{overflow:hidden!important}
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
+
+/* =========================================================
+   RUDELBAR KASSE v106 – iPhone Portrait Fix
+   Verhindert, dass die feststehende Bezahlleiste nach einer
+   Drehung/Viewport-Aenderung die komplette Seite einnimmt.
+   ========================================================= */
+@media (orientation: portrait) and (max-width: 1100px) {
+  body {
+    padding-bottom: calc(132px + env(safe-area-inset-bottom)) !important;
+  }
+
+  #kassenApp .inhalt {
+    display: block !important;
+    min-height: 0 !important;
+  }
+
+  #kassenApp .produkte {
+    display: block !important;
+    width: 100% !important;
+    min-height: 0 !important;
+  }
+
+  #kassenApp .bestellung {
+    position: fixed !important;
+    top: auto !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    left: max(8px, env(safe-area-inset-left)) !important;
+    right: max(8px, env(safe-area-inset-right)) !important;
+    width: auto !important;
+    height: 112px !important;
+    min-height: 112px !important;
+    max-height: 112px !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 9px 10px 10px !important;
+    display: block !important;
+    align-self: auto !important;
+  }
+
+  #kassenApp .bestellung > h2,
+  #kassenApp .bestellung > .warenkorb,
+  #kassenApp .bestellung > .gesamt-zeile,
+  #kassenApp .bestellung > .loeschen-button {
+    display: none !important;
+  }
+
+  #kassenApp .bestellung-kompakt {
+    display: flex !important;
+    height: 35px !important;
+    min-height: 35px !important;
+    padding: 0 4px 6px !important;
+    margin: 0 !important;
+  }
+
+  #kassenApp .zahlung {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    margin: 0 !important;
+  }
+
+  #kassenApp .zahlung-button {
+    min-height: 52px !important;
+    height: 52px !important;
+    margin: 0 !important;
+    font-size: 16px !important;
+  }
+}
