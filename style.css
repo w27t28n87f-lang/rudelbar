@@ -2520,3 +2520,23 @@ body.register-offen{overflow:hidden!important}
   padding: 10px 14px;
   border-radius: 12px;
 }
+
+/* v124 – Einladungen teilen */
+.einladung-karte-info { min-width: 0; }
+.einladung-karte-aktionen {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.einladung-karte-aktionen .sekundaer,
+.einladung-karte-aktionen .daten-loeschen {
+  margin: 0;
+  white-space: nowrap;
+}
+@media (max-width: 560px) {
+  .einladung-karte { align-items: flex-start; flex-direction: column; }
+  .einladung-karte-aktionen { width: 100%; }
+  .einladung-karte-aktionen button { flex: 1 1 140px; }
+}

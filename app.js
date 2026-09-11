@@ -943,20 +943,55 @@ async function einladungenOeffnen() {
   $("einladungDialog").showModal();
 }
 
+function einladungsURL(token) {
+  const url = basisAppURL();
+  url.searchParams.set("invite", token);
+  url.hash = `invite=${encodeURIComponent(token)}`;
+  return url.toString();
+}
+
+function einladungsText({ label, rolle, token }) {
+  const rollenText = rolle === "superuser" ? "Superuser" : "Mitarbeiter";
+  const name = label && label !== "Rudelbar-Mitglied" ? ` ${label}` : "";
+  return `Moin${name},\n\ndu wurdest zur Rudelbar-App eingeladen.\nRolle: ${rollenText}\n\nÖffne diesen persönlichen Link, um dein Konto zu erstellen.\n\nEinladungscode: ${token}`;
+}
+
+async function einladungTeilenMitDaten({ label, rolle, token }) {
+  const url = einladungsURL(token);
+  const text = einladungsText({ label, rolle, token });
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "Rudelbar – Einladung", text, url });
+      return true;
+    } catch (error) {
+      if (error?.name === "AbortError") return false;
+      console.warn("Teilen nicht möglich:", error);
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(`${text}\n\n${url}`);
+    alert("Einladung wurde in die Zwischenablage kopiert.");
+    return true;
+  } catch {
+    alert(`${text}\n\n${url}`);
+    return false;
+  }
+}
+
 async function einladungenLaden() {
   const liste = $("einladungListe");
   liste.innerHTML = '<div class="daten-leer"><span>Lade Einladungen…</span></div>';
 
   const { data, error } = await sb
     .from("einladungen")
-    .select("id,label,rolle,expires_at,used_at,created_at")
+    .select("id,token,label,rolle,expires_at,used_at,created_at")
     .is("used_at", null)
     .gt("expires_at", new Date().toISOString())
     .order("created_at", { ascending: false });
 
   if (error) {
     console.error(error);
-    liste.innerHTML = '<div class="daten-leer"><strong>Fehler</strong><span>Einladungen konnten nicht geladen werden.</span></div>';
+    liste.innerHTML = `<div class="daten-leer"><strong>Fehler</strong><span>${esc(error.message || "Einladungen konnten nicht geladen werden.")}</span></div>`;
     return;
   }
 
@@ -969,14 +1004,24 @@ async function einladungenLaden() {
     const bis = new Date(item.expires_at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
     return `
       <article class="einladung-karte">
-        <div>
+        <div class="einladung-karte-info">
           <strong>${esc(item.label || "Einladung")}</strong>
           <small>${item.rolle === "superuser" ? "Superuser" : "Mitarbeiter"} · gültig bis ${esc(bis)}</small>
         </div>
-        <button class="daten-loeschen" data-invite-revoke="${item.id}" type="button">Widerrufen</button>
+        <div class="einladung-karte-aktionen">
+          <button class="sekundaer" data-invite-share="${item.id}" type="button">📤 Teilen</button>
+          <button class="daten-loeschen" data-invite-revoke="${item.id}" type="button">Widerrufen</button>
+        </div>
       </article>`;
   }).join("");
 
+  const byId = new Map(data.map(item => [String(item.id), item]));
+  liste.querySelectorAll("[data-invite-share]").forEach(button => {
+    button.onclick = () => {
+      const item = byId.get(String(button.dataset.inviteShare));
+      if (item) einladungTeilenMitDaten(item);
+    };
+  });
   liste.querySelectorAll("[data-invite-revoke]").forEach(button => {
     button.onclick = () => einladungWiderrufen(button.dataset.inviteRevoke);
   });
@@ -1007,19 +1052,19 @@ async function einladungErstellen() {
 
   if (error) {
     console.error(error);
-    alert("Einladung konnte nicht erstellt werden.");
+    alert(`Einladung konnte nicht erstellt werden.\n\nSupabase meldet: ${error.message || "Unbekannter Fehler"}`);
     return;
   }
 
-  const url = basisAppURL();
-  // Doppelte Transport-Sicherung: Query UND Hash enthalten denselben Token.
-  // Fällt eine Variante durch WhatsApp/Safari weg, bleibt die andere erhalten.
-  url.searchParams.set("invite", token);
-  url.hash = `invite=${encodeURIComponent(token)}`;
-  $("einladungLink").value = url.toString();
+  $("einladungLink").value = einladungsURL(token);
   if ($("einladungCode")) $("einladungCode").value = token;
   $("einladungErgebnis").classList.remove("versteckt");
   await einladungenLaden();
+
+  // Nach erfolgreicher Erstellung direkt das iOS-Teilen-Menü versuchen.
+  // Falls Safari die User-Aktivierung nach dem Netzwerkaufruf verwirft,
+  // bleibt der gut sichtbare Teilen-Button darunter verfügbar.
+  await einladungTeilenMitDaten({ label, rolle, token });
 }
 
 async function einladungWiderrufen(id) {
@@ -1058,21 +1103,13 @@ async function einladungCodeKopieren() {
 }
 
 async function einladungLinkTeilen() {
-  const url = $("einladungLink").value;
-  if (!url) return;
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: "Rudelbar Einladung",
-        text: `Hier ist deine persönliche Einladung zur Rudelbar-App.\n\nRolle: ${$("einladungRolle")?.value === "superuser" ? "Superuser" : "Mitarbeiter"}\nEinladungscode: ${$("einladungCode")?.value || ""}\n\nFalls der Link auf dem iPhone gekürzt wird, einfach den 12-stelligen Code in der Registrierung eingeben.`,
-        url
-      });
-      return;
-    } catch (error) {
-      if (error?.name === "AbortError") return;
-    }
-  }
-  await einladungLinkKopieren();
+  const token = $("einladungCode")?.value || "";
+  if (!token) return;
+  await einladungTeilenMitDaten({
+    label: $("einladungName")?.value.trim() || "Rudelbar-Mitglied",
+    rolle: $("einladungRolle")?.value === "superuser" ? "superuser" : "mitarbeiter",
+    token
+  });
 }
 
 async function abmelden() {
