@@ -3314,7 +3314,7 @@ function rechnungFormNeuStarten(){
   rechnungOeffnen();
 }
 
-function rechnungSpeichern(){
+async function rechnungSpeichern(){
   if(!$("rechnungKunde").value.trim() || !$("rechnungAdresse").value.trim() || !$("rechnungDatum").value){ alert("Bitte Kunde, Anschrift und Rechnungsdatum ausfüllen."); return; }
   if(!rechnungPositionen.length || rechnungPositionen.some(p=>!String(p.beschreibung||"").trim())){ alert("Bitte alle Rechnungspositionen vollständig beschreiben."); return; }
   const daten=modulDatenLaden();
@@ -3328,8 +3328,19 @@ function rechnungSpeichern(){
     netto:sum.netto, mwst:sum.mwst, betrag:sum.gesamt, bereich:aktiverBereich
   };
   if(rechnungEditID){ const i=daten.findIndex(x=>x.id===rechnungEditID); if(i>=0) daten[i]=neu; } else daten.push(neu);
-  modulDatenSpeichern(daten); queueUpsert("moduldaten",modulZuDB(aktiverBereich,"rechnungen",neu));
-  $("rechnungDialog").close(); rechnungEditID=null; rechnungReservierteNummer=""; rechnungPositionen=[]; modulRendern();
+
+  // Die Rechnung bleibt als Datensatz lokal + in Supabase archiviert.
+  // Direkt danach wird die PDF erzeugt und das native Teilen-Menü geöffnet.
+  modulDatenSpeichern(daten);
+  queueUpsert("moduldaten",modulZuDB(aktiverBereich,"rechnungen",neu));
+
+  $("rechnungDialog").close();
+  rechnungEditID=null;
+  rechnungReservierteNummer="";
+  rechnungPositionen=[];
+  modulRendern();
+
+  await rechnungPDFAktion(neu.id,"share");
 }
 
 function rechnungenRendern(){
@@ -3504,7 +3515,11 @@ async function rechnungPDFAktion(id,art){
     }
     const a=document.createElement("a"); a.href=url; a.download=`${r.nummer}.pdf`; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),5000);
-  }catch(e){ alert(`PDF konnte nicht erstellt werden: ${e.message||e}`); }
+  }catch(e){
+    // Abbruch im iOS/Android-Teilen-Menü ist kein Fehler und braucht keine Warnung.
+    if(e?.name==="AbortError") return;
+    alert(`PDF konnte nicht erstellt oder geteilt werden: ${e.message||e}`);
+  }
 }
 
 async function rechnungDrucken(id){
