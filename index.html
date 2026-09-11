@@ -7,9 +7,30 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json?v=102">
-  <link rel="stylesheet" href="style.css?v=107">
+  <link rel="manifest" href="manifest.json?v=108">
+  <link rel="stylesheet" href="style.css?v=108">
 
+
+  <script>
+    // v108: Einladung so früh wie möglich sichern. iOS/WhatsApp können URL-Parameter
+    // bei Weiterleitungen oder beim Öffnen als PWA verändern.
+    (() => {
+      const KEY = "rudelbar_invite_token";
+      try {
+        const url = new URL(window.location.href);
+        let token = (url.searchParams.get("invite") || "").trim();
+        if (!token && url.hash) {
+          const hash = url.hash.replace(/^#/, "");
+          const params = new URLSearchParams(hash.includes("?") ? hash.split("?").pop() : hash);
+          token = (params.get("invite") || "").trim();
+        }
+        if (token) {
+          sessionStorage.setItem(KEY, token);
+          localStorage.setItem(KEY, token);
+        }
+      } catch (_) {}
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 
@@ -305,6 +326,15 @@
     <p class="login-hinweis">Eigenes Rudelbar-Konto erstellen</p>
     <div id="registerInviteStatus" class="invite-status">Persönlicher Einladungslink wird geprüft…</div>
 
+    <div id="registerInviteFallback" class="invite-fallback versteckt">
+      <label>
+        Einladungscode oder Einladungslink
+        <input id="registerInviteManuell" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Link oder Code hier einfügen">
+      </label>
+      <button class="sekundaer voll" id="registerInviteUebernehmen" type="button">Einladung übernehmen</button>
+      <small>Falls WhatsApp oder Safari den Link gekürzt hat, kann der vollständige Link oder nur der Einladungscode hier eingefügt werden.</small>
+    </div>
+
     <label>
       Name
       <input id="registerName" type="text" autocomplete="name" placeholder="Vor- und Nachname">
@@ -469,8 +499,12 @@
       <label>Einladungslink
         <textarea id="einladungLink" readonly></textarea>
       </label>
+      <label>Einladungscode (Fallback)
+        <input id="einladungCode" readonly>
+      </label>
       <div class="einladung-aktionen">
         <button class="sekundaer" id="einladungKopieren" type="button">Link kopieren</button>
+        <button class="sekundaer" id="einladungCodeKopieren" type="button">Code kopieren</button>
         <button class="hauptbutton" id="einladungTeilen" type="button">Teilen</button>
       </div>
     </div>
@@ -774,7 +808,7 @@
   </div>
 </dialog>
 
-<script src="app.js?v=107"></script>
+<script src="app.js?v=108"></script>
 
 </body>
 </html>

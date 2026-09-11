@@ -2394,3 +2394,33 @@ body.register-offen{overflow:hidden!important}
   outline: none !important;
   box-shadow: none !important;
 }
+
+/* v108 – robuster Einladungs-Fallback für iPhone/WhatsApp */
+.invite-fallback {
+  margin: 14px 0 18px;
+  padding: 14px;
+  border: 1px solid rgba(242, 169, 47, .55);
+  border-radius: 16px;
+  background: rgba(242, 169, 47, .06);
+}
+.invite-fallback label { margin: 0 0 10px; }
+.invite-fallback input {
+  width: 100%;
+  margin-top: 8px;
+  font-size: 16px;
+  text-transform: none;
+}
+.invite-fallback small {
+  display: block;
+  margin-top: 10px;
+  color: #aaa;
+  line-height: 1.35;
+}
+#einladungCode {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+@media (max-width: 560px) {
+  .einladung-aktionen { grid-template-columns: 1fr; }
+}

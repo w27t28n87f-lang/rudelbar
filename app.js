@@ -541,27 +541,94 @@ function startNachLogin(){
 /* EINLADUNGEN / REGISTRIERUNG */
 
 const INVITE_TOKEN_KEY = "rudelbar_invite_token";
-function einladungsTokenAusURL() {
-  // v100: Invite-Tokens robust aus URL, Hash, Session- und LocalStorage lesen.
-  // iOS/PWA-Navigation kann Query-Parameter beim Öffnen der installierten App verlieren.
-  let token = "";
+
+function inviteTokenNormalisieren(wert) {
+  const raw = String(wert || "").trim();
+  if (!raw) return "";
+
+  // Vollständige URL akzeptieren. Eine normale App-URL OHNE invite darf niemals
+  // versehentlich selbst als Einladungscode interpretiert werden.
   try {
-    const url = new URL(window.location.href);
-    token = (url.searchParams.get("invite") || "").trim();
+    const url = new URL(raw);
+    let token = (url.searchParams.get("invite") || "").trim();
     if (!token && url.hash) {
-      const raw = url.hash.replace(/^#/, "");
-      const params = new URLSearchParams(raw.includes("?") ? raw.split("?").pop() : raw);
+      const hash = url.hash.replace(/^#/, "");
+      const params = new URLSearchParams(hash.includes("?") ? hash.split("?").pop() : hash);
       token = (params.get("invite") || "").trim();
     }
-    if (token) {
-      sessionStorage.setItem(INVITE_TOKEN_KEY, token);
-      localStorage.setItem(INVITE_TOKEN_KEY, token);
-      return token;
-    }
+    return token;
+  } catch (_) {}
+
+  // Auch eingefügte Fragmente wie invite=ABC oder ?invite=ABC akzeptieren.
+  if (/invite=/i.test(raw)) {
+    try {
+      const teil = raw.replace(/^.*?[?#]/, "").replace(/^#/, "");
+      const params = new URLSearchParams(teil);
+      const token = (params.get("invite") || "").trim();
+      if (token) return token;
+    } catch (_) {}
+    const match = raw.match(/(?:^|[?&#])invite=([^&#\s]+)/i);
+    if (match?.[1]) return decodeURIComponent(match[1]).trim();
+  }
+
+  // Reiner Code als Fallback.
+  return raw.replace(/\s+/g, "");
+}
+
+function inviteTokenSpeichern(token) {
+  const clean = inviteTokenNormalisieren(token);
+  if (!clean) return "";
+  sessionStorage.setItem(INVITE_TOKEN_KEY, clean);
+  localStorage.setItem(INVITE_TOKEN_KEY, clean);
+  return clean;
+}
+
+function einladungsTokenAusURL() {
+  // v108: Query + Hash + Session + LocalStorage. Query und Hash werden beim
+  // Erstellen absichtlich gleichzeitig gesetzt, damit iOS/WhatsApp mindestens
+  // eine der beiden Varianten transportiert.
+  let token = "";
+  try {
+    token = inviteTokenNormalisieren(window.location.href);
+    if (token) return inviteTokenSpeichern(token);
   } catch (e) {
     console.warn("Einladungslink konnte nicht gelesen werden:", e);
   }
-  return sessionStorage.getItem(INVITE_TOKEN_KEY) || localStorage.getItem(INVITE_TOKEN_KEY) || "";
+
+  token = sessionStorage.getItem(INVITE_TOKEN_KEY) || localStorage.getItem(INVITE_TOKEN_KEY) || "";
+  return inviteTokenNormalisieren(token);
+}
+
+function einladungsTokenAktuell() {
+  const automatisch = einladungsTokenAusURL();
+  if (automatisch) return automatisch;
+  const manuell = inviteTokenNormalisieren($("registerInviteManuell")?.value || "");
+  return manuell ? inviteTokenSpeichern(manuell) : "";
+}
+
+function registrierungInviteStatusAktualisieren(token) {
+  const status = $("registerInviteStatus");
+  const fallback = $("registerInviteFallback");
+  if (status) {
+    status.textContent = token
+      ? "✓ Persönliche Einladung erkannt. Du kannst jetzt dein eigenes Konto anlegen."
+      : "Der Einladungslink konnte nicht automatisch erkannt werden. Füge unten den vollständigen Link oder den Einladungscode ein.";
+    status.classList.toggle("ok", Boolean(token));
+  }
+  fallback?.classList.toggle("versteckt", Boolean(token));
+}
+
+function inviteManuellUebernehmen() {
+  const feld = $("registerInviteManuell");
+  const token = inviteTokenNormalisieren(feld?.value || "");
+  $("registerFehler").textContent = "";
+  if (!token) {
+    $("registerFehler").textContent = "Bitte den vollständigen Einladungslink oder Einladungscode einfügen.";
+    return;
+  }
+  inviteTokenSpeichern(token);
+  registrierungInviteStatusAktualisieren(token);
+  $("registerErfolg").textContent = "Einladung übernommen. Du kannst das Konto jetzt erstellen.";
 }
 
 function basisAppURL() {
@@ -594,13 +661,7 @@ function registrierungOeffnen() {
   $("registerErfolg").textContent = "";
   $("registerPasswort").value = "";
   $("registerPasswort2").value = "";
-  const status = $("registerInviteStatus");
-  if (status) {
-    status.textContent = token
-      ? "✓ Persönliche Einladung erkannt. Du kannst jetzt dein eigenes Konto anlegen."
-      : "Für ein neues Konto brauchst du den persönlichen Einladungslink vom Administrator.";
-    status.classList.toggle("ok", Boolean(token));
-  }
+  registrierungInviteStatusAktualisieren(token);
   // Eingabefelder bleiben immer bedienbar. Der Invite-Token wird erst beim Absenden geprüft.
   // Dadurch kann ein iPhone den Nutzer nicht mehr in einem scheinbar "eingefrorenen" Formular festhalten.
   ["registerName","registerEmail","registerPasswort","registerPasswort2","registerButton"].forEach(id=>{
@@ -628,7 +689,7 @@ function registrierungZurLogin() {
 }
 
 async function registrierenMitEinladung() {
-  const token = einladungsTokenAusURL();
+  const token = einladungsTokenAktuell();
   const name = $("registerName").value.trim();
   const email = $("registerEmail").value.trim().toLowerCase();
   const passwort = $("registerPasswort").value;
@@ -638,7 +699,8 @@ async function registrierenMitEinladung() {
   $("registerErfolg").textContent = "";
 
   if (!token) {
-    $("registerFehler").textContent = "Der Einladungslink fehlt oder ist ungültig.";
+    $("registerFehler").textContent = "Einladung fehlt. Bitte den Einladungslink oder Einladungscode einfügen.";
+    registrierungInviteStatusAktualisieren("");
     return;
   }
   if (!name || !email || !passwort || !passwort2) {
@@ -695,6 +757,9 @@ async function registrierenMitEinladung() {
   } catch (error) {
     console.error(error);
     $("registerFehler").textContent = error.message || "Registrierung fehlgeschlagen.";
+    // Bei einem ungültigen/abgelaufenen Code die manuelle Korrektur anbieten,
+    // ohne Name, E-Mail oder Passwortfelder zu leeren.
+    $("registerInviteFallback")?.classList.remove("versteckt");
   } finally {
     $("registerButton").disabled = false;
     $("registerButton").textContent = "Konto erstellen";
@@ -781,8 +846,12 @@ async function einladungErstellen() {
   }
 
   const url = basisAppURL();
+  // Doppelte Transport-Sicherung: Query UND Hash enthalten denselben Token.
+  // Fällt eine Variante durch WhatsApp/Safari weg, bleibt die andere erhalten.
   url.searchParams.set("invite", token);
+  url.hash = `invite=${encodeURIComponent(token)}`;
   $("einladungLink").value = url.toString();
+  if ($("einladungCode")) $("einladungCode").value = token;
   $("einladungErgebnis").classList.remove("versteckt");
   await einladungenLaden();
 }
@@ -808,6 +877,17 @@ async function einladungLinkKopieren() {
     $("einladungLink").focus();
     $("einladungLink").select();
     alert("Link ist markiert und kann kopiert werden.");
+  }
+}
+
+async function einladungCodeKopieren() {
+  const code = $("einladungCode")?.value || "";
+  if (!code) return;
+  try {
+    await navigator.clipboard.writeText(code);
+    alert("Einladungscode kopiert.");
+  } catch {
+    alert(code);
   }
 }
 
@@ -3388,10 +3468,15 @@ $("settingsLogoutBtn").onclick = () => { if($("einstellungenDialog").open) $("ei
 $("einladungSchliessen").onclick = () => $("einladungDialog").close();
 $("einladungErstellen").onclick = einladungErstellen;
 $("einladungKopieren").onclick = einladungLinkKopieren;
+$("einladungCodeKopieren").onclick = einladungCodeKopieren;
 $("einladungTeilen").onclick = einladungLinkTeilen;
 $("registrierenOeffnen").onclick = registrierungOeffnen;
 $("registerZurLogin").onclick = registrierungZurLogin;
 $("registerButton").onclick = registrierenMitEinladung;
+$("registerInviteUebernehmen").onclick = inviteManuellUebernehmen;
+$("registerInviteManuell").addEventListener("keydown", event => {
+  if (event.key === "Enter") inviteManuellUebernehmen();
+});
 
 $("loginButton").onclick = anmelden;
 
