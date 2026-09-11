@@ -753,85 +753,50 @@ async function registrierenMitEinladung() {
   $("registerButton").textContent = "Konto wird erstellt…";
 
   try {
-    // v111: Zuerst die vorhandene Edge Function nutzen. Falls sie im Projekt
-    // nicht deployt wurde, fällt die App automatisch auf den sicheren
-    // Auth-Trigger-Workflow zurück (siehe supabase_v111_invite_setup.sql).
-    let kontoErstellt = false;
-    let edgeNichtVorhanden = false;
-
-    try {
-      const { data: result, error: invokeError } = await sb.functions.invoke("register-invite", {
-        body: { token, name, email, password: passwort }
-      });
-
-      if (invokeError) {
-        let detail = invokeError.message || "Registrierung fehlgeschlagen.";
-        try {
-          const ctx = invokeError.context;
-          if (ctx && typeof ctx.json === "function") {
-            const payload = await ctx.json();
-            detail = payload?.error || payload?.message || detail;
-          }
-        } catch (_) {}
-
-        edgeNichtVorhanden = /requested function was not found|function.*not found|404/i.test(detail);
-        if (!edgeNichtVorhanden) throw new Error(detail);
-      } else {
-        if (result?.error) throw new Error(result.error);
-        kontoErstellt = true;
+    // v112: bewusst KEIN Aufruf einer Edge Function mehr.
+    // Der Einladungscode wird vom DB-Trigger aus supabase_v112_invite_setup.sql
+    // direkt beim Supabase-Auth-Signup geprüft und atomar verbraucht.
+    const { data: signUpData, error: signUpError } = await sb.auth.signUp({
+      email,
+      password: passwort,
+      options: {
+        data: {
+          name,
+          rudelbar_invite_token: token
+        }
       }
-    } catch (edgeError) {
-      const detail = edgeError?.message || "";
-      edgeNichtVorhanden = /requested function was not found|function.*not found|404/i.test(detail);
-      if (!edgeNichtVorhanden) throw edgeError;
+    });
+
+    if (signUpError) {
+      let detail = String(signUpError.message || "Registrierung fehlgeschlagen.");
+      if (/signups? not allowed|signup.*disabled|user signups? are disabled/i.test(detail)) {
+        detail = "Registrierung ist in Supabase noch deaktiviert. In Authentication → Providers → Email muss 'Allow new users to sign up' aktiviert sein.";
+      } else if (/database error saving new user/i.test(detail)) {
+        detail = "Der Einladungscode ist ungültig, abgelaufen oder das v112-Supabase-Setup wurde noch nicht vollständig ausgeführt.";
+      } else if (/user already registered|already been registered|already registered/i.test(detail)) {
+        detail = "Für diese E-Mail-Adresse existiert bereits ein Konto. Bitte stattdessen anmelden.";
+      }
+      throw new Error(detail);
     }
 
-    if (!kontoErstellt && edgeNichtVorhanden) {
-      // Fallback ohne Edge Function. Der DB-Trigger prüft und verbraucht den
-      // Einladungscode serverseitig, bevor auth.users angelegt wird.
-      const { data: signUpData, error: signUpError } = await sb.auth.signUp({
-        email,
-        password: passwort,
-        options: {
-          data: {
-            name,
-            rudelbar_invite_token: token
-          }
-        }
-      });
+    if (!signUpData?.user) {
+      throw new Error("Supabase hat kein Benutzerkonto zurückgegeben. Bitte das v112-Supabase-Setup prüfen.");
+    }
 
-      if (signUpError) {
-        let detail = signUpError.message || "Registrierung fehlgeschlagen.";
-        if (/database error saving new user/i.test(detail)) {
-          detail = "Einladung ungültig/abgelaufen oder Supabase v111 wurde noch nicht eingerichtet.";
-        }
-        throw new Error(detail);
-      }
-      kontoErstellt = Boolean(signUpData?.user);
+    // Token ist serverseitig verbraucht. Lokal darf er nun weg.
+    sessionStorage.removeItem(INVITE_TOKEN_KEY);
+    localStorage.removeItem(INVITE_TOKEN_KEY);
 
-      // Wenn E-Mail-Bestätigung aktiv ist, liefert Supabase noch keine Session.
-      if (!signUpData?.session) {
-        $("registerErfolg").textContent = "Konto erstellt. Bitte bestätige ggf. die E-Mail und melde dich anschließend an.";
-        sessionStorage.removeItem(INVITE_TOKEN_KEY);
-        localStorage.removeItem(INVITE_TOKEN_KEY);
-        return;
-      }
+    if (!signUpData.session) {
+      $("registerErfolg").textContent = "Konto erstellt. Bitte bestätige ggf. die E-Mail und melde dich anschließend an.";
+      $("registerInviteFallback")?.classList.add("versteckt");
+      return;
     }
 
     $("registerErfolg").textContent = "Konto erstellt. Du wirst angemeldet…";
-
-    const sessionVorhanden = (await sb.auth.getSession()).data.session;
-    if (!sessionVorhanden) {
-      const { error } = await sb.auth.signInWithPassword({ email, password: passwort });
-      if (error) throw error;
-    }
-
     localStorage.setItem(EMAIL_KEY, email);
-    sessionStorage.removeItem(INVITE_TOKEN_KEY);
-    localStorage.removeItem(INVITE_TOKEN_KEY);
     angemeldet = true;
-    const sessionResult = await sb.auth.getSession();
-    aktuellerUser = sessionResult.data.session?.user || null;
+    aktuellerUser = signUpData.session.user || null;
 
     const clean = basisAppURL();
     history.replaceState({}, "", clean.pathname + clean.search + clean.hash);
@@ -843,9 +808,9 @@ async function registrierenMitEinladung() {
     console.error(error);
     const meldung = error?.message || "Registrierung fehlgeschlagen.";
     $("registerFehler").textContent = meldung;
-    // Bei einem ungültigen/abgelaufenen Code die manuelle Korrektur anbieten
-    // und den alten Code entfernen, damit derselbe Fehler nicht unsichtbar wiederholt wird.
-    if (/invite|einladung|token|expired|ungültig|abgelaufen|not found/i.test(meldung)) {
+
+    // Nur bei echten Invite-Problemen den lokal gespeicherten Code verwerfen.
+    if (/invite|einladung|token|abgelaufen|ungültig|invalid|expired/i.test(meldung)) {
       sessionStorage.removeItem(INVITE_TOKEN_KEY);
       localStorage.removeItem(INVITE_TOKEN_KEY);
       registrierungInviteStatusAktualisieren("");
