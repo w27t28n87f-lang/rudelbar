@@ -8,7 +8,7 @@
   <title>Rudelbar</title>
 
   <link rel="manifest" href="manifest.json?v=102">
-  <link rel="stylesheet" href="style.css?v=102">
+  <link rel="stylesheet" href="style.css?v=103">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -701,7 +701,42 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="app.js?v=102"></script>
+<dialog id="barzahlungDialog">
+  <div class="dialogbox barzahlung-dialogbox">
+    <div class="dialog-kopf">
+      <div>
+        <small class="barzahlung-kicker">BARZAHLUNG</small>
+        <h2>Bezahlung</h2>
+      </div>
+      <button type="button" class="sekundaer" id="barzahlungAbbrechen">✕</button>
+    </div>
+
+    <div class="barzahlung-gesamt">
+      <span>Zu zahlen</span>
+      <strong id="barzahlungGesamt">0,00 €</strong>
+    </div>
+
+    <label class="barzahlung-label" for="barzahlungGegeben">Kunde gibt</label>
+    <div class="barzahlung-eingabe">
+      <input id="barzahlungGegeben" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00">
+      <span>€</span>
+    </div>
+
+    <div class="barzahlung-schnellwahl" id="barzahlungSchnellwahl"></div>
+
+    <div class="barzahlung-rueckgeld" id="barzahlungRueckgeldBox">
+      <span>Rückgeld</span>
+      <strong id="barzahlungRueckgeld">0,00 €</strong>
+    </div>
+    <p class="barzahlung-hinweis" id="barzahlungHinweis"></p>
+
+    <button type="button" class="hauptbutton barzahlung-bestaetigen" id="barzahlungBestaetigen" disabled>
+      Barzahlung abschließen
+    </button>
+  </div>
+</dialog>
+
+<script src="app.js?v=103"></script>
 
 </body>
 </html>

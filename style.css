@@ -2069,3 +2069,31 @@ body.register-offen{overflow:hidden!important}
 .creator-3d-import,.creator-3d-viewport,.creator-3d-badge{display:none!important}
 .creator-canvas-hinweis{pointer-events:none!important}
 @media (min-width:760px){.creator-produkt-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+
+
+/* BARZAHLUNG v103 */
+.barzahlung-dialogbox { width: min(94vw, 520px); }
+.barzahlung-kicker { color: var(--gold2); font-weight: 900; letter-spacing: .14em; }
+.barzahlung-dialogbox h2 { margin: 3px 0 0; }
+.barzahlung-gesamt, .barzahlung-rueckgeld {
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:18px; border-radius:16px; background:#171717; border:1px solid #3d3d3d;
+}
+.barzahlung-gesamt strong { font-size:1.65rem; color:var(--gold2); }
+.barzahlung-label { display:block; margin:18px 0 7px; font-weight:800; }
+.barzahlung-eingabe { display:flex; align-items:center; background:#111; border:2px solid var(--gold2); border-radius:16px; padding:0 16px; }
+.barzahlung-eingabe input { flex:1; min-width:0; border:0 !important; margin:0 !important; padding:16px 0 !important; background:transparent !important; font-size:2rem; font-weight:900; text-align:right; }
+.barzahlung-eingabe span { margin-left:10px; font-size:1.5rem; font-weight:900; color:var(--gold2); }
+.barzahlung-schnellwahl { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin:10px 0 18px; }
+.barzahlung-schnellwahl button { padding:11px 5px; border:1px solid #555; border-radius:10px; background:#303030; color:white; font-weight:800; }
+.barzahlung-rueckgeld { border-color:var(--gold2); }
+.barzahlung-rueckgeld strong { font-size:2rem; color:#72e39a; }
+.barzahlung-rueckgeld.zu-wenig { border-color:#b94a48; }
+.barzahlung-rueckgeld.zu-wenig strong { color:#ff7b78; }
+.barzahlung-hinweis { min-height:22px; margin:8px 2px 14px; color:#bbb; font-weight:700; }
+.barzahlung-bestaetigen { width:100%; font-size:1.05rem; }
+.barzahlung-bestaetigen:disabled { opacity:.38; cursor:not-allowed; }
+@media (max-width:560px) {
+  .barzahlung-schnellwahl { grid-template-columns:repeat(3,1fr); }
+  .barzahlung-eingabe input { font-size:1.7rem; }
+}

@@ -3409,8 +3409,86 @@ $("getraenkSpeichern").onclick = getraenkSpeichern;
 $("getraenkAbbrechen").onclick = () =>
   $("getraenkDialog").close();
 
-$("barButton").onclick = () =>
+function centWert(wert) {
+  return Math.round(Number(wert || 0) * 100);
+}
+
+function euroAusCent(cent) {
+  return euro(cent / 100);
+}
+
+function barzahlungOeffnen() {
+  const gesamtCent = centWert(gesamtpreis());
+  if (gesamtCent <= 0) return;
+
+  $("barzahlungGesamt").textContent = euroAusCent(gesamtCent);
+  $("barzahlungGegeben").value = "";
+  $("barzahlungRueckgeld").textContent = "0,00 €";
+  $("barzahlungHinweis").textContent = "";
+  $("barzahlungRueckgeldBox").classList.remove("zu-wenig");
+  $("barzahlungBestaetigen").disabled = true;
+
+  const scheine = [5, 10, 20, 50, 100];
+  const passend = scheine.filter(x => x * 100 >= gesamtCent).slice(0, 4);
+  if (!passend.length) passend.push(Math.ceil(gesamtCent / 100));
+
+  $("barzahlungSchnellwahl").innerHTML =
+    `<button type="button" data-bar-exakt>Passend</button>` +
+    passend.map(x => `<button type="button" data-bar-wert="${x}">${x} €</button>`).join("");
+
+  $("barzahlungDialog").showModal();
+  setTimeout(() => $("barzahlungGegeben").focus(), 80);
+}
+
+function barzahlungBerechnen() {
+  const gesamtCent = centWert(gesamtpreis());
+  const roh = $("barzahlungGegeben").value.trim().replace(/\s/g, "").replace(",", ".");
+  const gegebenCent = Math.round(Number(roh) * 100);
+  const gueltig = roh !== "" && Number.isFinite(gegebenCent);
+
+  if (!gueltig) {
+    $("barzahlungRueckgeld").textContent = "0,00 €";
+    $("barzahlungHinweis").textContent = "";
+    $("barzahlungRueckgeldBox").classList.remove("zu-wenig");
+    $("barzahlungBestaetigen").disabled = true;
+    return;
+  }
+
+  const differenz = gegebenCent - gesamtCent;
+  if (differenz < 0) {
+    $("barzahlungRueckgeld").textContent = euroAusCent(Math.abs(differenz));
+    $("barzahlungHinweis").textContent = "Es fehlen noch " + euroAusCent(Math.abs(differenz)) + ".";
+    $("barzahlungRueckgeldBox").classList.add("zu-wenig");
+    $("barzahlungBestaetigen").disabled = true;
+  } else {
+    $("barzahlungRueckgeld").textContent = euroAusCent(differenz);
+    $("barzahlungHinweis").textContent = differenz === 0 ? "Passend bezahlt." : "An den Kunden zurückgeben.";
+    $("barzahlungRueckgeldBox").classList.remove("zu-wenig");
+    $("barzahlungBestaetigen").disabled = false;
+  }
+}
+
+$("barButton").onclick = barzahlungOeffnen;
+
+$("barzahlungGegeben").addEventListener("input", barzahlungBerechnen);
+
+$("barzahlungSchnellwahl").onclick = event => {
+  const exakt = event.target.closest("[data-bar-exakt]");
+  const wert = event.target.closest("[data-bar-wert]");
+  if (!exakt && !wert) return;
+  $("barzahlungGegeben").value = exakt
+    ? (centWert(gesamtpreis()) / 100).toFixed(2).replace(".", ",")
+    : Number(wert.dataset.barWert).toFixed(2).replace(".", ",");
+  barzahlungBerechnen();
+};
+
+$("barzahlungAbbrechen").onclick = () => $("barzahlungDialog").close();
+
+$("barzahlungBestaetigen").onclick = () => {
+  if ($("barzahlungBestaetigen").disabled) return;
+  $("barzahlungDialog").close();
   verkaufAbschliessen("Bar");
+};
 
 $("karteButton").onclick = () =>
   verkaufAbschliessen("Karte");
