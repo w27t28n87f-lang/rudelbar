@@ -2435,3 +2435,74 @@ body.register-offen{overflow:hidden!important}
 .settings-back{border:0;background:transparent;color:var(--goldHell);font-size:15px;font-weight:800;padding:4px 0 10px}.settings-page-title{margin:0;color:#fff;font-size:23px}.settings-page-sub{color:#999;line-height:1.45;margin:7px 0 16px;font-size:13px}
 .settings-folder{border:1px solid #343434;border-radius:14px;background:#121212;margin:10px 0;overflow:hidden}.settings-folder summary{list-style:none;cursor:pointer;padding:15px;display:flex;align-items:center;gap:11px;color:var(--goldHell);font-size:20px}.settings-folder summary::-webkit-details-marker{display:none}.settings-folder summary span{display:grid;gap:2px;color:#fff;font-size:14px}.settings-folder summary small{font-size:11px;color:#888;font-weight:600}.settings-folder summary:after{content:'⌄';margin-left:auto;color:#888}.settings-folder[open] summary:after{content:'⌃';color:var(--goldHell)}.settings-folder-body{padding:0 14px 15px;border-top:1px solid #292929}.settings-save{margin-top:14px}
 @media (min-width:800px){.settings-shell{max-width:980px!important}.settings-shell:has(#settingsHome.aktiv) #settingsHome{max-width:520px;margin:auto}.settings-page:not(#settingsHome).aktiv{padding:4px 12px}.settings-folder{max-width:760px}}
+
+
+/* =========================================================
+   RUDELBAR v117 – Rollen, Konto & Wolf-Hintergrund
+   ========================================================= */
+
+#bereichStart {
+  position: relative;
+  overflow: hidden;
+}
+
+#bereichStart .bereich-start-inhalt {
+  position: relative;
+  z-index: 1;
+}
+
+#bereichStart .start-wolf-bg {
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: 36%;
+  width: min(118vw, 900px);
+  height: auto;
+  transform: translate(-50%, -50%);
+  opacity: .13;
+  filter: grayscale(1) contrast(1.15) brightness(.82);
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  mix-blend-mode: screen;
+  mask-image: radial-gradient(ellipse at center, #000 30%, rgba(0,0,0,.78) 58%, transparent 82%);
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, rgba(0,0,0,.78) 58%, transparent 82%);
+}
+
+.rolle-mitarbeiter .superuser-only {
+  display: none !important;
+}
+
+.konto-gefahr {
+  border-color: rgba(220, 55, 55, .45) !important;
+}
+
+.danger-button {
+  min-height: 50px;
+  border: 1px solid #d63737;
+  border-radius: 14px;
+  background: rgba(150, 25, 25, .18);
+  color: #ff6868;
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.danger-button:active {
+  transform: scale(.985);
+}
+
+#einladungDialog .einladung-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 700px) {
+  #einladungDialog .einladung-form {
+    grid-template-columns: 1fr;
+  }
+
+  #bereichStart .start-wolf-bg {
+    top: 32%;
+    width: 150vw;
+    opacity: .12;
+  }
+}

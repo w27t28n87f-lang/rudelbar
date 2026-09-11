@@ -41,6 +41,7 @@ let angemeldet = false;
 let syncLaeuft = false;
 let aktuellerUser = null;
 let istAdmin = false;
+let aktuelleRolle = "mitarbeiter";
 
 
 /* GRUNDLAGEN */
@@ -509,24 +510,69 @@ function appSettingsSpeichern(){
   appSettingsAnwenden();
 }
 function settingsSeiteOeffnen(name="home") {
+  const geschuetzt=["team","unternehmen","rechnungen","darstellung"];
+  if (aktuelleRolle !== "superuser" && geschuetzt.includes(name)) name="home";
   document.querySelectorAll(".settings-page").forEach(el=>el.classList.remove("aktiv"));
   const id=name==="home"?"settingsHome":"settingsPage"+name[0].toUpperCase()+name.slice(1);
   $(id)?.classList.add("aktiv");
 }
+function settingsRolleAnwenden(){
+  document.body.classList.toggle("rolle-mitarbeiter", aktuelleRolle !== "superuser");
+  document.body.classList.toggle("rolle-superuser", aktuelleRolle === "superuser");
+  document.querySelectorAll(".superuser-only").forEach(el=>el.classList.toggle("versteckt", aktuelleRolle !== "superuser"));
+  document.querySelectorAll(".superuser-only-page").forEach(el=>{
+    if (aktuelleRolle !== "superuser") el.classList.remove("aktiv");
+  });
+}
+
+async function eigenesKontoLoeschen(){
+  if (!aktuellerUser) return;
+  const rolleText = aktuelleRolle === "superuser" ? "Superuser" : "Mitarbeiter";
+  const erste = confirm(`Dein ${rolleText}-Konto wirklich dauerhaft löschen?`);
+  if (!erste) return;
+  const zweite = confirm("Letzte Bestätigung: Das Konto wird sofort gelöscht und kann nicht wiederhergestellt werden.");
+  if (!zweite) return;
+
+  const btn=$("settingsKontoLoeschen");
+  if(btn){ btn.disabled=true; btn.textContent="Konto wird gelöscht…"; }
+  const { error } = await sb.rpc("delete_my_rudelbar_account");
+  if (error) {
+    console.error(error);
+    alert("Konto konnte nicht gelöscht werden. Bitte zuerst das Supabase-v117-Setup ausführen.");
+    if(btn){ btn.disabled=false; btn.textContent="🗑 Konto löschen"; }
+    return;
+  }
+
+  try { await sb.auth.signOut(); } catch {}
+  localStorage.removeItem(EMAIL_KEY);
+  location.replace(basisAppURL().toString());
+}
+
 function einstellungenOeffnen(){
   settingsSeiteOeffnen("home");
+  $("settingsName").textContent=aktuellerUser?.user_metadata?.name||"–";
   $("settingsEmail").textContent=aktuellerUser?.email||"–";
-  $("settingsRolle").textContent=istAdmin?"Administrator":"Mitglied";
-  $("settingsStartbereich").value=appSettings.startbereich||"start";
-  $("settingsCreatorSpalten").value=appSettings.creatorSpalten||"2";
-  $("settingsAnimationen").checked=appSettings.animationen!==false;
+  $("settingsRolle").textContent=aktuelleRolle==="superuser"?"Superuser":"Mitarbeiter";
+  if($("settingsZugangInfo")) $("settingsZugangInfo").textContent=aktuelleRolle==="superuser"?"Vollzugriff":"Nur eigenes Konto";
+  if(aktuelleRolle==="superuser"){
+    $("settingsStartbereich").value=appSettings.startbereich||"start";
+    $("settingsCreatorSpalten").value=appSettings.creatorSpalten||"2";
+    $("settingsAnimationen").checked=appSettings.animationen!==false;
+    rechnungsSettingsInUI();
+  }
   $("settingsInviteBtn")?.classList.toggle("versteckt",!istAdmin);
-  rechnungsSettingsInUI();
   $("einstellungenDialog").showModal();
 }
 function einstellungenSchliessen(){
-  appSettingsSpeichern();
-  rechnungsSettingsAusUI();
+  const homeAktiv=$("settingsHome")?.classList.contains("aktiv");
+  if(!homeAktiv){
+    settingsSeiteOeffnen("home");
+    return;
+  }
+  if(aktuelleRolle==="superuser"){
+    appSettingsSpeichern();
+    rechnungsSettingsAusUI();
+  }
   if($("einstellungenDialog").open) $("einstellungenDialog").close();
 }
 async function appAdresseTeilen(){
@@ -679,18 +725,29 @@ function basisAppURL() {
 
 async function adminStatusLaden() {
   istAdmin = false;
+  aktuelleRolle = "mitarbeiter";
   $("settingsInviteBtn")?.classList.add("versteckt");
 
-  if (!aktuellerUser) return;
-
-  const { data, error } = await sb.rpc("is_rudelbar_admin");
-  if (error) {
-    console.warn("Adminstatus konnte nicht geladen werden:", error.message);
+  if (!aktuellerUser) {
+    settingsRolleAnwenden();
     return;
   }
 
-  istAdmin = data === true;
+  // v117: Rolle serverseitig aus app_roles lesen. Nicht aus veränderbaren User-Metadaten.
+  const { data: roleData, error: roleError } = await sb.rpc("get_rudelbar_role");
+  if (!roleError && typeof roleData === "string") {
+    aktuelleRolle = roleData === "superuser" ? "superuser" : "mitarbeiter";
+    istAdmin = aktuelleRolle === "superuser";
+  } else {
+    // Rückwärtskompatibilität, falls das v117-SQL noch nicht ausgeführt wurde.
+    const { data, error } = await sb.rpc("is_rudelbar_admin");
+    if (error) console.warn("Rollenstatus konnte nicht geladen werden:", error.message);
+    istAdmin = data === true;
+    aktuelleRolle = istAdmin ? "superuser" : "mitarbeiter";
+  }
+
   if (istAdmin) $("settingsInviteBtn")?.classList.remove("versteckt");
+  settingsRolleAnwenden();
 }
 
 function registrierungOeffnen() {
@@ -882,7 +939,7 @@ async function einladungenLaden() {
 
   const { data, error } = await sb
     .from("einladungen")
-    .select("id,label,expires_at,used_at,created_at")
+    .select("id,label,rolle,expires_at,used_at,created_at")
     .is("used_at", null)
     .gt("expires_at", new Date().toISOString())
     .order("created_at", { ascending: false });
@@ -904,7 +961,7 @@ async function einladungenLaden() {
       <article class="einladung-karte">
         <div>
           <strong>${esc(item.label || "Einladung")}</strong>
-          <small>Gültig bis ${esc(bis)}</small>
+          <small>${item.rolle === "superuser" ? "Superuser" : "Mitarbeiter"} · gültig bis ${esc(bis)}</small>
         </div>
         <button class="daten-loeschen" data-invite-revoke="${item.id}" type="button">Widerrufen</button>
       </article>`;
@@ -919,6 +976,7 @@ async function einladungErstellen() {
   if (!istAdmin || !aktuellerUser) return;
 
   const label = $("einladungName").value.trim() || "Rudelbar-Mitglied";
+  const rolle = $("einladungRolle")?.value === "superuser" ? "superuser" : "mitarbeiter";
   const tage = Math.max(1, Number($("einladungTage").value) || 7);
   const token = inviteCodeErzeugen();
   const expires = new Date(Date.now() + tage * 86400000).toISOString();
@@ -929,6 +987,7 @@ async function einladungErstellen() {
   const { error } = await sb.from("einladungen").insert({
     token,
     label,
+    rolle,
     created_by: aktuellerUser.id,
     expires_at: expires
   });
@@ -995,7 +1054,7 @@ async function einladungLinkTeilen() {
     try {
       await navigator.share({
         title: "Rudelbar Einladung",
-        text: `Hier ist deine persönliche Einladung zur Rudelbar-App.\n\nEinladungscode: ${$("einladungCode")?.value || ""}\n\nFalls der Link auf dem iPhone gekürzt wird, einfach den 12-stelligen Code in der Registrierung eingeben.`,
+        text: `Hier ist deine persönliche Einladung zur Rudelbar-App.\n\nRolle: ${$("einladungRolle")?.value === "superuser" ? "Superuser" : "Mitarbeiter"}\nEinladungscode: ${$("einladungCode")?.value || ""}\n\nFalls der Link auf dem iPhone gekürzt wird, einfach den 12-stelligen Code in der Registrierung eingeben.`,
         url
       });
       return;
@@ -1018,6 +1077,7 @@ async function abmelden() {
   angemeldet = false;
   aktuellerUser = null;
   istAdmin = false;
+  aktuelleRolle = "mitarbeiter";
   $("settingsInviteBtn")?.classList.add("versteckt");
   alleHauptansichtenVerstecken();
   statusAktualisieren();
@@ -3577,10 +3637,14 @@ $("settingsAnimationen").onchange = appSettingsSpeichern;
 ["Mode","Service","Security"].forEach(cap=>{ const el=$("rechnungApply"+cap); if(el)el.onchange=rechnungsOverrideSichtbarkeit; });
 $("rechnungSettingsSpeichern").onclick = rechnungsSettingsSpeichern;
 $("rechnungSettingsSpeichernRechnung")?.addEventListener("click",rechnungsSettingsSpeichern);
-$("settingsInviteBtn").onclick = () => { if($("einstellungenDialog").open) $("einstellungenDialog").close(); einladungenOeffnen(); };
+$("settingsInviteBtn").onclick = () => { settingsSeiteOeffnen("team"); einladungenOeffnen(); };
 $("settingsAppTeilenBtn").onclick = appAdresseTeilen;
 $("settingsLogoutBtn").onclick = () => { if($("einstellungenDialog").open) $("einstellungenDialog").close(); abmelden(); };
-$("einladungSchliessen").onclick = () => $("einladungDialog").close();
+$("settingsKontoLoeschen")?.addEventListener("click", eigenesKontoLoeschen);
+$("einladungSchliessen").onclick = () => {
+  $("einladungDialog").close();
+  if ($("einstellungenDialog").open) settingsSeiteOeffnen("team");
+};
 $("einladungErstellen").onclick = einladungErstellen;
 $("einladungKopieren").onclick = einladungLinkKopieren;
 if ($("einladungCodeKopieren")) $("einladungCodeKopieren").onclick = einladungCodeKopieren;

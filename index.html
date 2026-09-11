@@ -7,8 +7,8 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json?v=116">
-  <link rel="stylesheet" href="style.css?v=116">
+  <link rel="manifest" href="manifest.json?v=117">
+  <link rel="stylesheet" href="style.css?v=117">
 
 
   <script>
@@ -39,6 +39,7 @@
 <!-- STARTSEITE NACH LOGIN -->
 <section id="bereichStart" class="bereich-start versteckt" aria-label="Rudelbar Bereiche">
   <div class="bereich-start-inhalt">
+    <img src="Wolf-Hintergrund.jpg" class="start-wolf-bg" alt="" aria-hidden="true">
     <img src="Logo-Haupt.png" class="bereich-hauptlogo" alt="Rudelbar">
     <button id="settingsBtn" class="settings-trigger" type="button" aria-label="Einstellungen öffnen" title="Einstellungen">⚙</button>
 
@@ -379,33 +380,48 @@
         <span class="settings-group-title">KONTO</span>
         <button class="settings-menu-row" type="button" data-settings-page="konto"><span class="settings-menu-icon">👤</span><span><strong>Konto &amp; Benutzer</strong><small>Profil, E-Mail und Rolle</small></span><b>›</b></button>
       </div>
-      <div class="settings-menu-group">
+      <div class="settings-menu-group superuser-only">
         <span class="settings-group-title">TEAM</span>
         <button class="settings-menu-row" type="button" data-settings-page="team"><span class="settings-menu-icon">👥</span><span><strong>Team &amp; Einladungen</strong><small>Mitglieder und App-Zugang</small></span><b>›</b></button>
       </div>
-      <div class="settings-menu-group">
+      <div class="settings-menu-group superuser-only">
         <span class="settings-group-title">UNTERNEHMEN</span>
         <button class="settings-menu-row" type="button" data-settings-page="unternehmen"><span class="settings-menu-icon">🏢</span><span><strong>Unternehmensdaten</strong><small>Kontakt, Bank und Steuer</small></span><b>›</b></button>
         <button class="settings-menu-row" type="button" data-settings-page="rechnungen"><span class="settings-menu-icon">📄</span><span><strong>Rechnungen</strong><small>Mode, Facility Service, Security</small></span><b>›</b></button>
       </div>
-      <div class="settings-menu-group">
+      <div class="settings-menu-group superuser-only">
         <span class="settings-group-title">APP</span>
         <button class="settings-menu-row" type="button" data-settings-page="darstellung"><span class="settings-menu-icon">🎨</span><span><strong>Darstellung</strong><small>Startbereich, Ansicht, Animationen</small></span><b>›</b></button>
+      </div>
+      <div class="settings-menu-group">
+        <span class="settings-group-title">INFO</span>
+        <button class="settings-menu-row" type="button" data-settings-page="info"><span class="settings-menu-icon">ℹ️</span><span><strong>App-Informationen</strong><small>Version und Hinweise</small></span><b>›</b></button>
       </div>
       <button id="settingsLogoutBtn" class="settings-logout" type="button">↪ Abmelden</button>
     </div>
 
     <div id="settingsPageKonto" class="settings-page">
       <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Konto &amp; Benutzer</h3>
-      <section class="settings-section"><div class="settings-info"><div><span>Angemeldet als</span><strong id="settingsEmail">–</strong></div><div><span>Rolle</span><strong id="settingsRolle">Mitglied</strong></div></div></section>
+      <section class="settings-section">
+        <div class="settings-info">
+          <div><span>Name</span><strong id="settingsName">–</strong></div>
+          <div><span>E-Mail</span><strong id="settingsEmail">–</strong></div>
+          <div><span>Rolle</span><strong id="settingsRolle">Mitarbeiter</strong></div>
+        </div>
+      </section>
+      <section class="settings-section konto-gefahr">
+        <h4 class="settings-subtitle">Konto verwalten</h4>
+        <p class="settings-hinweis">Das Löschen entfernt dein Rudelbar-Benutzerkonto dauerhaft. Diese Aktion kann nicht rückgängig gemacht werden.</p>
+        <button id="settingsKontoLoeschen" class="danger-button voll" type="button">🗑 Konto löschen</button>
+      </section>
     </div>
 
-    <div id="settingsPageTeam" class="settings-page">
+    <div id="settingsPageTeam" class="settings-page superuser-only-page">
       <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Team &amp; Einladungen</h3>
       <section class="settings-section"><p class="settings-hinweis">Neue Mitglieder erhalten einen persönlichen Einladungslink und melden sich danach mit ihrem eigenen Konto an.</p><button id="settingsInviteBtn" class="hauptbutton voll versteckt" type="button">👥 Einladungslink erstellen / weiterleiten</button><button id="settingsAppTeilenBtn" class="sekundaer voll" type="button">🔗 App-Adresse an bestehende Mitglieder teilen</button></section>
     </div>
 
-    <div id="settingsPageUnternehmen" class="settings-page">
+    <div id="settingsPageUnternehmen" class="settings-page superuser-only-page">
       <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Unternehmensdaten</h3><p class="settings-page-sub">Kontaktdaten sowie finanzielle und steuerliche Nummern liegen gesammelt in diesem Bereich.</p>
       <details class="settings-folder" open><summary>📞 <span><strong>Kontaktdaten</strong><small>Adresse, Telefon, E-Mail, Webseite</small></span></summary><div class="settings-form-grid settings-folder-body"><label>Inhaber<input id="rechnungSharedInhaber" type="text" autocomplete="name"></label><label>Telefon<input id="rechnungSharedTelefon" type="tel" autocomplete="tel"></label><label class="span-2">Straße &amp; Hausnummer<input id="rechnungSharedStrasse" type="text" autocomplete="street-address"></label><label class="span-2">PLZ &amp; Ort<input id="rechnungSharedOrt" type="text"></label><label>E-Mail<input id="rechnungSharedEmail" type="email" autocomplete="email"></label><label>Webseite<input id="rechnungSharedWebsite" type="text" placeholder="www.rudelbar.de"></label></div></details>
       <details class="settings-folder"><summary>🏦 <span><strong>Bankverbindung</strong><small>Bank, IBAN und BIC</small></span></summary><div class="settings-form-grid settings-folder-body"><label class="span-2">IBAN<input id="rechnungSharedIban" type="text"></label><label>BIC<input id="rechnungSharedBic" type="text"></label><label>Kreditinstitut<input id="rechnungSharedBank" type="text"></label></div></details>
@@ -413,15 +429,26 @@
       <button id="rechnungSettingsSpeichern" class="hauptbutton voll settings-save" type="button">Unternehmensdaten speichern</button>
     </div>
 
-    <div id="settingsPageRechnungen" class="settings-page">
+    <div id="settingsPageRechnungen" class="settings-page superuser-only-page">
       <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Rechnungen</h3><p class="settings-page-sub">Die Unternehmensdaten werden automatisch übernommen. Nur bei Bedarf kannst du je Bereich abweichende Daten verwenden.</p>
       <section class="settings-section settings-rechnungen"><h4 class="settings-subtitle">Unternehmensdaten verwenden für</h4><div class="rechnung-apply-grid"><label><input id="rechnungApplyMode" type="checkbox" checked> Mode</label><label><input id="rechnungApplyService" type="checkbox" checked> Facility Service</label><label><input id="rechnungApplySecurity" type="checkbox" checked> Security</label></div>
       <details id="rechnungOverrideMode" class="rechnung-override versteckt"><summary>👕 Eigene Daten für Mode</summary><div class="settings-form-grid" data-rechnung-area="mode"></div></details><details id="rechnungOverrideService" class="rechnung-override versteckt"><summary>🚚 Eigene Daten für Facility Service</summary><div class="settings-form-grid" data-rechnung-area="service"></div></details><details id="rechnungOverrideSecurity" class="rechnung-override versteckt"><summary>🛡️ Eigene Daten für Security</summary><div class="settings-form-grid" data-rechnung-area="security"></div></details>
       <button id="rechnungSettingsSpeichernRechnung" class="hauptbutton voll settings-save" type="button">Rechnungseinstellungen speichern</button></section>
     </div>
 
-    <div id="settingsPageDarstellung" class="settings-page">
+    <div id="settingsPageDarstellung" class="settings-page superuser-only-page">
       <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Darstellung</h3><section class="settings-section"><label>Startbereich nach der Anmeldung<select id="settingsStartbereich"><option value="start">Bereichsauswahl</option><option value="kneipe">Mobile Kneipe</option><option value="mode">Mode</option><option value="service">Facility Service</option><option value="security">Security</option></select></label><label>Creator-Produktkarten auf dem Handy<select id="settingsCreatorSpalten"><option value="2">2 Spalten, größere Vorschau</option><option value="3">3 Spalten, kompakter</option></select></label><label class="settings-check"><input id="settingsAnimationen" type="checkbox" checked> Animationen verwenden</label></section>
+    </div>
+
+    <div id="settingsPageInfo" class="settings-page">
+      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">App-Informationen</h3>
+      <section class="settings-section">
+        <div class="settings-info">
+          <div><span>Version</span><strong>Rudelbar v117</strong></div>
+          <div><span>Zugang</span><strong id="settingsZugangInfo">–</strong></div>
+        </div>
+        <p class="settings-hinweis">Superuser verwalten die App vollständig. Mitarbeiter sehen in den Einstellungen ausschließlich ihr eigenes Konto und die App-Informationen.</p>
+      </section>
     </div>
   </div>
 </dialog>
@@ -434,12 +461,19 @@
       <button class="sekundaer" id="einladungSchliessen" type="button">Fertig</button>
     </div>
 
-    <p class="login-hinweis links">Nur Personen mit einem gültigen, unbenutzten Einladungslink können sich registrieren.</p>
+    <p class="login-hinweis links">Nur Personen mit einem gültigen, unbenutzten Einladungslink können sich registrieren. Die Rolle wird beim Erstellen des Links festgelegt.</p>
 
     <div class="einladung-form">
       <label>
         Für wen?
         <input id="einladungName" type="text" placeholder="z. B. John J Rambo">
+      </label>
+      <label>
+        Rolle
+        <select id="einladungRolle">
+          <option value="mitarbeiter" selected>Mitarbeiter</option>
+          <option value="superuser">Superuser</option>
+        </select>
       </label>
       <label>
         Gültigkeit
@@ -768,7 +802,7 @@
   </div>
 </dialog>
 
-<script src="app.js?v=116"></script>
+<script src="app.js?v=117"></script>
 
 </body>
 </html>
