@@ -575,6 +575,26 @@ function inviteTokenNormalisieren(wert) {
   return raw.replace(/\s+/g, "");
 }
 
+function inviteCodeErzeugen() {
+  // Gut abtippbarer Einmalcode ohne leicht verwechselbare Zeichen.
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint8Array(12);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => alphabet[b % alphabet.length]).join("");
+}
+
+function istNurNormaleAppURL(wert) {
+  const raw = String(wert || "").trim();
+  if (!raw) return false;
+  try {
+    const url = new URL(raw);
+    const token = inviteTokenNormalisieren(raw);
+    return !token && url.origin === window.location.origin;
+  } catch (_) {
+    return false;
+  }
+}
+
 function inviteTokenSpeichern(token) {
   const clean = inviteTokenNormalisieren(token);
   if (!clean) return "";
@@ -584,7 +604,7 @@ function inviteTokenSpeichern(token) {
 }
 
 function einladungsTokenAusURL() {
-  // v108: Query + Hash + Session + LocalStorage. Query und Hash werden beim
+  // v110: Query + Hash + Session + LocalStorage. Query und Hash werden beim
   // Erstellen absichtlich gleichzeitig gesetzt, damit iOS/WhatsApp mindestens
   // eine der beiden Varianten transportiert.
   let token = "";
@@ -620,15 +640,28 @@ function registrierungInviteStatusAktualisieren(token) {
 
 function inviteManuellUebernehmen() {
   const feld = $("registerInviteManuell");
-  const token = inviteTokenNormalisieren(feld?.value || "");
+  const raw = feld?.value || "";
   $("registerFehler").textContent = "";
+  $("registerErfolg").textContent = "";
+
+  // Eine normale Rudelbar-Adresse ist KEINE Einladung. Alte, eventuell ungültige
+  // Tokens werden in diesem Fall bewusst entfernt, damit sie nicht heimlich weiterverwendet werden.
+  if (istNurNormaleAppURL(raw)) {
+    sessionStorage.removeItem(INVITE_TOKEN_KEY);
+    localStorage.removeItem(INVITE_TOKEN_KEY);
+    registrierungInviteStatusAktualisieren("");
+    $("registerFehler").textContent = "Das ist nur die normale Rudelbar-Adresse. Bitte den persönlichen Einladungscode (12 Zeichen) oder den vollständigen Einladungslink einfügen.";
+    return;
+  }
+
+  const token = inviteTokenNormalisieren(raw);
   if (!token) {
-    $("registerFehler").textContent = "Bitte den vollständigen Einladungslink oder Einladungscode einfügen.";
+    $("registerFehler").textContent = "Bitte den persönlichen Einladungscode oder den vollständigen Einladungslink einfügen.";
     return;
   }
   inviteTokenSpeichern(token);
   registrierungInviteStatusAktualisieren(token);
-  $("registerErfolg").textContent = "Einladung übernommen. Du kannst das Konto jetzt erstellen.";
+  $("registerErfolg").textContent = `Einladungscode ${token} übernommen. Du kannst das Konto jetzt erstellen.`;
 }
 
 function basisAppURL() {
@@ -720,21 +753,25 @@ async function registrierenMitEinladung() {
   $("registerButton").textContent = "Konto wird erstellt…";
 
   try {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/register-invite`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_KEY
-      },
-      body: JSON.stringify({ token, name, email, password: passwort })
+    // supabase-js setzt die für Edge Functions benötigten API-/Auth-Header sauber selbst.
+    // Das ist robuster als ein handgebauter fetch, besonders mit aktuellen Publishable Keys.
+    const { data: result, error: invokeError } = await sb.functions.invoke("register-invite", {
+      body: { token, name, email, password: passwort }
     });
 
-    let result = {};
-    try { result = await response.json(); } catch {}
-
-    if (!response.ok) {
-      throw new Error(result.error || "Registrierung fehlgeschlagen.");
+    if (invokeError) {
+      let detail = invokeError.message || "Registrierung fehlgeschlagen.";
+      try {
+        const ctx = invokeError.context;
+        if (ctx && typeof ctx.json === "function") {
+          const payload = await ctx.json();
+          detail = payload?.error || payload?.message || detail;
+        }
+      } catch (_) {}
+      throw new Error(detail);
     }
+
+    if (result?.error) throw new Error(result.error);
 
     $("registerErfolg").textContent = "Konto erstellt. Du wirst angemeldet…";
 
@@ -756,9 +793,15 @@ async function registrierenMitEinladung() {
     await nachLogin();
   } catch (error) {
     console.error(error);
-    $("registerFehler").textContent = error.message || "Registrierung fehlgeschlagen.";
-    // Bei einem ungültigen/abgelaufenen Code die manuelle Korrektur anbieten,
-    // ohne Name, E-Mail oder Passwortfelder zu leeren.
+    const meldung = error?.message || "Registrierung fehlgeschlagen.";
+    $("registerFehler").textContent = meldung;
+    // Bei einem ungültigen/abgelaufenen Code die manuelle Korrektur anbieten
+    // und den alten Code entfernen, damit derselbe Fehler nicht unsichtbar wiederholt wird.
+    if (/invite|einladung|token|expired|ungültig|abgelaufen|not found/i.test(meldung)) {
+      sessionStorage.removeItem(INVITE_TOKEN_KEY);
+      localStorage.removeItem(INVITE_TOKEN_KEY);
+      registrierungInviteStatusAktualisieren("");
+    }
     $("registerInviteFallback")?.classList.remove("versteckt");
   } finally {
     $("registerButton").disabled = false;
@@ -823,7 +866,7 @@ async function einladungErstellen() {
 
   const label = $("einladungName").value.trim() || "Rudelbar-Mitglied";
   const tage = Math.max(1, Number($("einladungTage").value) || 7);
-  const token = crypto.randomUUID() + crypto.randomUUID().replaceAll("-", "");
+  const token = inviteCodeErzeugen();
   const expires = new Date(Date.now() + tage * 86400000).toISOString();
 
   $("einladungErstellen").disabled = true;
@@ -898,7 +941,7 @@ async function einladungLinkTeilen() {
     try {
       await navigator.share({
         title: "Rudelbar Einladung",
-        text: "Hier ist deine persönliche Einladung zur Rudelbar-App.",
+        text: `Hier ist deine persönliche Einladung zur Rudelbar-App.\n\nEinladungscode: ${$("einladungCode")?.value || ""}\n\nFalls der Link auf dem iPhone gekürzt wird, einfach den 12-stelligen Code in der Registrierung eingeben.`,
         url
       });
       return;
