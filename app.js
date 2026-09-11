@@ -3495,8 +3495,69 @@ $("barzahlungBestaetigen").onclick = () => {
   verkaufAbschliessen("Bar");
 };
 
-$("karteButton").onclick = () =>
+function kartenzahlungOeffnen() {
+  const gesamtCent = centWert(gesamtpreis());
+  if (gesamtCent <= 0) return;
+
+  $("kartenzahlungGesamt").textContent = euroAusCent(gesamtCent);
+  $("kartenzahlungBetrag").value = "";
+  $("kartenzahlungHinweis").textContent = "Betrag eingeben oder Passend wählen.";
+  $("kartenzahlungHinweis").classList.remove("zahlung-fehler", "zahlung-ok");
+  $("kartenzahlungBestaetigen").disabled = true;
+
+  $("kartenzahlungDialog").showModal();
+  setTimeout(() => $("kartenzahlungBetrag").focus(), 80);
+}
+
+function kartenzahlungBerechnen() {
+  const gesamtCent = centWert(gesamtpreis());
+  const roh = $("kartenzahlungBetrag").value.trim().replace(/\s/g, "").replace(",", ".");
+  const betragCent = Math.round(Number(roh) * 100);
+  const gueltig = roh !== "" && Number.isFinite(betragCent);
+  const hinweis = $("kartenzahlungHinweis");
+
+  hinweis.classList.remove("zahlung-fehler", "zahlung-ok");
+
+  if (!gueltig) {
+    hinweis.textContent = "Betrag eingeben oder Passend wählen.";
+    $("kartenzahlungBestaetigen").disabled = true;
+    return;
+  }
+
+  if (betragCent < gesamtCent) {
+    hinweis.textContent = "Es fehlen noch " + euroAusCent(gesamtCent - betragCent) + ".";
+    hinweis.classList.add("zahlung-fehler");
+    $("kartenzahlungBestaetigen").disabled = true;
+    return;
+  }
+
+  if (betragCent > gesamtCent) {
+    hinweis.textContent = "Der Kartenbetrag ist " + euroAusCent(betragCent - gesamtCent) + " zu hoch.";
+    hinweis.classList.add("zahlung-fehler");
+    $("kartenzahlungBestaetigen").disabled = true;
+    return;
+  }
+
+  hinweis.textContent = "Passend bezahlt.";
+  hinweis.classList.add("zahlung-ok");
+  $("kartenzahlungBestaetigen").disabled = false;
+}
+
+$("karteButton").onclick = kartenzahlungOeffnen;
+$("kartenzahlungBetrag").addEventListener("input", kartenzahlungBerechnen);
+
+$("kartenzahlungPassend").onclick = () => {
+  $("kartenzahlungBetrag").value = (centWert(gesamtpreis()) / 100).toFixed(2).replace(".", ",");
+  kartenzahlungBerechnen();
+};
+
+$("kartenzahlungAbbrechen").onclick = () => $("kartenzahlungDialog").close();
+
+$("kartenzahlungBestaetigen").onclick = () => {
+  if ($("kartenzahlungBestaetigen").disabled) return;
+  $("kartenzahlungDialog").close();
   verkaufAbschliessen("Karte");
+};
 
 $("bestellungLoeschen").onclick = () => {
   warenkorb = {};

@@ -2375,3 +2375,22 @@ body.register-offen{overflow:hidden!important}
     font-size: 16px !important;
   }
 }
+
+/* ===== RUDELBAR v107: Kartenzahlung ===== */
+.kartenzahlung-schnellwahl {
+  grid-template-columns: 1fr;
+}
+.kartenzahlung-schnellwahl button {
+  min-height: 48px;
+}
+.barzahlung-hinweis.zahlung-fehler {
+  color: #ff7b78;
+}
+.barzahlung-hinweis.zahlung-ok {
+  color: #72e39a;
+}
+#kartenzahlungBetrag:focus,
+#kartenzahlungBetrag:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}

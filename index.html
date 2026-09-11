@@ -8,7 +8,7 @@
   <title>Rudelbar</title>
 
   <link rel="manifest" href="manifest.json?v=102">
-  <link rel="stylesheet" href="style.css?v=106">
+  <link rel="stylesheet" href="style.css?v=107">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -741,7 +741,40 @@
   </div>
 </dialog>
 
-<script src="app.js?v=106"></script>
+<dialog id="kartenzahlungDialog">
+  <div class="dialogbox barzahlung-dialogbox">
+    <div class="dialog-kopf">
+      <div>
+        <small class="barzahlung-kicker">KARTENZAHLUNG</small>
+        <h2>Bezahlung</h2>
+      </div>
+      <button type="button" class="sekundaer" id="kartenzahlungAbbrechen">✕</button>
+    </div>
+
+    <div class="barzahlung-gesamt">
+      <span>Zu zahlen</span>
+      <strong id="kartenzahlungGesamt">0,00 €</strong>
+    </div>
+
+    <label class="barzahlung-label" for="kartenzahlungBetrag">Kartenbetrag</label>
+    <div class="barzahlung-eingabe">
+      <input id="kartenzahlungBetrag" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00">
+      <span>€</span>
+    </div>
+
+    <div class="barzahlung-schnellwahl kartenzahlung-schnellwahl">
+      <button type="button" id="kartenzahlungPassend">Passend</button>
+    </div>
+
+    <p class="barzahlung-hinweis" id="kartenzahlungHinweis"></p>
+
+    <button type="button" class="hauptbutton barzahlung-bestaetigen" id="kartenzahlungBestaetigen" disabled>
+      Kartenzahlung abschließen
+    </button>
+  </div>
+</dialog>
+
+<script src="app.js?v=107"></script>
 
 </body>
 </html>
