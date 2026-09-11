@@ -753,7 +753,7 @@ async function registrierenMitEinladung() {
   $("registerButton").textContent = "Konto wird erstellt…";
 
   try {
-    // v112: bewusst KEIN Aufruf einer Edge Function mehr.
+    // v113: bewusst KEIN Aufruf einer Edge Function mehr.
     // Der Einladungscode wird vom DB-Trigger aus supabase_v112_invite_setup.sql
     // direkt beim Supabase-Auth-Signup geprüft und atomar verbraucht.
     const { data: signUpData, error: signUpError } = await sb.auth.signUp({
@@ -783,20 +783,38 @@ async function registrierenMitEinladung() {
       throw new Error("Supabase hat kein Benutzerkonto zurückgegeben. Bitte das v112-Supabase-Setup prüfen.");
     }
 
-    // Token ist serverseitig verbraucht. Lokal darf er nun weg.
+    // Für Rudelbar ist keine zusätzliche E-Mail-Bestätigung gewünscht.
+    // Wenn Supabase "Confirm Email" deaktiviert hat, liefert signUp sofort eine Session.
+    // Falls wider Erwarten keine Session zurückkommt, probieren wir genau einmal den
+    // direkten Login. So landet ein korrekt konfiguriertes Konto unmittelbar in der App.
+    let aktiveSession = signUpData.session || null;
+
+    if (!aktiveSession) {
+      const { data: loginData, error: loginError } = await sb.auth.signInWithPassword({
+        email,
+        password: passwort
+      });
+      if (!loginError && loginData?.session) {
+        aktiveSession = loginData.session;
+      }
+    }
+
+    if (!aktiveSession) {
+      throw new Error(
+        "Das Konto wurde erstellt, aber Supabase verlangt noch eine E-Mail-Bestätigung. " +
+        "Bitte in Supabase unter Authentication → Providers → Email die Option 'Confirm email' ausschalten. " +
+        "Danach wird beim Registrieren keine Bestätigungs-Mail mehr benötigt und der neue Benutzer landet direkt in der App."
+      );
+    }
+
+    // Erst nach erfolgreicher Session den lokal gespeicherten Einladungscode entfernen.
     sessionStorage.removeItem(INVITE_TOKEN_KEY);
     localStorage.removeItem(INVITE_TOKEN_KEY);
 
-    if (!signUpData.session) {
-      $("registerErfolg").textContent = "Konto erstellt. Bitte bestätige ggf. die E-Mail und melde dich anschließend an.";
-      $("registerInviteFallback")?.classList.add("versteckt");
-      return;
-    }
-
-    $("registerErfolg").textContent = "Konto erstellt. Du wirst angemeldet…";
+    $("registerErfolg").textContent = "Konto erstellt. Du wirst direkt angemeldet…";
     localStorage.setItem(EMAIL_KEY, email);
     angemeldet = true;
-    aktuellerUser = signUpData.session.user || null;
+    aktuellerUser = aktiveSession.user || null;
 
     const clean = basisAppURL();
     history.replaceState({}, "", clean.pathname + clean.search + clean.hash);
