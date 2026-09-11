@@ -8,6 +8,11 @@ const VERKAEUFE_KEY = "rudelbar_verkaeufe";
 const ABSCHLUSS_KEY = "rudelbar_abschluesse";
 const SYNC_KEY = "rudelbar_sync_queue";
 const EMAIL_KEY = "rudelbar_login_email";
+const RUDELBAR_OWNER_EMAIL = "martin_kuester1988@web.de";
+
+function istRudelbarBesitzer(user = aktuellerUser) {
+  return String(user?.email || "").trim().toLowerCase() === RUDELBAR_OWNER_EMAIL;
+}
 
 const sb = window.supabase.createClient(
   SUPABASE_URL,
@@ -733,17 +738,22 @@ async function adminStatusLaden() {
     return;
   }
 
-  // v117: Rolle serverseitig aus app_roles lesen. Nicht aus veränderbaren User-Metadaten.
-  const { data: roleData, error: roleError } = await sb.rpc("get_rudelbar_role");
-  if (!roleError && typeof roleData === "string") {
-    aktuelleRolle = roleData === "superuser" ? "superuser" : "mitarbeiter";
-    istAdmin = aktuelleRolle === "superuser";
+  // v119: Das Besitzerkonto ist zusätzlich clientseitig fest als Superuser verankert.
+  // Dadurch kann ein veralteter/fehlender app_roles-Eintrag den Inhaber nicht mehr aussperren.
+  if (istRudelbarBesitzer()) {
+    aktuelleRolle = "superuser";
+    istAdmin = true;
   } else {
-    // Rückwärtskompatibilität, falls das v117-SQL noch nicht ausgeführt wurde.
-    const { data, error } = await sb.rpc("is_rudelbar_admin");
-    if (error) console.warn("Rollenstatus konnte nicht geladen werden:", error.message);
-    istAdmin = data === true;
-    aktuelleRolle = istAdmin ? "superuser" : "mitarbeiter";
+    const { data: roleData, error: roleError } = await sb.rpc("get_rudelbar_role");
+    if (!roleError && typeof roleData === "string") {
+      aktuelleRolle = roleData === "superuser" ? "superuser" : "mitarbeiter";
+      istAdmin = aktuelleRolle === "superuser";
+    } else {
+      const { data, error } = await sb.rpc("is_rudelbar_admin");
+      if (error) console.warn("Rollenstatus konnte nicht geladen werden:", error.message);
+      istAdmin = data === true;
+      aktuelleRolle = istAdmin ? "superuser" : "mitarbeiter";
+    }
   }
 
   if (istAdmin) $("settingsInviteBtn")?.classList.remove("versteckt");
@@ -2876,7 +2886,7 @@ function modulEintragLoeschen(id) {
 async function archivAbschlussLoeschen(id) {
   // v118: Löschen im Kassenarchiv ist absichtlich Superuser-only.
   // Die zugehörigen Einzelverkäufe bleiben im Verlauf erhalten.
-  if (aktuelleRolle !== "superuser") {
+  if (aktuelleRolle !== "superuser" && !istRudelbarBesitzer()) {
     alert("Nur der Superuser darf Tagesabschlüsse aus dem Archiv löschen.");
     return;
   }
@@ -2916,7 +2926,7 @@ function archivModulRendern() {
         <div class="betrag">${euro(x.gesamt)}</div>
       </div>
       <div class="notiz">Kassendifferenz: ${euro(x.diff ?? x.differenz ?? 0)}</div>
-      ${aktuelleRolle === "superuser" ? `<div class="archiv-aktionen"><button class="daten-loeschen archiv-loeschen" type="button" data-archiv-loeschen="${esc(x.id)}">🗑 Tagesabschluss löschen</button></div>` : ""}
+      ${(aktuelleRolle === "superuser" || istRudelbarBesitzer()) ? `<div class="archiv-aktionen"><button class="daten-loeschen archiv-loeschen" type="button" data-archiv-loeschen="${esc(x.id)}">🗑 Tagesabschluss löschen</button></div>` : ""}
     </article>`).join("");
 
   $("modulListe").querySelectorAll("[data-archiv-loeschen]").forEach(btn => {
