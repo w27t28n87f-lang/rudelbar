@@ -2506,3 +2506,19 @@ body.register-offen{overflow:hidden!important}
     opacity: .12;
   }
 }
+
+
+/* v118 – Archiv löschen */
+.archiv-aktionen {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.archiv-loeschen {
+  width: auto;
+  min-height: 42px;
+  padding: 10px 14px;
+  border-radius: 12px;
+}

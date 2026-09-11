@@ -2873,6 +2873,30 @@ function modulEintragLoeschen(id) {
   modulRendern();
 }
 
+async function archivAbschlussLoeschen(id) {
+  // v118: Löschen im Kassenarchiv ist absichtlich Superuser-only.
+  // Die zugehörigen Einzelverkäufe bleiben im Verlauf erhalten.
+  if (aktuelleRolle !== "superuser") {
+    alert("Nur der Superuser darf Tagesabschlüsse aus dem Archiv löschen.");
+    return;
+  }
+
+  const a = abschluesse.find(x => x.id === id);
+  if (!a) return;
+
+  const titel = a.veranstaltung || "Tagesabschluss";
+  const datum = String(a.datum || "").slice(0, 10);
+  const bestaetigt = confirm(
+    `Tagesabschluss „${titel}“ vom ${datum || "unbekannten Datum"} wirklich aus dem Archiv löschen?\n\nDie einzelnen Verkäufe im Verlauf bleiben erhalten.`
+  );
+  if (!bestaetigt) return;
+
+  abschluesse = abschluesse.filter(x => x.id !== id);
+  speichernLokal();
+  queueDelete("tagesabschluesse", id);
+  archivModulRendern();
+}
+
 function archivModulRendern() {
   const daten = [...abschluesse].sort((a,b) => String(b.datum).localeCompare(String(a.datum)));
   const summe = daten.reduce((s,x) => s + Number(x.gesamt || 0), 0);
@@ -2892,7 +2916,12 @@ function archivModulRendern() {
         <div class="betrag">${euro(x.gesamt)}</div>
       </div>
       <div class="notiz">Kassendifferenz: ${euro(x.diff ?? x.differenz ?? 0)}</div>
+      ${aktuelleRolle === "superuser" ? `<div class="archiv-aktionen"><button class="daten-loeschen archiv-loeschen" type="button" data-archiv-loeschen="${esc(x.id)}">🗑 Tagesabschluss löschen</button></div>` : ""}
     </article>`).join("");
+
+  $("modulListe").querySelectorAll("[data-archiv-loeschen]").forEach(btn => {
+    btn.onclick = () => archivAbschlussLoeschen(btn.dataset.archivLoeschen);
+  });
 }
 
 function csvWert(wert) {
