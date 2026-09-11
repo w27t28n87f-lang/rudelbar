@@ -3468,13 +3468,13 @@ $("settingsLogoutBtn").onclick = () => { if($("einstellungenDialog").open) $("ei
 $("einladungSchliessen").onclick = () => $("einladungDialog").close();
 $("einladungErstellen").onclick = einladungErstellen;
 $("einladungKopieren").onclick = einladungLinkKopieren;
-$("einladungCodeKopieren").onclick = einladungCodeKopieren;
+if ($("einladungCodeKopieren")) $("einladungCodeKopieren").onclick = einladungCodeKopieren;
 $("einladungTeilen").onclick = einladungLinkTeilen;
 $("registrierenOeffnen").onclick = registrierungOeffnen;
 $("registerZurLogin").onclick = registrierungZurLogin;
 $("registerButton").onclick = registrierenMitEinladung;
-$("registerInviteUebernehmen").onclick = inviteManuellUebernehmen;
-$("registerInviteManuell").addEventListener("keydown", event => {
+if ($("registerInviteUebernehmen")) $("registerInviteUebernehmen").onclick = inviteManuellUebernehmen;
+if ($("registerInviteManuell")) $("registerInviteManuell").addEventListener("keydown", event => {
   if (event.key === "Enter") inviteManuellUebernehmen();
 });
 
