@@ -543,7 +543,7 @@ async function eigenesKontoLoeschen(){
   const { error } = await sb.rpc("delete_my_rudelbar_account");
   if (error) {
     console.error(error);
-    alert(`Konto konnte nicht gelöscht werden.\n\nSupabase meldet: ${error?.message || "Unbekannter Fehler"}\n\nBitte das v122-Konto-Setup einmal im SQL Editor ausführen.`);
+    alert(`Konto konnte nicht gelöscht werden.\n\nSupabase meldet: ${error?.message || "Unbekannter Fehler"}\n\nBitte das v121-Konto-Setup einmal im SQL Editor ausführen.`);
     if(btn){ btn.disabled=false; btn.textContent="🗑 Konto löschen"; }
     return;
   }

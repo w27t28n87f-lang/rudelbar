@@ -1,4 +1,4 @@
-const CACHE_NAME = "rudelbar-v122";
+const CACHE_NAME = "rudelbar-v123";
 
 const APP_SHELL = [
   "./",
@@ -10,7 +10,7 @@ const APP_SHELL = [
   "./Logo-Mobile_Kneipe.png",
   "./Logo-Mode.png",
   "./Logo-Service.png",
-  "./Wolf-Hintergrund.jpg",
+  "./Wolf-Hintergrund.png",
 ];
 
 self.addEventListener("install", event => {
