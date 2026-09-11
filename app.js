@@ -508,7 +508,13 @@ function appSettingsSpeichern(){
   localStorage.setItem(APP_SETTINGS_KEY,JSON.stringify(appSettings));
   appSettingsAnwenden();
 }
+function settingsSeiteOeffnen(name="home") {
+  document.querySelectorAll(".settings-page").forEach(el=>el.classList.remove("aktiv"));
+  const id=name==="home"?"settingsHome":"settingsPage"+name[0].toUpperCase()+name.slice(1);
+  $(id)?.classList.add("aktiv");
+}
 function einstellungenOeffnen(){
+  settingsSeiteOeffnen("home");
   $("settingsEmail").textContent=aktuellerUser?.email||"–";
   $("settingsRolle").textContent=istAdmin?"Administrator":"Mitglied";
   $("settingsStartbereich").value=appSettings.startbereich||"start";
@@ -811,17 +817,34 @@ async function registrierenMitEinladung() {
     sessionStorage.removeItem(INVITE_TOKEN_KEY);
     localStorage.removeItem(INVITE_TOKEN_KEY);
 
-    $("registerErfolg").textContent = "Konto erstellt. Du wirst direkt angemeldet…";
+    $("registerErfolg").textContent = "Konto erstellt. Die App wird geöffnet…";
     localStorage.setItem(EMAIL_KEY, email);
     angemeldet = true;
     aktuellerUser = aktiveSession.user || null;
 
+    // v114: Nach erfolgreicher Registrierung erzwingen wir einen sauberen Neustart
+    // auf der normalen App-URL. Supabase speichert die aktive Session bereits im
+    // Browser. Beim Neuladen liest authStart() diese Session und öffnet direkt die App.
+    // Das ist auf iOS/Safari robuster als nur DOM-Ansichten umzuschalten, weil dort
+    // die Registrierungsansicht nach signUp() gelegentlich sichtbar blieb.
     const clean = basisAppURL();
-    history.replaceState({}, "", clean.pathname + clean.search + clean.hash);
-
     $("registrierungDialog").classList.add("versteckt");
     document.body.classList.remove("register-offen");
-    await nachLogin();
+
+    // Session noch einmal explizit im Client setzen, falls Safari den signUp-State
+    // verzögert in den Storage schreibt.
+    if (aktiveSession?.access_token && aktiveSession?.refresh_token) {
+      const { error: sessionError } = await sb.auth.setSession({
+        access_token: aktiveSession.access_token,
+        refresh_token: aktiveSession.refresh_token
+      });
+      if (sessionError) console.warn("Session konnte nicht erneut gesetzt werden:", sessionError.message);
+    }
+
+    // Kurzer Frame erlaubt Safari, den Session-Storage sicher zu schreiben.
+    await new Promise(resolve => setTimeout(resolve, 120));
+    window.location.replace(clean.toString());
+    return;
   } catch (error) {
     console.error(error);
     const meldung = error?.message || "Registrierung fehlgeschlagen.";
@@ -3529,6 +3552,8 @@ $("rechnungPositionNeu").onclick = () => rechnungPositionNeu();
 $("rechnungNeuStarten").onclick = rechnungFormNeuStarten;
 $("rechnungSpeichern").onclick = rechnungSpeichern;
 
+document.querySelectorAll("[data-settings-page]").forEach(btn=>btn.addEventListener("click",()=>settingsSeiteOeffnen(btn.dataset.settingsPage)));
+document.querySelectorAll(".settings-back").forEach(btn=>btn.addEventListener("click",()=>settingsSeiteOeffnen("home")));
 $("settingsBtn").onclick = einstellungenOeffnen;
 $("settingsSchliessen").onclick = einstellungenSchliessen;
 $("settingsStartbereich").onchange = appSettingsSpeichern;
@@ -3536,6 +3561,7 @@ $("settingsCreatorSpalten").onchange = appSettingsSpeichern;
 $("settingsAnimationen").onchange = appSettingsSpeichern;
 ["Mode","Service","Security"].forEach(cap=>{ const el=$("rechnungApply"+cap); if(el)el.onchange=rechnungsOverrideSichtbarkeit; });
 $("rechnungSettingsSpeichern").onclick = rechnungsSettingsSpeichern;
+$("rechnungSettingsSpeichernRechnung")?.addEventListener("click",rechnungsSettingsSpeichern);
 $("settingsInviteBtn").onclick = () => { if($("einstellungenDialog").open) $("einstellungenDialog").close(); einladungenOeffnen(); };
 $("settingsAppTeilenBtn").onclick = appAdresseTeilen;
 $("settingsLogoutBtn").onclick = () => { if($("einstellungenDialog").open) $("einstellungenDialog").close(); abmelden(); };

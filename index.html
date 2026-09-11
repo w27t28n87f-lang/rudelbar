@@ -7,8 +7,8 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json?v=113">
-  <link rel="stylesheet" href="style.css?v=113">
+  <link rel="manifest" href="manifest.json?v=115">
+  <link rel="stylesheet" href="style.css?v=115">
 
 
   <script>
@@ -368,101 +368,61 @@
 
 <!-- EINSTELLUNGEN -->
 <dialog id="einstellungenDialog">
-  <div class="dialogbox gross settings-box">
-    <div class="dialog-kopf">
-      <div>
-        <h2>Einstellungen</h2>
-        <p class="login-hinweis links">Konto, Anzeige und Teamzugang verwalten.</p>
-      </div>
+  <div class="dialogbox gross settings-box settings-shell">
+    <div class="dialog-kopf settings-topbar">
+      <div><h2>Einstellungen</h2><p class="login-hinweis links">Rudelbar verwalten.</p></div>
       <button class="sekundaer" id="settingsSchliessen" type="button">Fertig</button>
     </div>
 
-    <section class="settings-section">
-      <h3>Mein Konto</h3>
-      <div class="settings-info">
-        <div><span>Angemeldet als</span><strong id="settingsEmail">–</strong></div>
-        <div><span>Rolle</span><strong id="settingsRolle">Mitglied</strong></div>
+    <div id="settingsHome" class="settings-page aktiv">
+      <div class="settings-menu-group">
+        <span class="settings-group-title">KONTO</span>
+        <button class="settings-menu-row" type="button" data-settings-page="konto"><span class="settings-menu-icon">👤</span><span><strong>Konto &amp; Benutzer</strong><small>Profil, E-Mail und Rolle</small></span><b>›</b></button>
       </div>
-    </section>
-
-    <section class="settings-section">
-      <h3>App</h3>
-      <label>Startbereich nach der Anmeldung
-        <select id="settingsStartbereich">
-          <option value="start">Bereichsauswahl</option>
-          <option value="kneipe">Mobile Kneipe</option>
-          <option value="mode">Mode</option>
-          <option value="service">Facility Service</option>
-          <option value="security">Security</option>
-        </select>
-      </label>
-      <label>Creator-Produktkarten auf dem Handy
-        <select id="settingsCreatorSpalten">
-          <option value="2">2 Spalten, größere Vorschau</option>
-          <option value="3">3 Spalten, kompakter</option>
-        </select>
-      </label>
-      <label class="settings-check"><input id="settingsAnimationen" type="checkbox" checked> Animationen verwenden</label>
-    </section>
-
-    <section class="settings-section settings-rechnungen">
-      <div class="settings-section-head">
-        <div>
-          <h3>Rechnungen</h3>
-          <p class="settings-hinweis">Kontakt- und Kontodaten einmal hinterlegen und auf die gewünschten Rechnungsvorlagen anwenden.</p>
-        </div>
+      <div class="settings-menu-group">
+        <span class="settings-group-title">TEAM</span>
+        <button class="settings-menu-row" type="button" data-settings-page="team"><span class="settings-menu-icon">👥</span><span><strong>Team &amp; Einladungen</strong><small>Mitglieder und App-Zugang</small></span><b>›</b></button>
       </div>
-
-      <div class="rechnung-settings-card">
-        <h4>Gemeinsame Rechnungsdaten</h4>
-        <div class="settings-form-grid">
-          <label>Inhaber<input id="rechnungSharedInhaber" type="text" autocomplete="name"></label>
-          <label>Telefon<input id="rechnungSharedTelefon" type="tel" autocomplete="tel"></label>
-          <label class="span-2">Straße &amp; Hausnummer<input id="rechnungSharedStrasse" type="text" autocomplete="street-address"></label>
-          <label class="span-2">PLZ &amp; Ort<input id="rechnungSharedOrt" type="text"></label>
-          <label>E-Mail<input id="rechnungSharedEmail" type="email" autocomplete="email"></label>
-          <label>Webseite<input id="rechnungSharedWebsite" type="text" placeholder="www.rudelbar.de"></label>
-          <label class="span-2">IBAN<input id="rechnungSharedIban" type="text" inputmode="text"></label>
-          <label>BIC<input id="rechnungSharedBic" type="text"></label>
-          <label>Kreditinstitut<input id="rechnungSharedBank" type="text"></label>
-          <label>Steuernummer<input id="rechnungSharedSteuernummer" type="text"></label>
-          <label>USt-IdNr.<input id="rechnungSharedUstid" type="text"></label>
-        </div>
-
-        <h4 class="settings-subtitle">Diese Daten verwenden für</h4>
-        <div class="rechnung-apply-grid">
-          <label><input id="rechnungApplyMode" type="checkbox" checked> Mode</label>
-          <label><input id="rechnungApplyService" type="checkbox" checked> Facility Service</label>
-          <label><input id="rechnungApplySecurity" type="checkbox" checked> Security</label>
-        </div>
+      <div class="settings-menu-group">
+        <span class="settings-group-title">UNTERNEHMEN</span>
+        <button class="settings-menu-row" type="button" data-settings-page="unternehmen"><span class="settings-menu-icon">🏢</span><span><strong>Unternehmensdaten</strong><small>Kontakt, Bank und Steuer</small></span><b>›</b></button>
+        <button class="settings-menu-row" type="button" data-settings-page="rechnungen"><span class="settings-menu-icon">📄</span><span><strong>Rechnungen</strong><small>Mode, Facility Service, Security</small></span><b>›</b></button>
       </div>
+      <div class="settings-menu-group">
+        <span class="settings-group-title">APP</span>
+        <button class="settings-menu-row" type="button" data-settings-page="darstellung"><span class="settings-menu-icon">🎨</span><span><strong>Darstellung</strong><small>Startbereich, Ansicht, Animationen</small></span><b>›</b></button>
+      </div>
+      <button id="settingsLogoutBtn" class="settings-logout" type="button">↪ Abmelden</button>
+    </div>
 
-      <details id="rechnungOverrideMode" class="rechnung-override versteckt">
-        <summary>Eigene Daten für Mode</summary>
-        <div class="settings-form-grid" data-rechnung-area="mode"></div>
-      </details>
-      <details id="rechnungOverrideService" class="rechnung-override versteckt">
-        <summary>Eigene Daten für Facility Service</summary>
-        <div class="settings-form-grid" data-rechnung-area="service"></div>
-      </details>
-      <details id="rechnungOverrideSecurity" class="rechnung-override versteckt">
-        <summary>Eigene Daten für Security</summary>
-        <div class="settings-form-grid" data-rechnung-area="security"></div>
-      </details>
+    <div id="settingsPageKonto" class="settings-page">
+      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Konto &amp; Benutzer</h3>
+      <section class="settings-section"><div class="settings-info"><div><span>Angemeldet als</span><strong id="settingsEmail">–</strong></div><div><span>Rolle</span><strong id="settingsRolle">Mitglied</strong></div></div></section>
+    </div>
 
-      <button id="rechnungSettingsSpeichern" class="hauptbutton voll" type="button">Rechnungsdaten speichern</button>
-    </section>
+    <div id="settingsPageTeam" class="settings-page">
+      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Team &amp; Einladungen</h3>
+      <section class="settings-section"><p class="settings-hinweis">Neue Mitglieder erhalten einen persönlichen Einladungslink und melden sich danach mit ihrem eigenen Konto an.</p><button id="settingsInviteBtn" class="hauptbutton voll versteckt" type="button">👥 Einladungslink erstellen / weiterleiten</button><button id="settingsAppTeilenBtn" class="sekundaer voll" type="button">🔗 App-Adresse an bestehende Mitglieder teilen</button></section>
+    </div>
 
-    <section class="settings-section">
-      <h3>Weiterleiten &amp; Team</h3>
-      <p class="settings-hinweis">Neue Mitglieder können sich nur über einen persönlichen Einladungslink registrieren. Danach melden sie sich mit ihrer eigenen E-Mail-Adresse und ihrem eigenen Passwort an.</p>
-      <button id="settingsInviteBtn" class="hauptbutton voll versteckt" type="button">👥 Einladungslink erstellen / weiterleiten</button>
-      <button id="settingsAppTeilenBtn" class="sekundaer voll" type="button">🔗 App-Adresse an bestehende Mitglieder teilen</button>
-    </section>
+    <div id="settingsPageUnternehmen" class="settings-page">
+      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Unternehmensdaten</h3><p class="settings-page-sub">Kontaktdaten sowie finanzielle und steuerliche Nummern liegen gesammelt in diesem Bereich.</p>
+      <details class="settings-folder" open><summary>📞 <span><strong>Kontaktdaten</strong><small>Adresse, Telefon, E-Mail, Webseite</small></span></summary><div class="settings-form-grid settings-folder-body"><label>Inhaber<input id="rechnungSharedInhaber" type="text" autocomplete="name"></label><label>Telefon<input id="rechnungSharedTelefon" type="tel" autocomplete="tel"></label><label class="span-2">Straße &amp; Hausnummer<input id="rechnungSharedStrasse" type="text" autocomplete="street-address"></label><label class="span-2">PLZ &amp; Ort<input id="rechnungSharedOrt" type="text"></label><label>E-Mail<input id="rechnungSharedEmail" type="email" autocomplete="email"></label><label>Webseite<input id="rechnungSharedWebsite" type="text" placeholder="www.rudelbar.de"></label></div></details>
+      <details class="settings-folder"><summary>🏦 <span><strong>Bankverbindung</strong><small>Bank, IBAN und BIC</small></span></summary><div class="settings-form-grid settings-folder-body"><label class="span-2">IBAN<input id="rechnungSharedIban" type="text"></label><label>BIC<input id="rechnungSharedBic" type="text"></label><label>Kreditinstitut<input id="rechnungSharedBank" type="text"></label></div></details>
+      <details class="settings-folder"><summary>📋 <span><strong>Steuerdaten</strong><small>Steuernummer und Umsatzsteuer-ID</small></span></summary><div class="settings-form-grid settings-folder-body"><label>Steuernummer<input id="rechnungSharedSteuernummer" type="text"></label><label>USt-IdNr.<input id="rechnungSharedUstid" type="text"></label></div></details>
+      <button id="rechnungSettingsSpeichern" class="hauptbutton voll settings-save" type="button">Unternehmensdaten speichern</button>
+    </div>
 
-    <section class="settings-section settings-danger">
-      <button id="settingsLogoutBtn" class="sekundaer voll" type="button">Abmelden</button>
-    </section>
+    <div id="settingsPageRechnungen" class="settings-page">
+      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Rechnungen</h3><p class="settings-page-sub">Die Unternehmensdaten werden automatisch übernommen. Nur bei Bedarf kannst du je Bereich abweichende Daten verwenden.</p>
+      <section class="settings-section settings-rechnungen"><h4 class="settings-subtitle">Unternehmensdaten verwenden für</h4><div class="rechnung-apply-grid"><label><input id="rechnungApplyMode" type="checkbox" checked> Mode</label><label><input id="rechnungApplyService" type="checkbox" checked> Facility Service</label><label><input id="rechnungApplySecurity" type="checkbox" checked> Security</label></div>
+      <details id="rechnungOverrideMode" class="rechnung-override versteckt"><summary>👕 Eigene Daten für Mode</summary><div class="settings-form-grid" data-rechnung-area="mode"></div></details><details id="rechnungOverrideService" class="rechnung-override versteckt"><summary>🚚 Eigene Daten für Facility Service</summary><div class="settings-form-grid" data-rechnung-area="service"></div></details><details id="rechnungOverrideSecurity" class="rechnung-override versteckt"><summary>🛡️ Eigene Daten für Security</summary><div class="settings-form-grid" data-rechnung-area="security"></div></details>
+      <button id="rechnungSettingsSpeichernRechnung" class="hauptbutton voll settings-save" type="button">Rechnungseinstellungen speichern</button></section>
+    </div>
+
+    <div id="settingsPageDarstellung" class="settings-page">
+      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Darstellung</h3><section class="settings-section"><label>Startbereich nach der Anmeldung<select id="settingsStartbereich"><option value="start">Bereichsauswahl</option><option value="kneipe">Mobile Kneipe</option><option value="mode">Mode</option><option value="service">Facility Service</option><option value="security">Security</option></select></label><label>Creator-Produktkarten auf dem Handy<select id="settingsCreatorSpalten"><option value="2">2 Spalten, größere Vorschau</option><option value="3">3 Spalten, kompakter</option></select></label><label class="settings-check"><input id="settingsAnimationen" type="checkbox" checked> Animationen verwenden</label></section>
+    </div>
   </div>
 </dialog>
 
@@ -808,7 +768,7 @@
   </div>
 </dialog>
 
-<script src="app.js?v=113"></script>
+<script src="app.js?v=115"></script>
 
 </body>
 </html>

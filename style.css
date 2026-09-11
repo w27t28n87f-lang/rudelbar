@@ -2424,3 +2424,14 @@ body.register-offen{overflow:hidden!important}
 @media (max-width: 560px) {
   .einladung-aktionen { grid-template-columns: 1fr; }
 }
+/* v115 Einstellungen: kompakte iOS-artige Navigation */
+.settings-shell{max-width:760px!important;background:linear-gradient(180deg,#101010,#090909)}
+.settings-page{display:none}.settings-page.aktiv{display:block}
+.settings-menu-group{margin:16px 0}.settings-group-title{display:block;margin:0 10px 7px;color:#777;font-size:11px;font-weight:900;letter-spacing:1.2px}
+.settings-menu-row{width:100%;min-height:68px;border:1px solid #303030;border-bottom-width:0;background:#151515;color:#fff;padding:11px 14px;display:grid;grid-template-columns:38px 1fr 20px;align-items:center;text-align:left;cursor:pointer}
+.settings-menu-row:first-of-type{border-radius:14px 14px 0 0}.settings-menu-row:last-of-type{border-bottom-width:1px;border-radius:0 0 14px 14px}.settings-menu-row:only-of-type{border:1px solid #303030;border-radius:14px}
+.settings-menu-icon{font-size:22px}.settings-menu-row span:nth-child(2){display:grid;gap:3px}.settings-menu-row strong{font-size:15px}.settings-menu-row small{color:#8d8d8d;font-size:11px}.settings-menu-row b{color:#888;font-size:27px;font-weight:400;text-align:right}
+.settings-menu-row:active{background:#211b0e;border-color:var(--gold)}.settings-logout{width:100%;margin:22px 0 4px;min-height:52px;border:1px solid #a22;border-radius:13px;background:#281313;color:#ff5757;font-weight:900;font-size:15px}
+.settings-back{border:0;background:transparent;color:var(--goldHell);font-size:15px;font-weight:800;padding:4px 0 10px}.settings-page-title{margin:0;color:#fff;font-size:23px}.settings-page-sub{color:#999;line-height:1.45;margin:7px 0 16px;font-size:13px}
+.settings-folder{border:1px solid #343434;border-radius:14px;background:#121212;margin:10px 0;overflow:hidden}.settings-folder summary{list-style:none;cursor:pointer;padding:15px;display:flex;align-items:center;gap:11px;color:var(--goldHell);font-size:20px}.settings-folder summary::-webkit-details-marker{display:none}.settings-folder summary span{display:grid;gap:2px;color:#fff;font-size:14px}.settings-folder summary small{font-size:11px;color:#888;font-weight:600}.settings-folder summary:after{content:'⌄';margin-left:auto;color:#888}.settings-folder[open] summary:after{content:'⌃';color:var(--goldHell)}.settings-folder-body{padding:0 14px 15px;border-top:1px solid #292929}.settings-save{margin-top:14px}
+@media (min-width:800px){.settings-shell{max-width:980px!important}.settings-shell:has(#settingsHome.aktiv) #settingsHome{max-width:520px;margin:auto}.settings-page:not(#settingsHome).aktiv{padding:4px 12px}.settings-folder{max-width:760px}}
