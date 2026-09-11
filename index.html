@@ -8,7 +8,7 @@
   <title>Rudelbar</title>
 
   <link rel="manifest" href="manifest.json?v=102">
-  <link rel="stylesheet" href="style.css?v=103">
+  <link rel="stylesheet" href="style.css?v=105">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -230,6 +230,11 @@
     <aside class="bestellung">
 
       <h2>Bestellung</h2>
+
+      <div class="bestellung-kompakt" aria-live="polite">
+        <span>🛒 <strong id="artikelAnzahl">0 Artikel</strong></span>
+        <strong id="kompaktGesamt">0,00 €</strong>
+      </div>
 
       <div id="warenkorb" class="warenkorb"></div>
 
@@ -736,7 +741,7 @@
   </div>
 </dialog>
 
-<script src="app.js?v=103"></script>
+<script src="app.js?v=105"></script>
 
 </body>
 </html>

@@ -1161,7 +1161,14 @@ function renderWarenkorb() {
     };
   });
 
-  $("gesamtpreis").textContent = euro(gesamtpreis());
+  const summe = gesamtpreis();
+  $("gesamtpreis").textContent = euro(summe);
+
+  const anzahl = Object.values(warenkorb).reduce((sum, menge) => sum + Number(menge || 0), 0);
+  const artikelAnzahl = $("artikelAnzahl");
+  const kompaktGesamt = $("kompaktGesamt");
+  if (artikelAnzahl) artikelAnzahl.textContent = `${anzahl} ${anzahl === 1 ? "Artikel" : "Artikel"}`;
+  if (kompaktGesamt) kompaktGesamt.textContent = euro(summe);
 }
 
 function gesamtpreis() {
@@ -3429,12 +3436,10 @@ function barzahlungOeffnen() {
   $("barzahlungBestaetigen").disabled = true;
 
   const scheine = [5, 10, 20, 50, 100];
-  const passend = scheine.filter(x => x * 100 >= gesamtCent).slice(0, 4);
-  if (!passend.length) passend.push(Math.ceil(gesamtCent / 100));
 
   $("barzahlungSchnellwahl").innerHTML =
     `<button type="button" data-bar-exakt>Passend</button>` +
-    passend.map(x => `<button type="button" data-bar-wert="${x}">${x} €</button>`).join("");
+    scheine.map(x => `<button type="button" data-bar-wert="${x}">${x} €</button>`).join("");
 
   $("barzahlungDialog").showModal();
   setTimeout(() => $("barzahlungGegeben").focus(), 80);

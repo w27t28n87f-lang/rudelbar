@@ -2097,3 +2097,213 @@ body.register-offen{overflow:hidden!important}
   .barzahlung-schnellwahl { grid-template-columns:repeat(3,1fr); }
   .barzahlung-eingabe input { font-size:1.7rem; }
 }
+
+
+/* BARZAHLUNG v104 */
+#barzahlungGegeben:focus,
+#barzahlungGegeben:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  -webkit-appearance: none;
+}
+.barzahlung-eingabe:focus-within {
+  border-color: var(--gold2) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+
+/* =========================================================
+   RUDELBAR KASSE v105 – responsive Geräte-Layouts
+   Portrait: 3 Spalten + feststehende Bezahlleiste
+   Landscape: Getränkeraster links + Bestellung rechts
+   ========================================================= */
+
+.bestellung-kompakt {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text);
+}
+
+.bestellung-kompakt #kompaktGesamt {
+  color: var(--gold);
+  font-size: 20px;
+}
+
+/* Hochformat auf iPhone und iPad */
+@media (orientation: portrait) and (max-width: 1100px) {
+  body {
+    padding-bottom: calc(150px + env(safe-area-inset-bottom));
+  }
+
+  #kassenApp .inhalt {
+    display: block;
+  }
+
+  #kassenApp .produkte {
+    width: 100%;
+  }
+
+  #kassenApp .getraenke-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(6px, 1.6vw, 12px);
+  }
+
+  #kassenApp .getraenk {
+    padding: clamp(5px, 1.4vw, 10px);
+    border-radius: 14px;
+  }
+
+  #kassenApp .getraenk-bild {
+    height: clamp(74px, 22vw, 170px);
+  }
+
+  #kassenApp .getraenk-bild img {
+    width: 100%;
+  }
+
+  #kassenApp .getraenk-name,
+  #kassenApp .getraenk-preis {
+    font-size: clamp(12px, 3.4vw, 18px);
+  }
+
+  #kassenApp .ausgewaehlt {
+    font-size: clamp(9px, 2.6vw, 12px);
+  }
+
+  #kassenApp .getraenk-aktionen {
+    gap: 5px;
+    margin-top: 7px;
+  }
+
+  #kassenApp .aktion {
+    min-height: clamp(34px, 10vw, 46px);
+  }
+
+  #kassenApp .bestellung {
+    position: fixed;
+    z-index: 80;
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: auto;
+    padding: 10px;
+    border-radius: 16px;
+    box-shadow: 0 -10px 30px rgba(0,0,0,.42);
+    background: rgba(36,36,36,.97);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+
+  #kassenApp .bestellung > h2,
+  #kassenApp .bestellung > .warenkorb,
+  #kassenApp .bestellung > .gesamt-zeile,
+  #kassenApp .bestellung > .loeschen-button {
+    display: none;
+  }
+
+  #kassenApp .bestellung-kompakt {
+    display: flex;
+    min-height: 34px;
+    padding: 0 4px 7px;
+  }
+
+  #kassenApp .zahlung {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  #kassenApp .zahlung-button {
+    min-height: 48px;
+    font-size: 16px;
+  }
+}
+
+/* Sehr schmale iPhones: trotzdem exakt drei Getränkespalten */
+@media (orientation: portrait) and (max-width: 430px) {
+  #kassenApp .getraenk-bild {
+    height: 82px;
+  }
+
+  #kassenApp .becher-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  #kassenApp .getraenk-name,
+  #kassenApp .getraenk-preis {
+    font-size: 12px;
+  }
+
+  #kassenApp .getraenk-aktionen svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Querformat: Kasse dauerhaft rechts, Getränke links */
+@media (orientation: landscape) and (min-width: 700px) {
+  #kassenApp .inhalt {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(250px, 28vw, 370px);
+    gap: 12px;
+    align-items: start;
+  }
+
+  #kassenApp .getraenke-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: clamp(6px, 1vw, 12px);
+  }
+
+  #kassenApp .getraenk {
+    padding: 7px;
+    border-radius: 13px;
+  }
+
+  #kassenApp .getraenk-bild {
+    height: clamp(70px, 10vw, 135px);
+  }
+
+  #kassenApp .getraenk-name,
+  #kassenApp .getraenk-preis {
+    font-size: clamp(12px, 1.35vw, 17px);
+  }
+
+  #kassenApp .getraenk-aktionen {
+    margin-top: 7px;
+  }
+
+  #kassenApp .aktion {
+    min-height: 36px;
+  }
+
+  #kassenApp .bestellung {
+    position: sticky;
+    top: 10px;
+    max-height: calc(100dvh - 28px);
+    overflow: auto;
+    padding: clamp(10px, 1.5vw, 18px);
+  }
+
+  #kassenApp .bestellung-kompakt {
+    display: none;
+  }
+
+  #kassenApp .warenkorb {
+    min-height: 90px;
+  }
+
+  #kassenApp .leer {
+    min-height: 90px;
+  }
+}
+
+/* Große iPads/Desktop im Querformat bekommen sechs Spalten, wenn Platz da ist. */
+@media (orientation: landscape) and (min-width: 1250px) {
+  #kassenApp .getraenke-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
