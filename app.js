@@ -261,6 +261,8 @@ function remoteModuldatenLokalSpeichern(rows) {
   }
   if (typeof notizenBadgeAktualisieren === "function") notizenBadgeAktualisieren();
   if ($("notizenDialog")?.open && typeof notizenRendern === "function") notizenRendern();
+  if (typeof teamButtonAktualisieren === "function") teamButtonAktualisieren();
+  if ($("teamDialog")?.open && typeof teamRendern === "function") teamRendern();
 }
 
 async function moduldatenErstSynchronisieren(remoteRows) {
@@ -820,7 +822,7 @@ async function registrierenMitEinladung() {
       if (/signups? not allowed|signup.*disabled|user signups? are disabled/i.test(detail)) {
         detail = "Registrierung ist in Supabase noch deaktiviert. In Authentication → Providers → Email muss 'Allow new users to sign up' aktiviert sein.";
       } else if (/database error saving new user/i.test(detail)) {
-        detail = "Der Einladungscode ist ungültig, abgelaufen oder das v112-Supabase-Setup wurde noch nicht vollständig ausgeführt.";
+        detail = "Die Einladung konnte von Supabase nicht verarbeitet werden. Bitte einen neuen Einladungslink verwenden oder das Einladungs-Setup prüfen.";
       } else if (/user already registered|already been registered|already registered/i.test(detail)) {
         detail = "Für diese E-Mail-Adresse existiert bereits ein Konto. Bitte stattdessen anmelden.";
       }
@@ -828,7 +830,7 @@ async function registrierenMitEinladung() {
     }
 
     if (!signUpData?.user) {
-      throw new Error("Supabase hat kein Benutzerkonto zurückgegeben. Bitte das v112-Supabase-Setup prüfen.");
+      throw new Error("Supabase hat kein Benutzerkonto zurückgegeben. Bitte das Einladungs-Setup prüfen.");
     }
 
     // Für Rudelbar ist keine zusätzliche E-Mail-Bestätigung gewünscht.
@@ -1171,6 +1173,7 @@ async function ersteSynchronisierung() {
   }
 
   await moduldatenErstSynchronisieren(remoteModuldaten.data || []);
+  await teamEigenesProfilSicherstellen();
 
   speichernLokal();
   render();
@@ -2567,6 +2570,7 @@ function startseiteZeigen() {
   aktiverBereich = null;
   startKalenderRendern();
   notizenBadgeAktualisieren();
+  teamButtonAktualisieren();
   nachOben();
 }
 
@@ -2999,6 +3003,113 @@ function startKalenderRendern(){
 
 
 const NOTIZEN_BEREICH = "global";
+/* TEAM / EINSATZBEREICHE */
+const TEAM_BEREICH = "system";
+const TEAM_MODUL = "team";
+
+function teamKey(){ return modulKey(TEAM_BEREICH, TEAM_MODUL); }
+function teamLaden(){ return laden(teamKey(), []); }
+function teamSpeichern(daten){ localStorage.setItem(teamKey(), JSON.stringify(daten)); }
+
+async function teamEigenesProfilSicherstellen(){
+  if(!aktuellerUser) return;
+  const daten=teamLaden();
+  let profil=daten.find(x=>String(x.id)===String(aktuellerUser.id));
+  const jetzt=new Date().toISOString();
+  const name=aktuellerUser?.user_metadata?.name || aktuellerUser?.email?.split("@")[0] || "Rudelbar-Mitglied";
+  const rolle=aktuelleRolle === "superuser" ? "superuser" : "mitarbeiter";
+  if(!profil){
+    profil={
+      id:aktuellerUser.id,
+      name,
+      email:aktuellerUser.email||"",
+      rolle,
+      einsatzbereiche:[],
+      notiz:"",
+      createdAt:jetzt,
+      updatedAt:jetzt,
+      letzterLogin:jetzt
+    };
+    daten.push(profil);
+  }else{
+    profil.name=name;
+    profil.email=aktuellerUser.email||profil.email||"";
+    profil.rolle=rolle;
+    profil.einsatzbereiche=Array.isArray(profil.einsatzbereiche)?profil.einsatzbereiche:[];
+    profil.notiz=profil.notiz||"";
+    profil.letzterLogin=jetzt;
+    profil.updatedAt=jetzt;
+  }
+  teamSpeichern(daten);
+  queueUpsert("moduldaten", modulZuDB(TEAM_BEREICH, TEAM_MODUL, profil));
+  teamButtonAktualisieren();
+}
+
+function teamButtonAktualisieren(){
+  const btn=$("startTeamBtn");
+  if(!btn) return;
+  const darf=aktuelleRolle === "superuser";
+  btn.classList.toggle("versteckt", !darf);
+  const badge=$("startTeamBadge");
+  if(badge) badge.textContent=String(teamLaden().length);
+}
+
+function teamOeffnen(){
+  if(aktuelleRolle !== "superuser") return;
+  teamRendern();
+  $("teamDialog")?.showModal();
+}
+
+function teamBereichLabel(key){
+  return ({kneipe:"🍺 Mobile Kneipe",service:"🛠️ Facility",security:"🛡️ Security",mode:"👕 Mode"})[key] || key;
+}
+
+function teamRendern(){
+  const liste=$("teamListe"); if(!liste) return;
+  if(aktuelleRolle !== "superuser"){
+    liste.innerHTML='<div class="daten-leer"><strong>Kein Zugriff</strong></div>';
+    return;
+  }
+  const daten=[...teamLaden()].sort((a,b)=>{
+    if(a.rolle!==b.rolle) return a.rolle==="superuser"?-1:1;
+    return String(a.name||a.email||"").localeCompare(String(b.name||b.email||""),"de");
+  });
+  if(!daten.length){
+    liste.innerHTML='<div class="daten-leer"><strong>Noch keine Teamprofile</strong><span>Mitglieder erscheinen hier automatisch, sobald sie sich mit der aktuellen App-Version anmelden.</span></div>';
+    return;
+  }
+  liste.innerHTML=daten.map(m=>{
+    const bereiche=Array.isArray(m.einsatzbereiche)?m.einsatzbereiche:[];
+    const login=m.letzterLogin?new Date(m.letzterLogin).toLocaleString("de-DE",{dateStyle:"short",timeStyle:"short"}):"–";
+    return `<article class="team-karte" data-team-id="${esc(m.id)}">
+      <div class="team-kopf"><div><strong>${esc(m.name||"Teammitglied")}</strong><small>${esc(m.email||"")}</small></div><span class="team-rolle ${m.rolle==="superuser"?"superuser":""}">${m.rolle==="superuser"?"Superuser":"Mitarbeiter"}</span></div>
+      <div class="team-meta">Zuletzt angemeldet: ${esc(login)}</div>
+      <div class="team-bereich-label">Einsetzbar in</div>
+      <div class="team-bereiche">
+        ${["kneipe","service","security","mode"].map(k=>`<label><input type="checkbox" data-team-bereich="${k}" ${bereiche.includes(k)?"checked":""}> <span>${teamBereichLabel(k)}</span></label>`).join("")}
+      </div>
+      <label class="team-notiz-label">Notiz<textarea data-team-notiz rows="2" placeholder="z. B. 34a Sachkunde, Zapferfahrung, Führerschein…">${esc(m.notiz||"")}</textarea></label>
+      <button class="hauptbutton team-speichern" type="button" data-team-save="${esc(m.id)}">Speichern</button>
+    </article>`;
+  }).join("");
+  liste.querySelectorAll("[data-team-save]").forEach(btn=>btn.onclick=()=>teamProfilSpeichern(btn.dataset.teamSave));
+}
+
+function teamProfilSpeichern(id){
+  if(aktuelleRolle !== "superuser") return;
+  const daten=teamLaden();
+  const profil=daten.find(x=>String(x.id)===String(id));
+  const card=$("teamListe")?.querySelector(`[data-team-id="${CSS.escape(String(id))}"]`);
+  if(!profil||!card) return;
+  profil.einsatzbereiche=[...card.querySelectorAll("[data-team-bereich]:checked")].map(x=>x.dataset.teamBereich);
+  profil.notiz=card.querySelector("[data-team-notiz]")?.value.trim()||"";
+  profil.updatedAt=new Date().toISOString();
+  teamSpeichern(daten);
+  queueUpsert("moduldaten",modulZuDB(TEAM_BEREICH,TEAM_MODUL,profil));
+  syncStarten();
+  teamRendern();
+}
+
 const NOTIZEN_MODUL = "notizen";
 let notizenFilter = "offen";
 
@@ -3984,6 +4095,8 @@ $("startKalenderSchliessen")?.addEventListener("click",()=>{
   $("startKalender")?.classList.add("versteckt");
   $("startKalenderToggle")?.setAttribute("aria-expanded","false");
 });
+$("startTeamBtn")?.addEventListener("click",teamOeffnen);
+$("teamSchliessen")?.addEventListener("click",()=>$("teamDialog")?.close());
 $("startNotizenBtn")?.addEventListener("click",notizenOeffnen);
 $("notizenSchliessen")?.addEventListener("click",()=>$("notizenDialog")?.close());
 $("notizenHinzufuegen")?.addEventListener("click",notizHinzufuegen);

@@ -7,8 +7,8 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json?v=129">
-  <link rel="stylesheet" href="style.css?v=129">
+  <link rel="manifest" href="manifest.json?v=130">
+  <link rel="stylesheet" href="style.css?v=130">
 
 
   <script>
@@ -72,6 +72,12 @@
       <span>📝</span>
       <span><strong>Notizen</strong><small>Ideen & Verbesserungen</small></span>
       <b id="startNotizenBadge" class="versteckt">0</b>
+    </button>
+
+    <button id="startTeamBtn" class="start-team-toggle versteckt" type="button" aria-controls="teamDialog">
+      <span>👥</span>
+      <span><strong>Team</strong><small>Mitglieder & Einsatzbereiche</small></span>
+      <b id="startTeamBadge">0</b>
     </button>
 
     <section id="startKalender" class="start-kalender versteckt" aria-label="Gesamtkalender">
@@ -753,6 +759,20 @@
 </dialog>
 
 <!-- NOTIZEN / VERBESSERUNGEN -->
+<dialog id="teamDialog">
+  <div class="dialogbox gross team-dialogbox">
+    <div class="dialog-kopf">
+      <div>
+        <small class="notizen-kicker">SUPERUSER</small>
+        <h2>Team</h2>
+      </div>
+      <button class="sekundaer" id="teamSchliessen" type="button">Fertig</button>
+    </div>
+    <p class="notizen-hinweis">Hier siehst du die Rudelbar-Mitglieder und kannst festlegen, wo sie eingesetzt werden können.</p>
+    <div id="teamListe" class="team-liste"></div>
+  </div>
+</dialog>
+
 <dialog id="notizenDialog">
   <div class="dialogbox gross notizen-dialogbox">
     <div class="dialog-kopf">
@@ -844,7 +864,7 @@
   </div>
 </dialog>
 
-<script src="app.js?v=129"></script>
+<script src="app.js?v=130"></script>
 
 </body>
 </html>
