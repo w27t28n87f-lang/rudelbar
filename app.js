@@ -1186,6 +1186,7 @@ async function ersteSynchronisierung() {
 
   await moduldatenErstSynchronisieren(remoteModuldaten.data || []);
   await teamEigenesProfilSicherstellen();
+  if(aktuelleRolle === "superuser") await teamRemoteLaden();
 
   speichernLokal();
   render();
@@ -3057,6 +3058,37 @@ async function teamEigenesProfilSicherstellen(){
   teamButtonAktualisieren();
 }
 
+async function teamRemoteLaden(){
+  if(aktuelleRolle !== "superuser" || !angemeldet || !navigator.onLine) return teamLaden();
+  try{
+    const { data, error } = await sb.rpc("get_rudelbar_team_members");
+    if(error) throw error;
+    const lokal = teamLaden();
+    const lokalMap = new Map(lokal.map(x=>[String(x.id),x]));
+    const jetzt = new Date().toISOString();
+    const gemappt = (Array.isArray(data)?data:[]).map(row=>{
+      const alt = lokalMap.get(String(row.user_id)) || {};
+      return {
+        id: row.user_id,
+        name: row.name || alt.name || row.email?.split("@")[0] || "Teammitglied",
+        email: row.email || alt.email || "",
+        rolle: row.rolle === "superuser" ? "superuser" : "mitarbeiter",
+        einsatzbereiche: Array.isArray(row.einsatzbereiche) ? row.einsatzbereiche : (Array.isArray(alt.einsatzbereiche)?alt.einsatzbereiche:[]),
+        notiz: row.notiz ?? alt.notiz ?? "",
+        createdAt: alt.createdAt || jetzt,
+        updatedAt: jetzt,
+        letzterLogin: row.last_sign_in_at || alt.letzterLogin || null
+      };
+    });
+    teamSpeichern(gemappt);
+    teamButtonAktualisieren();
+    return gemappt;
+  }catch(error){
+    console.warn("Teamliste konnte nicht direkt aus Supabase geladen werden:", error?.message || error);
+    return teamLaden();
+  }
+}
+
 function teamButtonAktualisieren(){
   const btn=$("startTeamBtn");
   if(!btn) return;
@@ -3066,10 +3098,13 @@ function teamButtonAktualisieren(){
   if(badge) badge.textContent=String(teamLaden().length);
 }
 
-function teamOeffnen(){
+async function teamOeffnen(){
   if(aktuelleRolle !== "superuser") return;
-  teamRendern();
   $("teamDialog")?.showModal();
+  const liste=$("teamListe");
+  if(liste) liste.innerHTML='<div class="daten-leer"><strong>Team wird geladen…</strong></div>';
+  await teamRemoteLaden();
+  teamRendern();
 }
 
 function teamBereichLabel(key){
@@ -3087,7 +3122,7 @@ function teamRendern(){
     return String(a.name||a.email||"").localeCompare(String(b.name||b.email||""),"de");
   });
   if(!daten.length){
-    liste.innerHTML='<div class="daten-leer"><strong>Noch keine Teamprofile</strong><span>Mitglieder erscheinen hier automatisch, sobald sie sich mit der aktuellen App-Version anmelden.</span></div>';
+    liste.innerHTML='<div class="daten-leer"><strong>Noch keine Teammitglieder</strong><span>Registrierte Rudelbar-Konten erscheinen hier automatisch.</span></div>';
     return;
   }
   liste.innerHTML=daten.map(m=>{
@@ -3115,7 +3150,7 @@ function teamRendern(){
   liste.querySelectorAll("[data-team-delete]").forEach(btn=>btn.onclick=()=>teamMitgliedLoeschen(btn.dataset.teamDelete));
 }
 
-function teamProfilSpeichern(id){
+async function teamProfilSpeichern(id){
   if(aktuelleRolle !== "superuser") return;
   const daten=teamLaden();
   const profil=daten.find(x=>String(x.id)===String(id));
@@ -3125,8 +3160,18 @@ function teamProfilSpeichern(id){
   profil.notiz=card.querySelector("[data-team-notiz]")?.value.trim()||"";
   profil.updatedAt=new Date().toISOString();
   teamSpeichern(daten);
-  queueUpsert("moduldaten",modulZuDB(TEAM_BEREICH,TEAM_MODUL,profil));
-  syncStarten();
+  try{
+    const { error } = await sb.rpc("update_rudelbar_team_member", {
+      p_user_id: id,
+      p_einsatzbereiche: profil.einsatzbereiche,
+      p_notiz: profil.notiz
+    });
+    if(error) throw error;
+  }catch(error){
+    console.warn("Teamprofil konnte serverseitig nicht gespeichert werden:", error?.message || error);
+    queueUpsert("moduldaten",modulZuDB(TEAM_BEREICH,TEAM_MODUL,profil));
+    syncStarten();
+  }
   teamRendern();
 }
 
@@ -3154,6 +3199,7 @@ async function teamMitgliedLoeschen(id){
   }
   const daten=teamLaden().filter(x=>String(x.id)!==String(id));
   teamSpeichern(daten);
+  await teamRemoteLaden();
   teamRendern();
   teamButtonAktualisieren();
   try{ await remoteNeuLaden(); }catch{}
