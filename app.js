@@ -685,113 +685,12 @@ function einladungsTokenAktuell() {
 
 function registrierungInviteStatusAktualisieren(token) {
   const status = $("registerInviteStatus");
-  const fallback = $("registerInviteFallback");
-  if (status) {
-    status.textContent = token
-      ? "✓ Persönliche Einladung erkannt. Du kannst jetzt dein eigenes Konto anlegen."
-      : "Der Einladungslink konnte nicht automatisch erkannt werden. Füge unten den vollständigen Link oder den Einladungscode ein.";
-    status.classList.toggle("ok", Boolean(token));
-  }
-  fallback?.classList.toggle("versteckt", Boolean(token));
-}
-
-function inviteManuellUebernehmen() {
-  const feld = $("registerInviteManuell");
-  const raw = feld?.value || "";
-  $("registerFehler").textContent = "";
-  $("registerErfolg").textContent = "";
-
-  // Eine normale Rudelbar-Adresse ist KEINE Einladung. Alte, eventuell ungültige
-  // Tokens werden in diesem Fall bewusst entfernt, damit sie nicht heimlich weiterverwendet werden.
-  if (istNurNormaleAppURL(raw)) {
-    sessionStorage.removeItem(INVITE_TOKEN_KEY);
-    localStorage.removeItem(INVITE_TOKEN_KEY);
-    registrierungInviteStatusAktualisieren("");
-    $("registerFehler").textContent = "Das ist nur die normale Rudelbar-Adresse. Bitte den persönlichen Einladungscode (12 Zeichen) oder den vollständigen Einladungslink einfügen.";
-    return;
-  }
-
-  const token = inviteTokenNormalisieren(raw);
-  if (!token) {
-    $("registerFehler").textContent = "Bitte den persönlichen Einladungscode oder den vollständigen Einladungslink einfügen.";
-    return;
-  }
-  inviteTokenSpeichern(token);
-  registrierungInviteStatusAktualisieren(token);
-  $("registerErfolg").textContent = `Einladungscode ${token} übernommen. Du kannst das Konto jetzt erstellen.`;
-}
-
-function basisAppURL() {
-  const url = new URL(window.location.href);
-  url.search = "";
-  url.hash = "";
-  return url;
-}
-
-async function adminStatusLaden() {
-  istAdmin = false;
-  aktuelleRolle = "mitarbeiter";
-  $("settingsInviteBtn")?.classList.add("versteckt");
-
-  if (!aktuellerUser) {
-    settingsRolleAnwenden();
-    return;
-  }
-
-  // v119: Das Besitzerkonto ist zusätzlich clientseitig fest als Superuser verankert.
-  // Dadurch kann ein veralteter/fehlender app_roles-Eintrag den Inhaber nicht mehr aussperren.
-  if (istRudelbarBesitzer()) {
-    aktuelleRolle = "superuser";
-    istAdmin = true;
-  } else {
-    const { data: roleData, error: roleError } = await sb.rpc("get_rudelbar_role");
-    if (!roleError && typeof roleData === "string") {
-      aktuelleRolle = roleData === "superuser" ? "superuser" : "mitarbeiter";
-      istAdmin = aktuelleRolle === "superuser";
-    } else {
-      const { data, error } = await sb.rpc("is_rudelbar_admin");
-      if (error) console.warn("Rollenstatus konnte nicht geladen werden:", error.message);
-      istAdmin = data === true;
-      aktuelleRolle = istAdmin ? "superuser" : "mitarbeiter";
-    }
-  }
-
-  if (istAdmin) $("settingsInviteBtn")?.classList.remove("versteckt");
-  settingsRolleAnwenden();
-}
-
-function registrierungOeffnen() {
-  const token = einladungsTokenAusURL();
-  if ($("loginDialog").open) $("loginDialog").close();
-  $("registerFehler").textContent = "";
-  $("registerErfolg").textContent = "";
-  $("registerPasswort").value = "";
-  $("registerPasswort2").value = "";
-  registrierungInviteStatusAktualisieren(token);
-  // Eingabefelder bleiben immer bedienbar. Der Invite-Token wird erst beim Absenden geprüft.
-  // Dadurch kann ein iPhone den Nutzer nicht mehr in einem scheinbar "eingefrorenen" Formular festhalten.
-  ["registerName","registerEmail","registerPasswort","registerPasswort2","registerButton"].forEach(id=>{
-    const el=$(id);
-    if(!el) return;
-    el.disabled=false;
-    el.removeAttribute("readonly");
-    el.style.pointerEvents="auto";
-    el.style.webkitUserSelect="text";
-    el.style.userSelect="text";
-  });
-  const reg = $("registrierungDialog");
-  reg.classList.remove("versteckt");
-  document.body.classList.add("register-offen");
-  setTimeout(() => {
-    const feld = $("registerName");
-    if (feld) { feld.removeAttribute("readonly"); feld.disabled = false; feld.focus({preventScroll:true}); }
-  }, 180);
-}
-
-function registrierungZurLogin() {
-  $("registrierungDialog").classList.add("versteckt");
-  document.body.classList.remove("register-offen");
-  $("loginDialog").showModal();
+  if (!status) return;
+  const clean = inviteTokenNormalisieren(token || "");
+  status.textContent = clean
+    ? "✓ Persönliche Einladung erkannt. Du kannst jetzt dein eigenes Konto anlegen."
+    : "Registrierung ist nur über einen persönlichen Rudelbar-Einladungslink möglich.";
+  $("registerInviteFallback")?.classList.add("versteckt");
 }
 
 async function registrierenMitEinladung() {
@@ -805,7 +704,7 @@ async function registrierenMitEinladung() {
   $("registerErfolg").textContent = "";
 
   if (!token) {
-    $("registerFehler").textContent = "Einladung fehlt. Bitte den Einladungslink oder Einladungscode einfügen.";
+    $("registerFehler").textContent = "Einladung fehlt. Bitte öffne den persönlichen Einladungslink, den du erhalten hast.";
     registrierungInviteStatusAktualisieren("");
     return;
   }
@@ -953,7 +852,7 @@ function einladungsURL(token) {
 function einladungsText({ label, rolle, token }) {
   const rollenText = rolle === "superuser" ? "Superuser" : "Mitarbeiter";
   const name = label && label !== "Rudelbar-Mitglied" ? ` ${label}` : "";
-  return `Moin${name},\n\ndu wurdest zur Rudelbar-App eingeladen.\nRolle: ${rollenText}\n\nÖffne diesen persönlichen Link, um dein Konto zu erstellen.\n\nEinladungscode: ${token}`;
+  return `Moin${name},\n\ndu wurdest zur Rudelbar-App eingeladen.\nRolle: ${rollenText}\n\nÖffne diesen persönlichen Link, um dein Konto zu erstellen.`;
 }
 
 async function einladungTeilenMitDaten({ label, rolle, token }) {
@@ -1057,7 +956,7 @@ async function einladungErstellen() {
   }
 
   $("einladungLink").value = einladungsURL(token);
-  if ($("einladungCode")) $("einladungCode").value = token;
+  if ($("einladungCode")) $("einladungCode").value = token; // intern nur fürs Teilen, nicht sichtbar
   $("einladungErgebnis").classList.remove("versteckt");
   await einladungenLaden();
 
@@ -2549,6 +2448,7 @@ const BEREICHE = {
     subtitel: "FACILITY SERVICE",
     logo: "Logo-Service.png",
     module: [
+      { id: "veranstaltungen", icon: "📅", titel: "Veranstaltungen", text: "Kalender und Einsätze" },
       { id: "auftraege", icon: "🛠️", titel: "Aufträge", text: "Einsätze planen" },
       { id: "kunden", icon: "👥", titel: "Kunden", text: "Kundendaten verwalten" },
       { id: "angebote", icon: "📝", titel: "Angebote", text: "Leistungen anbieten" },
@@ -2562,6 +2462,7 @@ const BEREICHE = {
     subtitel: "SECURITY",
     logo: "Logo-Haupt.png",
     module: [
+      { id: "veranstaltungen", icon: "📅", titel: "Veranstaltungen", text: "Kalender und Einsätze" },
       { id: "auftraege", icon: "🛡️", titel: "Aufträge", text: "Security-Einsätze" },
       { id: "personal", icon: "👥", titel: "Personal", text: "Mitarbeiter und Qualifikationen" },
       { id: "dienstplan", icon: "📅", titel: "Dienstplan", text: "Einsatzplanung" },
@@ -2627,15 +2528,7 @@ function kasseZeigen() {
 
 const MODUL_FELDER = {
   kneipe: {
-    veranstaltungen: [
-      { key: "titel", label: "Veranstaltung", type: "text", required: true, full: true },
-      { key: "datum", label: "Datum", type: "date", required: true },
-      { key: "ort", label: "Ort", type: "text" },
-      { key: "kunde", label: "Auftraggeber", type: "text" },
-      { key: "status", label: "Status", type: "select", options: ["Anfrage", "Geplant", "Bestätigt", "Erledigt"] },
-      { key: "betrag", label: "Geplanter Umsatz €", type: "number" },
-      { key: "notiz", label: "Notizen", type: "textarea", full: true }
-    ]
+    veranstaltungen: veranstaltungsFelder("Mobile Kneipe")
   },
   mode: {
     auftraege: [
@@ -2661,6 +2554,7 @@ const MODUL_FELDER = {
     kalkulation: kalkulationsFelder()
   },
   service: {
+    veranstaltungen: veranstaltungsFelder("Facility Service"),
     auftraege: [
       { key: "titel", label: "Auftrag", type: "text", required: true, full: true },
       { key: "datum", label: "Einsatzdatum", type: "date" },
@@ -2683,6 +2577,7 @@ const MODUL_FELDER = {
     ]
   },
   security: {
+    veranstaltungen: veranstaltungsFelder("Security"),
     auftraege: [
       { key: "titel", label: "Security-Auftrag", type: "text", required: true, full: true },
       { key: "datum", label: "Einsatzdatum", type: "date" },
@@ -2715,6 +2610,21 @@ const MODUL_FELDER = {
     rechnungen: dokumentFelder("Rechnung")
   }
 };
+
+function veranstaltungsFelder(bereichName) {
+  return [
+    { key: "titel", label: "Veranstaltung / Einsatz", type: "text", required: true, full: true },
+    { key: "datum", label: "Datum", type: "date", required: true },
+    { key: "start", label: "Beginn", type: "time" },
+    { key: "ende", label: "Ende", type: "time" },
+    { key: "ort", label: "Ort", type: "text", full: true },
+    { key: "kunde", label: "Auftraggeber / Kunde", type: "text" },
+    { key: "team", label: "Team / Mitarbeiter", type: "text" },
+    { key: "status", label: "Status", type: "select", options: ["Anfrage", "In Planung", "Bestätigt", "Erledigt", "Abgesagt"] },
+    { key: "betrag", label: "Geplanter Umsatz €", type: "number" },
+    { key: "notiz", label: "Beschreibung / Hinweise", type: "textarea", full: true }
+  ];
+}
 
 function kundenFelder() {
   return [
@@ -2805,6 +2715,10 @@ function modulRendern() {
     archivModulRendern();
     return;
   }
+  if (["kneipe", "service", "security"].includes(aktiverBereich) && aktivesModul === "veranstaltungen") {
+    kalenderRendern();
+    return;
+  }
 
   const daten = modulDatenLaden();
   const betragSumme = daten.reduce((s, x) => s + Number(x.betrag || 0), 0);
@@ -2825,6 +2739,126 @@ function modulRendern() {
 
   document.querySelectorAll("[data-mod-edit]").forEach(btn => btn.onclick = () => modulFormOeffnen(btn.dataset.modEdit));
   document.querySelectorAll("[data-mod-del]").forEach(btn => btn.onclick = () => modulEintragLoeschen(btn.dataset.modDel));
+}
+
+
+const KALENDER_BEREICHE = {
+  kneipe: { name: "Mobile Kneipe", icon: "🍺", cls: "kneipe" },
+  service: { name: "Facility Service", icon: "🛠️", cls: "service" },
+  security: { name: "Security", icon: "🛡️", cls: "security" }
+};
+let kalenderMonat = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let kalenderFilter = new Set(["kneipe", "service", "security"]);
+
+function kalenderAlleTermine() {
+  return Object.keys(KALENDER_BEREICHE).flatMap(bereich => {
+    const daten = laden(modulKey(bereich, "veranstaltungen"), []);
+    return daten.map(x => ({ ...x, bereich }));
+  }).filter(x => x.datum);
+}
+
+function kalenderDatumISO(d) {
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+
+function kalenderRendern() {
+  $("modulNeu").style.display = "";
+  const alle = kalenderAlleTermine();
+  const monatStart = new Date(kalenderMonat.getFullYear(), kalenderMonat.getMonth(), 1);
+  const monatEnde = new Date(kalenderMonat.getFullYear(), kalenderMonat.getMonth()+1, 0);
+  const sichtbar = alle.filter(x => kalenderFilter.has(x.bereich));
+  const imMonat = sichtbar.filter(x => {
+    const d=new Date(`${x.datum}T12:00:00`); return d>=monatStart && d<=monatEnde;
+  });
+  const bestaetigt = imMonat.filter(x => x.status === "Bestätigt").length;
+  $("modulStatistik").innerHTML = `
+    <div class="kalender-toolbar">
+      <div class="kalender-monat-nav">
+        <button type="button" data-kal-prev aria-label="Voriger Monat">‹</button>
+        <button type="button" data-kal-heute>Heute</button>
+        <strong>${monatStart.toLocaleDateString("de-DE", {month:"long", year:"numeric"})}</strong>
+        <button type="button" data-kal-next aria-label="Nächster Monat">›</button>
+      </div>
+      <div class="kalender-filter">
+        ${Object.entries(KALENDER_BEREICHE).map(([id,b])=>`<button type="button" class="kal-filter ${kalenderFilter.has(id)?"aktiv":""} ${b.cls}" data-kal-filter="${id}">${b.icon} ${b.name}</button>`).join("")}
+      </div>
+    </div>
+    <div class="kalender-mini-stats">
+      <div><span>Termine im Monat</span><strong>${imMonat.length}</strong></div>
+      <div><span>Bestätigt</span><strong>${bestaetigt}</strong></div>
+      <div><span>Alle Bereiche</span><strong>${alle.length}</strong></div>
+    </div>`;
+
+  const firstWeekday=(monatStart.getDay()+6)%7;
+  const gridStart=new Date(monatStart); gridStart.setDate(gridStart.getDate()-firstWeekday);
+  const tage=[];
+  for(let i=0;i<42;i++){ const d=new Date(gridStart); d.setDate(gridStart.getDate()+i); tage.push(d); }
+  const byDate=new Map();
+  sichtbar.forEach(x=>{ if(!byDate.has(x.datum)) byDate.set(x.datum,[]); byDate.get(x.datum).push(x); });
+  const heute=kalenderDatumISO(new Date());
+  const wochenkopf=["Mo","Di","Mi","Do","Fr","Sa","So"].map(x=>`<div class="kal-wtag">${x}</div>`).join("");
+  const zellen=tage.map(d=>{
+    const iso=kalenderDatumISO(d), items=(byDate.get(iso)||[]).sort((a,b)=>String(a.start||"").localeCompare(String(b.start||"")));
+    const fremd=d.getMonth()!==monatStart.getMonth();
+    return `<button type="button" class="kal-tag ${fremd?"fremd":""} ${iso===heute?"heute":""}" data-kal-datum="${iso}">
+      <span class="kal-tag-nr">${d.getDate()}</span>
+      <span class="kal-events">${items.slice(0,3).map(x=>{const b=KALENDER_BEREICHE[x.bereich]; return `<span class="kal-event ${b.cls}" data-kal-event="${x.bereich}|${x.id}"><b>${esc(x.start||"")}</b>${esc(x.titel||"Termin")}</span>`}).join("")}${items.length>3?`<span class="kal-mehr">+${items.length-3} mehr</span>`:""}</span>
+    </button>`;
+  }).join("");
+
+  const kommende=sichtbar.filter(x=>x.datum>=heute).sort((a,b)=>`${a.datum} ${a.start||""}`.localeCompare(`${b.datum} ${b.start||""}`)).slice(0,8);
+  $("modulListe").innerHTML = `
+    <div class="kalender-wrap">
+      <div class="kalender-grid">${wochenkopf}${zellen}</div>
+      <section class="kalender-naechste"><div class="kalender-naechste-kopf"><h3>Nächste Termine</h3><button type="button" data-kal-neu>+ Neuer Termin</button></div>
+        ${kommende.length?kommende.map(x=>kalenderTerminKarte(x)).join(""):'<div class="daten-leer"><strong>Keine kommenden Termine</strong><span>Lege mit „+ Neuer Termin“ den ersten Einsatz an.</span></div>'}
+      </section>
+    </div>`;
+
+  document.querySelector("[data-kal-prev]").onclick=()=>{kalenderMonat=new Date(kalenderMonat.getFullYear(),kalenderMonat.getMonth()-1,1);kalenderRendern();};
+  document.querySelector("[data-kal-next]").onclick=()=>{kalenderMonat=new Date(kalenderMonat.getFullYear(),kalenderMonat.getMonth()+1,1);kalenderRendern();};
+  document.querySelector("[data-kal-heute]").onclick=()=>{const n=new Date();kalenderMonat=new Date(n.getFullYear(),n.getMonth(),1);kalenderRendern();};
+  document.querySelectorAll("[data-kal-filter]").forEach(btn=>btn.onclick=()=>{const id=btn.dataset.kalFilter; kalenderFilter.has(id)?kalenderFilter.delete(id):kalenderFilter.add(id); if(!kalenderFilter.size) kalenderFilter.add(id); kalenderRendern();});
+  document.querySelectorAll("[data-kal-datum]").forEach(btn=>btn.onclick=(ev)=>{ if(ev.target.closest("[data-kal-event]")) return; kalenderNeuFuerDatum(btn.dataset.kalDatum); });
+  document.querySelectorAll("[data-kal-event]").forEach(el=>el.onclick=(ev)=>{ev.stopPropagation();const [bereich,id]=el.dataset.kalEvent.split("|");kalenderTerminDetails(bereich,id);});
+  document.querySelectorAll("[data-kal-open]").forEach(el=>el.onclick=()=>{const [bereich,id]=el.dataset.kalOpen.split("|");kalenderTerminDetails(bereich,id);});
+  document.querySelector("[data-kal-neu]").onclick=()=>kalenderNeuFuerDatum(heute);
+}
+
+function kalenderTerminKarte(x){
+  const b=KALENDER_BEREICHE[x.bereich];
+  return `<button type="button" class="kal-list-item" data-kal-open="${x.bereich}|${x.id}">
+    <span class="kal-list-date"><b>${new Date(`${x.datum}T12:00:00`).toLocaleDateString("de-DE",{weekday:"short"})}</b>${new Date(`${x.datum}T12:00:00`).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}</span>
+    <span class="kal-list-icon ${b.cls}">${b.icon}</span>
+    <span class="kal-list-main"><strong>${esc(x.titel||"Termin")}</strong><small>${b.name}${x.start?` · ${esc(x.start)}${x.ende?`–${esc(x.ende)}`:""}`:""}${x.ort?` · ${esc(x.ort)}`:""}</small></span>
+    <span class="status-chip">${esc(x.status||"Geplant")}</span>
+  </button>`;
+}
+
+function kalenderNeuFuerDatum(datum){
+  const ursprungBereich=aktiverBereich;
+  modulEditID=null;
+  const felder=veranstaltungsFelder(KALENDER_BEREICHE[ursprungBereich]?.name||"Veranstaltung");
+  $("modulFormTitel").textContent="Neuen Termin anlegen";
+  $("modulForm").innerHTML = `<label class="ganz">Bereich<select name="__bereich"><option value="kneipe" ${ursprungBereich==="kneipe"?"selected":""}>Mobile Kneipe</option><option value="service" ${ursprungBereich==="service"?"selected":""}>Facility Service</option><option value="security" ${ursprungBereich==="security"?"selected":""}>Security</option></select></label>` + felder.map(f=>{
+    const value=f.key==="datum"?datum:""; const cls=f.full?"ganz":"";
+    if(f.type==="textarea") return `<label class="${cls}">${esc(f.label)}<textarea name="${f.key}" ${f.required?"required":""}>${esc(value)}</textarea></label>`;
+    if(f.type==="select") return `<label class="${cls}">${esc(f.label)}<select name="${f.key}">${(f.options||[]).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("")}</select></label>`;
+    const step=f.type==="number"?' step="0.01" inputmode="decimal"':"";
+    return `<label class="${cls}">${esc(f.label)}<input name="${f.key}" type="${f.type||"text"}" value="${esc(value)}" ${f.required?"required":""}${step}></label>`;
+  }).join("");
+  $("modulFormDialog").dataset.kalenderNeu="1";
+  $("modulFormDialog").showModal();
+}
+
+function kalenderTerminDetails(bereich,id){
+  const daten=laden(modulKey(bereich,"veranstaltungen"),[]); const x=daten.find(e=>String(e.id)===String(id)); if(!x)return;
+  const b=KALENDER_BEREICHE[bereich];
+  const text=[`${b.icon} ${b.name}`,x.titel||"Termin",x.datum||"",[x.start,x.ende].filter(Boolean).join(" – "),x.ort?`Ort: ${x.ort}`:"",x.kunde?`Kunde: ${x.kunde}`:"",x.team?`Team: ${x.team}`:"",x.status?`Status: ${x.status}`:"",x.notiz||""].filter(Boolean).join("\n");
+  const bearbeiten=confirm(`${text}\n\nOK = bearbeiten · Abbrechen = schließen`);
+  if(!bearbeiten)return;
+  aktiverBereich=bereich; aktivesModul="veranstaltungen"; modulFormOeffnen(id);
 }
 
 function datenKarteHTML(x) {
@@ -2863,6 +2897,7 @@ function datenKarteHTML(x) {
 }
 
 function modulFormOeffnen(id = null) {
+  if ($("modulFormDialog")) delete $("modulFormDialog").dataset.kalenderNeu;
   modulEditID = id;
   const daten = modulDatenLaden();
   const eintrag = id ? daten.find(x => x.id === id) || {} : {};
@@ -2889,11 +2924,16 @@ function modulFormOeffnen(id = null) {
 function modulFormSpeichern() {
   const form = $("modulForm");
   if (!form.reportValidity()) return;
+  const kalenderNeu = $("modulFormDialog")?.dataset.kalenderNeu === "1";
+  const kalenderBereich = kalenderNeu ? (new FormData(form).get("__bereich") || aktiverBereich) : aktiverBereich;
+  const vorherBereich = aktiverBereich;
+  if (kalenderNeu) { aktiverBereich = kalenderBereich; aktivesModul = "veranstaltungen"; }
   const daten = modulDatenLaden();
   const alt = modulEditID ? daten.find(x => x.id === modulEditID) : null;
   const neu = { ...(alt || {}), id: modulEditID || neueID(), createdAt: alt?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
 
   new FormData(form).forEach((value, key) => {
+    if (key === "__bereich") return;
     if (["betrag", "ek", "bestand", "menge"].includes(key)) neu[key] = value === "" ? "" : Number(String(value).replace(",", "."));
     else neu[key] = String(value).trim();
   });
@@ -2908,7 +2948,9 @@ function modulFormSpeichern() {
   modulDatenSpeichern(daten);
   queueUpsert("moduldaten", modulZuDB(aktiverBereich, aktivesModul, neu));
   $("modulFormDialog").close();
+  delete $("modulFormDialog").dataset.kalenderNeu;
   modulEditID = null;
+  if (kalenderNeu) { aktiverBereich = vorherBereich; aktivesModul = "veranstaltungen"; kalenderMonat = new Date(Number(neu.datum?.slice(0,4)) || new Date().getFullYear(), Math.max(0,(Number(neu.datum?.slice(5,7))||1)-1), 1); }
   modulRendern();
 }
 
