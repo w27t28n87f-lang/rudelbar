@@ -2544,3 +2544,85 @@ body.register-offen{overflow:hidden!important}
 /* v125: gemeinsamer Veranstaltungskalender */
 .kalender-toolbar{display:flex;flex-direction:column;gap:12px;margin:2px 0 14px}.kalender-monat-nav{display:grid;grid-template-columns:auto auto 1fr auto;gap:8px;align-items:center}.kalender-monat-nav button,.kalender-naechste-kopf button{border:1px solid rgba(240,171,47,.55);background:#191919;color:#f0ab2f;border-radius:12px;padding:10px 12px;font-weight:800}.kalender-monat-nav strong{text-align:center;text-transform:capitalize}.kalender-filter{display:flex;gap:7px;overflow:auto;padding-bottom:2px;scrollbar-width:none}.kal-filter{white-space:nowrap;border:1px solid #3a3a3a;background:#171717;color:#bdbdbd;border-radius:999px;padding:9px 11px;font-weight:800}.kal-filter.aktiv{color:#fff}.kal-filter.kneipe.aktiv{border-color:#f0ab2f;background:rgba(240,171,47,.16)}.kal-filter.service.aktiv{border-color:#2bbb69;background:rgba(43,187,105,.14)}.kal-filter.security.aktiv{border-color:#398af4;background:rgba(57,138,244,.14)}.kalender-mini-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.kalender-mini-stats>div{background:#1a1a1a;border:1px solid #333;border-radius:14px;padding:10px}.kalender-mini-stats span{display:block;color:#999;font-size:11px}.kalender-mini-stats strong{font-size:20px;color:#f0ab2f}.kalender-wrap{display:grid;gap:16px}.kalender-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid #333;border-radius:16px;overflow:hidden;background:#111}.kal-wtag{padding:9px 4px;text-align:center;color:#aaa;font-size:12px;font-weight:900;border-bottom:1px solid #333}.kal-tag{min-width:0;min-height:88px;text-align:left;padding:7px;background:#151515;color:#eee;border:0;border-right:1px solid #292929;border-bottom:1px solid #292929;display:flex;flex-direction:column;gap:5px}.kal-tag:nth-child(7n){border-right:0}.kal-tag.fremd{opacity:.35}.kal-tag.heute .kal-tag-nr{background:#f0ab2f;color:#111}.kal-tag-nr{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;font-size:12px;font-weight:900}.kal-events{display:flex;flex-direction:column;gap:3px;min-width:0}.kal-event{display:block;border-radius:5px;padding:3px 4px;font-size:9px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:white}.kal-event b{margin-right:3px}.kal-event.kneipe{background:#9b6a10}.kal-event.service{background:#167b40}.kal-event.security{background:#1d63b7}.kal-mehr{font-size:9px;color:#aaa}.kalender-naechste{background:#151515;border:1px solid #333;border-radius:16px;padding:12px}.kalender-naechste-kopf{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.kalender-naechste-kopf h3{margin:0}.kal-list-item{width:100%;display:grid;grid-template-columns:48px 34px 1fr auto;align-items:center;gap:8px;background:transparent;color:white;border:0;border-top:1px solid #2b2b2b;padding:11px 2px;text-align:left}.kal-list-date{font-size:11px;color:#aaa;display:flex;flex-direction:column}.kal-list-date b{color:#fff}.kal-list-icon{width:32px;height:32px;border-radius:9px;display:grid;place-items:center}.kal-list-icon.kneipe{background:rgba(240,171,47,.17)}.kal-list-icon.service{background:rgba(43,187,105,.15)}.kal-list-icon.security{background:rgba(57,138,244,.15)}.kal-list-main{min-width:0}.kal-list-main strong,.kal-list-main small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kal-list-main small{color:#aaa;font-size:11px;margin-top:2px}
 @media (max-width:700px){.kalender-monat-nav{grid-template-columns:auto auto 1fr auto}.kalender-monat-nav strong{font-size:15px}.kalender-grid{border-radius:12px}.kal-tag{min-height:72px;padding:5px 3px}.kal-wtag{font-size:10px}.kal-event{font-size:0;padding:0;width:7px;height:7px;border-radius:50%}.kal-event b{display:none}.kal-events{flex-direction:row;flex-wrap:wrap}.kal-mehr{display:none}.kal-list-item{grid-template-columns:42px 30px minmax(0,1fr);}.kal-list-item .status-chip{grid-column:3;margin-top:3px;width:max-content}.kalender-mini-stats span{font-size:9px}.kalender-mini-stats strong{font-size:17px}}
+
+
+/* =========================================================
+   RUDELBAR v127 – kompakter Mobilkalender + Gesamtübersicht
+   ========================================================= */
+.start-kalender{
+  width:min(94vw,560px);
+  margin:14px auto 26px;
+  padding:12px;
+  border:1px solid rgba(240,171,47,.55);
+  border-radius:18px;
+  background:rgba(12,12,12,.90);
+  position:relative;
+  z-index:2;
+  text-align:left;
+  box-sizing:border-box;
+}
+.start-kalender-kopf{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.start-kalender-kopf>div{display:grid;gap:2px}
+.start-kalender-kopf strong{font-size:17px;color:#fff}
+.start-kalender-kopf small{font-size:10px;color:#969696}
+.start-kalender-neu{border:1px solid var(--gold);background:var(--gold);color:#15100a;border-radius:11px;padding:9px 11px;font-weight:900;white-space:nowrap}
+.start-kal-nav{display:grid;grid-template-columns:38px 1fr 38px;align-items:center;gap:6px;margin-bottom:7px}
+.start-kal-nav strong{text-align:center;text-transform:capitalize;font-size:14px}
+.start-kal-nav button{height:34px;border:1px solid #3a3a3a;background:#171717;color:var(--gold);border-radius:9px;font-size:20px}
+.start-kal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid #303030;border-radius:11px;overflow:hidden}
+.start-kal-wtag{text-align:center;padding:5px 1px;color:#888;font-size:9px;font-weight:900;border-bottom:1px solid #303030}
+.start-kal-tag{min-width:0;height:42px;border:0;border-right:1px solid #252525;border-bottom:1px solid #252525;background:#141414;color:#ddd;padding:3px;display:grid;align-content:start;justify-items:center;gap:3px}
+.start-kal-tag:nth-child(7n){border-right:0}.start-kal-tag.fremd{opacity:.34}.start-kal-tag.heute span{background:var(--gold);color:#111}
+.start-kal-tag>span{display:grid;place-items:center;width:21px;height:21px;border-radius:50%;font-size:10px;font-weight:900}
+.start-kal-tag i{display:flex;gap:2px;min-height:4px}.start-kal-tag i b,.start-kal-legende b{width:5px;height:5px;border-radius:50%;display:inline-block}
+.start-kal-tag i b.kneipe,.start-kal-legende b.kneipe{background:#f0ab2f}.start-kal-tag i b.service,.start-kal-legende b.service{background:#2bbb69}.start-kal-tag i b.security,.start-kal-legende b.security{background:#398af4}
+.start-kal-legende{display:flex;justify-content:center;flex-wrap:wrap;gap:9px;margin:8px 0;color:#999;font-size:9px}.start-kal-legende span{display:flex;align-items:center;gap:4px}
+.start-kal-naechste{display:grid;gap:5px}.start-kal-naechste button{width:100%;display:grid;grid-template-columns:45px minmax(0,1fr);column-gap:7px;border:1px solid #292929;background:#161616;color:#fff;border-radius:10px;padding:7px 9px;text-align:left}
+.start-kal-naechste button span{grid-row:1/3;color:#aaa;font-size:10px;align-self:center}.start-kal-naechste button b{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.start-kal-naechste button small{font-size:9px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.start-kal-leer{display:block;text-align:center;color:#888;padding:8px}
+
+/* Bereichskalender bewusst auf den aktuellen Bereich beschränken */
+.kalender-bereich-fest{display:inline-flex;align-items:center;gap:6px;max-width:100%;width:max-content;padding:8px 10px;border-radius:999px;font-size:12px;font-weight:900;border:1px solid #444}
+.kalender-bereich-fest.kneipe{border-color:#f0ab2f;color:#f4bf60;background:rgba(240,171,47,.12)}
+.kalender-bereich-fest.service{border-color:#2bbb69;color:#63d794;background:rgba(43,187,105,.12)}
+.kalender-bereich-fest.security{border-color:#398af4;color:#78b0fb;background:rgba(57,138,244,.12)}
+
+/* verhindert horizontales Abschneiden auf iPhone */
+#modulAnsicht,.modul-wrap,.datenmodul-toolbar,.modul-statistik,.datenmodul-liste,.kalender-wrap,.kalender-grid{max-width:100%;box-sizing:border-box}
+#modulAnsicht{overflow-x:hidden}
+.kalender-toolbar,.kalender-mini-stats,.kalender-wrap{min-width:0}
+.kalender-monat-nav{width:100%;min-width:0}
+.kalender-monat-nav strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kalender-filter{max-width:100%}
+
+@media(max-width:700px){
+  .modul-wrap{width:100%;padding-left:0;padding-right:0}
+  .datenmodul-toolbar{gap:8px;align-items:flex-start}
+  .datenmodul-toolbar>div:first-child{min-width:0}
+  .datenmodul-aktionen{display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%}
+  .datenmodul-aktionen button{min-width:0;width:100%;padding:10px 7px;font-size:12px}
+  .kalender-monat-nav{grid-template-columns:38px 58px minmax(0,1fr) 38px;gap:5px}
+  .kalender-monat-nav button{padding:8px 5px;min-width:0}
+  .kalender-monat-nav strong{font-size:13px}
+  .kalender-mini-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .kalender-mini-stats>div{padding:8px 6px;min-width:0}
+  .kalender-mini-stats span{font-size:8px;white-space:normal}
+  .kalender-mini-stats strong{font-size:16px}
+  .kalender-grid{width:100%}
+  .kal-wtag{padding:6px 1px;font-size:9px}
+  .kal-tag{min-height:61px;padding:4px 2px}
+  .kal-tag-nr{width:20px;height:20px;font-size:10px}
+  .kalender-naechste{padding:9px}
+  .kalender-naechste-kopf{align-items:center}
+  .kalender-naechste-kopf button{padding:8px 9px;font-size:11px}
+  .kal-list-item{grid-template-columns:38px 28px minmax(0,1fr);gap:5px;padding:9px 0}
+  .kal-list-icon{width:28px;height:28px}
+  .kal-list-main strong{font-size:12px}.kal-list-main small{font-size:9px}
+}
+
+@media(max-width:390px){
+  .start-kalender{width:95vw;padding:10px}
+  .start-kal-tag{height:38px}
+  .start-kalender-kopf strong{font-size:15px}
+  .start-kalender-neu{font-size:11px;padding:8px}
+  .kalender-monat-nav{grid-template-columns:34px 52px minmax(0,1fr) 34px}
+}

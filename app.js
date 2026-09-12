@@ -2563,6 +2563,7 @@ function startseiteZeigen() {
   alleHauptansichtenVerstecken();
   $("bereichStart").classList.remove("versteckt");
   aktiverBereich = null;
+  startKalenderRendern();
   nachOben();
 }
 
@@ -2841,11 +2842,18 @@ function kalenderRendern() {
   const alle = kalenderAlleTermine();
   const monatStart = new Date(kalenderMonat.getFullYear(), kalenderMonat.getMonth(), 1);
   const monatEnde = new Date(kalenderMonat.getFullYear(), kalenderMonat.getMonth()+1, 0);
-  const sichtbar = alle.filter(x => kalenderFilter.has(x.bereich));
+
+  const bereichFix = ["kneipe","service","security"].includes(aktiverBereich) ? aktiverBereich : null;
+  const sichtbar = bereichFix ? alle.filter(x => x.bereich === bereichFix) : alle.filter(x => kalenderFilter.has(x.bereich));
   const imMonat = sichtbar.filter(x => {
     const d=new Date(`${x.datum}T12:00:00`); return d>=monatStart && d<=monatEnde;
   });
   const bestaetigt = imMonat.filter(x => x.status === "Bestätigt").length;
+
+  const filterHTML = bereichFix
+    ? `<div class="kalender-bereich-fest ${KALENDER_BEREICHE[bereichFix].cls}">${KALENDER_BEREICHE[bereichFix].icon} Nur ${KALENDER_BEREICHE[bereichFix].name}</div>`
+    : `<div class="kalender-filter">${Object.entries(KALENDER_BEREICHE).map(([id,b])=>`<button type="button" class="kal-filter ${kalenderFilter.has(id)?"aktiv":""} ${b.cls}" data-kal-filter="${id}">${b.icon} ${b.name}</button>`).join("")}</div>`;
+
   $("modulStatistik").innerHTML = `
     <div class="kalender-toolbar">
       <div class="kalender-monat-nav">
@@ -2854,14 +2862,12 @@ function kalenderRendern() {
         <strong>${monatStart.toLocaleDateString("de-DE", {month:"long", year:"numeric"})}</strong>
         <button type="button" data-kal-next aria-label="Nächster Monat">›</button>
       </div>
-      <div class="kalender-filter">
-        ${Object.entries(KALENDER_BEREICHE).map(([id,b])=>`<button type="button" class="kal-filter ${kalenderFilter.has(id)?"aktiv":""} ${b.cls}" data-kal-filter="${id}">${b.icon} ${b.name}</button>`).join("")}
-      </div>
+      ${filterHTML}
     </div>
     <div class="kalender-mini-stats">
       <div><span>Termine im Monat</span><strong>${imMonat.length}</strong></div>
       <div><span>Bestätigt</span><strong>${bestaetigt}</strong></div>
-      <div><span>Alle Bereiche</span><strong>${alle.length}</strong></div>
+      <div><span>${bereichFix ? "Gesamt Bereich" : "Alle Bereiche"}</span><strong>${sichtbar.length}</strong></div>
     </div>`;
 
   const firstWeekday=(monatStart.getDay()+6)%7;
@@ -2885,7 +2891,7 @@ function kalenderRendern() {
   $("modulListe").innerHTML = `
     <div class="kalender-wrap">
       <div class="kalender-grid">${wochenkopf}${zellen}</div>
-      <section class="kalender-naechste"><div class="kalender-naechste-kopf"><h3>Nächste Termine</h3><button type="button" data-kal-neu>+ Neuer Termin</button></div>
+      <section class="kalender-naechste"><div class="kalender-naechste-kopf"><h3>${bereichFix ? "Nächste Termine" : "Nächste Termine"}</h3><button type="button" data-kal-neu>+ Neuer Termin</button></div>
         ${kommende.length?kommende.map(x=>kalenderTerminKarte(x)).join(""):'<div class="daten-leer"><strong>Keine kommenden Termine</strong><span>Lege mit „+ Neuer Termin“ den ersten Einsatz an.</span></div>'}
       </section>
     </div>`;
@@ -2894,12 +2900,11 @@ function kalenderRendern() {
   document.querySelector("[data-kal-next]").onclick=()=>{kalenderMonat=new Date(kalenderMonat.getFullYear(),kalenderMonat.getMonth()+1,1);kalenderRendern();};
   document.querySelector("[data-kal-heute]").onclick=()=>{const n=new Date();kalenderMonat=new Date(n.getFullYear(),n.getMonth(),1);kalenderRendern();};
   document.querySelectorAll("[data-kal-filter]").forEach(btn=>btn.onclick=()=>{const id=btn.dataset.kalFilter; kalenderFilter.has(id)?kalenderFilter.delete(id):kalenderFilter.add(id); if(!kalenderFilter.size) kalenderFilter.add(id); kalenderRendern();});
-  document.querySelectorAll("[data-kal-datum]").forEach(btn=>btn.onclick=(ev)=>{ if(ev.target.closest("[data-kal-event]")) return; kalenderNeuFuerDatum(btn.dataset.kalDatum); });
+  document.querySelectorAll("[data-kal-datum]").forEach(btn=>btn.onclick=(ev)=>{ if(ev.target.closest("[data-kal-event]")) return; kalenderNeuFuerDatum(btn.dataset.kalDatum, bereichFix); });
   document.querySelectorAll("[data-kal-event]").forEach(el=>el.onclick=(ev)=>{ev.stopPropagation();const [bereich,id]=el.dataset.kalEvent.split("|");kalenderTerminDetails(bereich,id);});
   document.querySelectorAll("[data-kal-open]").forEach(el=>el.onclick=()=>{const [bereich,id]=el.dataset.kalOpen.split("|");kalenderTerminDetails(bereich,id);});
-  document.querySelector("[data-kal-neu]").onclick=()=>kalenderNeuFuerDatum(heute);
+  document.querySelector("[data-kal-neu]").onclick=()=>kalenderNeuFuerDatum(heute, bereichFix);
 }
-
 function kalenderTerminKarte(x){
   const b=KALENDER_BEREICHE[x.bereich];
   return `<button type="button" class="kal-list-item" data-kal-open="${x.bereich}|${x.id}">
@@ -2910,12 +2915,18 @@ function kalenderTerminKarte(x){
   </button>`;
 }
 
-function kalenderNeuFuerDatum(datum){
-  const ursprungBereich=aktiverBereich;
+function kalenderNeuFuerDatum(datum, bereichVorgabe = null, ursprung = "modul"){
+  const ursprungBereich = bereichVorgabe || aktiverBereich;
+  const istBereichsKalender = ["kneipe","service","security"].includes(bereichVorgabe);
   modulEditID=null;
   const felder=veranstaltungsFelder(KALENDER_BEREICHE[ursprungBereich]?.name||"Veranstaltung");
   $("modulFormTitel").textContent="Neuen Termin anlegen";
-  $("modulForm").innerHTML = `<label class="ganz">Bereich<select name="__bereich"><option value="kneipe" ${ursprungBereich==="kneipe"?"selected":""}>Mobile Kneipe</option><option value="service" ${ursprungBereich==="service"?"selected":""}>Facility Service</option><option value="security" ${ursprungBereich==="security"?"selected":""}>Security</option></select></label>` + felder.map(f=>{
+
+  const bereichFeld = istBereichsKalender
+    ? `<input type="hidden" name="__bereich" value="${ursprungBereich}">`
+    : `<label class="ganz">Bereich<select name="__bereich"><option value="kneipe">Mobile Kneipe</option><option value="service">Facility Service</option><option value="security">Security</option></select></label>`;
+
+  $("modulForm").innerHTML = bereichFeld + felder.map(f=>{
     const value=f.key==="datum"?datum:""; const cls=f.full?"ganz":"";
     if(f.type==="textarea") return `<label class="${cls}">${esc(f.label)}<textarea name="${f.key}" ${f.required?"required":""}>${esc(value)}</textarea></label>`;
     if(f.type==="select") return `<label class="${cls}">${esc(f.label)}<select name="${f.key}">${(f.options||[]).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("")}</select></label>`;
@@ -2923,9 +2934,10 @@ function kalenderNeuFuerDatum(datum){
     return `<label class="${cls}">${esc(f.label)}<input name="${f.key}" type="${f.type||"text"}" value="${esc(value)}" ${f.required?"required":""}${step}></label>`;
   }).join("");
   $("modulFormDialog").dataset.kalenderNeu="1";
+  $("modulFormDialog").dataset.kalenderOrigin=ursprung;
+  $("modulFormDialog").dataset.kalenderBereich=ursprungBereich || "";
   $("modulFormDialog").showModal();
 }
-
 function kalenderTerminDetails(bereich,id){
   const daten=laden(modulKey(bereich,"veranstaltungen"),[]); const x=daten.find(e=>String(e.id)===String(id)); if(!x)return;
   const b=KALENDER_BEREICHE[bereich];
@@ -2934,6 +2946,44 @@ function kalenderTerminDetails(bereich,id){
   if(!bearbeiten)return;
   aktiverBereich=bereich; aktivesModul="veranstaltungen"; modulFormOeffnen(id);
 }
+
+function startKalenderRendern(){
+  const root=$("startKalenderInhalt");
+  if(!root) return;
+  const alle=kalenderAlleTermine();
+  const heute=kalenderDatumISO(new Date());
+  const monatStart=new Date(kalenderMonat.getFullYear(),kalenderMonat.getMonth(),1);
+  const firstWeekday=(monatStart.getDay()+6)%7;
+  const gridStart=new Date(monatStart); gridStart.setDate(gridStart.getDate()-firstWeekday);
+  const byDate=new Map();
+  alle.forEach(x=>{ if(!byDate.has(x.datum))byDate.set(x.datum,[]); byDate.get(x.datum).push(x); });
+  const tage=[]; for(let i=0;i<35;i++){const d=new Date(gridStart);d.setDate(gridStart.getDate()+i);tage.push(d);}
+  const wochenkopf=["Mo","Di","Mi","Do","Fr","Sa","So"].map(x=>`<div class="start-kal-wtag">${x}</div>`).join("");
+  const zellen=tage.map(d=>{
+    const iso=kalenderDatumISO(d), items=byDate.get(iso)||[], fremd=d.getMonth()!==monatStart.getMonth();
+    return `<button class="start-kal-tag ${fremd?"fremd":""} ${iso===heute?"heute":""}" type="button" data-start-kal-datum="${iso}">
+      <span>${d.getDate()}</span>
+      <i>${items.slice(0,3).map(x=>`<b class="${KALENDER_BEREICHE[x.bereich].cls}"></b>`).join("")}</i>
+    </button>`;
+  }).join("");
+  const kommende=alle.filter(x=>x.datum>=heute).sort((a,b)=>`${a.datum} ${a.start||""}`.localeCompare(`${b.datum} ${b.start||""}`)).slice(0,3);
+  root.innerHTML=`
+    <div class="start-kal-nav">
+      <button type="button" data-start-kal-prev>‹</button>
+      <strong>${monatStart.toLocaleDateString("de-DE",{month:"long",year:"numeric"})}</strong>
+      <button type="button" data-start-kal-next>›</button>
+    </div>
+    <div class="start-kal-grid">${wochenkopf}${zellen}</div>
+    <div class="start-kal-legende"><span><b class="kneipe"></b>Mobile Kneipe</span><span><b class="service"></b>Facility</span><span><b class="security"></b>Security</span></div>
+    <div class="start-kal-naechste">
+      ${kommende.length?kommende.map(x=>`<button type="button" data-start-kal-open="${x.bereich}|${x.id}"><span>${new Date(`${x.datum}T12:00:00`).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}</span><b>${KALENDER_BEREICHE[x.bereich].icon} ${esc(x.titel||"Termin")}</b><small>${esc(x.start||"")}${x.ort?` · ${esc(x.ort)}`:""}</small></button>`).join(""):'<small class="start-kal-leer">Keine kommenden Termine</small>'}
+    </div>`;
+  root.querySelector("[data-start-kal-prev]").onclick=()=>{kalenderMonat=new Date(kalenderMonat.getFullYear(),kalenderMonat.getMonth()-1,1);startKalenderRendern();};
+  root.querySelector("[data-start-kal-next]").onclick=()=>{kalenderMonat=new Date(kalenderMonat.getFullYear(),kalenderMonat.getMonth()+1,1);startKalenderRendern();};
+  root.querySelectorAll("[data-start-kal-datum]").forEach(btn=>btn.onclick=()=>kalenderNeuFuerDatum(btn.dataset.startKalDatum,null,"start"));
+  root.querySelectorAll("[data-start-kal-open]").forEach(btn=>btn.onclick=()=>{const [bereich,id]=btn.dataset.startKalOpen.split("|");kalenderTerminDetails(bereich,id);});
+}
+
 
 function datenKarteHTML(x) {
   const titel = esc(x.titel || x.name || "Eintrag");
@@ -2999,7 +3049,8 @@ function modulFormSpeichern() {
   const form = $("modulForm");
   if (!form.reportValidity()) return;
   const kalenderNeu = $("modulFormDialog")?.dataset.kalenderNeu === "1";
-  const kalenderBereich = kalenderNeu ? (new FormData(form).get("__bereich") || aktiverBereich) : aktiverBereich;
+  const kalenderOrigin = $("modulFormDialog")?.dataset.kalenderOrigin || "modul";
+  const kalenderBereich = kalenderNeu ? (new FormData(form).get("__bereich") || $("modulFormDialog")?.dataset.kalenderBereich || aktiverBereich) : aktiverBereich;
   const vorherBereich = aktiverBereich;
   if (kalenderNeu) { aktiverBereich = kalenderBereich; aktivesModul = "veranstaltungen"; }
   const daten = modulDatenLaden();
@@ -3023,8 +3074,18 @@ function modulFormSpeichern() {
   queueUpsert("moduldaten", modulZuDB(aktiverBereich, aktivesModul, neu));
   $("modulFormDialog").close();
   delete $("modulFormDialog").dataset.kalenderNeu;
+  delete $("modulFormDialog").dataset.kalenderOrigin;
+  delete $("modulFormDialog").dataset.kalenderBereich;
   modulEditID = null;
-  if (kalenderNeu) { aktiverBereich = vorherBereich; aktivesModul = "veranstaltungen"; kalenderMonat = new Date(Number(neu.datum?.slice(0,4)) || new Date().getFullYear(), Math.max(0,(Number(neu.datum?.slice(5,7))||1)-1), 1); }
+  if (kalenderNeu) {
+    aktiverBereich = vorherBereich;
+    aktivesModul = "veranstaltungen";
+    kalenderMonat = new Date(Number(neu.datum?.slice(0,4)) || new Date().getFullYear(), Math.max(0,(Number(neu.datum?.slice(5,7))||1)-1), 1);
+    if (kalenderOrigin === "start") {
+      startseiteZeigen();
+      return;
+    }
+  }
   modulRendern();
 }
 
@@ -3806,10 +3867,17 @@ document.querySelectorAll(".bereich-karte").forEach(button => {
   });
 });
 
+$("startKalenderNeu")?.addEventListener("click",()=>kalenderNeuFuerDatum(kalenderDatumISO(new Date()),null,"start"));
 $("zurBereichsauswahl").onclick = () => bereichMenuZeigen("kneipe");
 $("bereichMenuZurueck").onclick = startseiteZeigen;
 $("modulZurueck").onclick = () => bereichMenuZeigen(aktiverBereich);
-$("modulNeu").onclick = () => aktivesModul === "rechnungen" ? rechnungOeffnen() : modulFormOeffnen();
+$("modulNeu").onclick = () => {
+  if (aktivesModul === "rechnungen") return rechnungOeffnen();
+  if (aktivesModul === "veranstaltungen" && ["kneipe","service","security"].includes(aktiverBereich)) {
+    return kalenderNeuFuerDatum(kalenderDatumISO(new Date()), aktiverBereich);
+  }
+  modulFormOeffnen();
+};
 $("modulExport").onclick = modulExportieren;
 $("modulFormAbbrechen").onclick = () => $("modulFormDialog").close();
 $("modulFormSpeichern").onclick = modulFormSpeichern;
