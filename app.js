@@ -2695,7 +2695,7 @@ function veranstaltungsFelder(bereichName) {
     { key: "ort", label: "Ort", type: "text", full: true },
     { key: "kunde", label: "Auftraggeber / Kunde", type: "text" },
     { key: "team", label: "Team / Mitarbeiter", type: "text" },
-    { key: "status", label: "Status", type: "select", options: ["Anfrage", "In Planung", "Bestätigt", "Erledigt", "Abgesagt"] },
+    { key: "status", label: "Status", type: "select", options: ["Anfrage", "Bestätigt"] },
     { key: "betrag", label: "Geplanter Umsatz €", type: "number" },
     { key: "notiz", label: "Beschreibung / Hinweise", type: "textarea", full: true }
   ];
@@ -2837,6 +2837,13 @@ function kalenderDatumISO(d) {
   return `${y}-${m}-${day}`;
 }
 
+function kalenderStatus(x) {
+  return x?.status === "Bestätigt" ? "Bestätigt" : "Anfrage";
+}
+function kalenderStatusKlasse(x) {
+  return kalenderStatus(x) === "Bestätigt" ? "bestaetigt" : "anfrage";
+}
+
 function kalenderRendern() {
   $("modulNeu").style.display = "";
   const alle = kalenderAlleTermine();
@@ -2848,7 +2855,8 @@ function kalenderRendern() {
   const imMonat = sichtbar.filter(x => {
     const d=new Date(`${x.datum}T12:00:00`); return d>=monatStart && d<=monatEnde;
   });
-  const bestaetigt = imMonat.filter(x => x.status === "Bestätigt").length;
+  const bestaetigt = imMonat.filter(x => kalenderStatus(x) === "Bestätigt").length;
+  const anfragen = imMonat.length - bestaetigt;
 
   const filterHTML = bereichFix
     ? `<div class="kalender-bereich-fest ${KALENDER_BEREICHE[bereichFix].cls}">${KALENDER_BEREICHE[bereichFix].icon} Nur ${KALENDER_BEREICHE[bereichFix].name}</div>`
@@ -2865,9 +2873,9 @@ function kalenderRendern() {
       ${filterHTML}
     </div>
     <div class="kalender-mini-stats">
-      <div><span>Termine im Monat</span><strong>${imMonat.length}</strong></div>
+      <div><span>Termine</span><strong>${imMonat.length}</strong></div>
+      <div><span>Anfrage</span><strong>${anfragen}</strong></div>
       <div><span>Bestätigt</span><strong>${bestaetigt}</strong></div>
-      <div><span>${bereichFix ? "Gesamt Bereich" : "Alle Bereiche"}</span><strong>${sichtbar.length}</strong></div>
     </div>`;
 
   const firstWeekday=(monatStart.getDay()+6)%7;
@@ -2883,7 +2891,7 @@ function kalenderRendern() {
     const fremd=d.getMonth()!==monatStart.getMonth();
     return `<button type="button" class="kal-tag ${fremd?"fremd":""} ${iso===heute?"heute":""}" data-kal-datum="${iso}">
       <span class="kal-tag-nr">${d.getDate()}</span>
-      <span class="kal-events">${items.slice(0,3).map(x=>{const b=KALENDER_BEREICHE[x.bereich]; return `<span class="kal-event ${b.cls}" data-kal-event="${x.bereich}|${x.id}"><b>${esc(x.start||"")}</b>${esc(x.titel||"Termin")}</span>`}).join("")}${items.length>3?`<span class="kal-mehr">+${items.length-3} mehr</span>`:""}</span>
+      <span class="kal-events">${items.slice(0,3).map(x=>`<span class="kal-event ${kalenderStatusKlasse(x)}" data-kal-event="${x.bereich}|${x.id}"><b>${esc(x.start||"")}</b>${esc(x.titel||"Termin")}</span>`).join("")}${items.length>3?`<span class="kal-mehr">+${items.length-3} mehr</span>`:""}</span>
     </button>`;
   }).join("");
 
@@ -2911,7 +2919,7 @@ function kalenderTerminKarte(x){
     <span class="kal-list-date"><b>${new Date(`${x.datum}T12:00:00`).toLocaleDateString("de-DE",{weekday:"short"})}</b>${new Date(`${x.datum}T12:00:00`).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}</span>
     <span class="kal-list-icon ${b.cls}">${b.icon}</span>
     <span class="kal-list-main"><strong>${esc(x.titel||"Termin")}</strong><small>${b.name}${x.start?` · ${esc(x.start)}${x.ende?`–${esc(x.ende)}`:""}`:""}${x.ort?` · ${esc(x.ort)}`:""}</small></span>
-    <span class="status-chip">${esc(x.status||"Geplant")}</span>
+    <span class="kal-status-chip ${kalenderStatusKlasse(x)}">${kalenderStatus(x)}</span>
   </button>`;
 }
 
@@ -2963,7 +2971,7 @@ function startKalenderRendern(){
     const iso=kalenderDatumISO(d), items=byDate.get(iso)||[], fremd=d.getMonth()!==monatStart.getMonth();
     return `<button class="start-kal-tag ${fremd?"fremd":""} ${iso===heute?"heute":""}" type="button" data-start-kal-datum="${iso}">
       <span>${d.getDate()}</span>
-      <i>${items.slice(0,3).map(x=>`<b class="${KALENDER_BEREICHE[x.bereich].cls}"></b>`).join("")}</i>
+      <i>${items.slice(0,3).map(x=>`<b class="${kalenderStatusKlasse(x)}"></b>`).join("")}</i>
     </button>`;
   }).join("");
   const kommende=alle.filter(x=>x.datum>=heute).sort((a,b)=>`${a.datum} ${a.start||""}`.localeCompare(`${b.datum} ${b.start||""}`)).slice(0,3);
@@ -2974,9 +2982,9 @@ function startKalenderRendern(){
       <button type="button" data-start-kal-next>›</button>
     </div>
     <div class="start-kal-grid">${wochenkopf}${zellen}</div>
-    <div class="start-kal-legende"><span><b class="kneipe"></b>Mobile Kneipe</span><span><b class="service"></b>Facility</span><span><b class="security"></b>Security</span></div>
+    <div class="start-kal-legende"><span><b class="anfrage"></b>Anfrage</span><span><b class="bestaetigt"></b>Bestätigt</span></div>
     <div class="start-kal-naechste">
-      ${kommende.length?kommende.map(x=>`<button type="button" data-start-kal-open="${x.bereich}|${x.id}"><span>${new Date(`${x.datum}T12:00:00`).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}</span><b>${KALENDER_BEREICHE[x.bereich].icon} ${esc(x.titel||"Termin")}</b><small>${esc(x.start||"")}${x.ort?` · ${esc(x.ort)}`:""}</small></button>`).join(""):'<small class="start-kal-leer">Keine kommenden Termine</small>'}
+      ${kommende.length?kommende.map(x=>`<button type="button" data-start-kal-open="${x.bereich}|${x.id}"><span>${new Date(`${x.datum}T12:00:00`).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}</span><b>${KALENDER_BEREICHE[x.bereich].icon} ${esc(x.titel||"Termin")}</b><small>${KALENDER_BEREICHE[x.bereich].name}${x.start?` · ${esc(x.start)}`:""}</small><em class="kal-status-chip ${kalenderStatusKlasse(x)}">${kalenderStatus(x)}</em></button>`).join(""):'<small class="start-kal-leer">Keine kommenden Termine</small>'}
     </div>`;
   root.querySelector("[data-start-kal-prev]").onclick=()=>{kalenderMonat=new Date(kalenderMonat.getFullYear(),kalenderMonat.getMonth()-1,1);startKalenderRendern();};
   root.querySelector("[data-start-kal-next]").onclick=()=>{kalenderMonat=new Date(kalenderMonat.getFullYear(),kalenderMonat.getMonth()+1,1);startKalenderRendern();};
@@ -3868,6 +3876,18 @@ document.querySelectorAll(".bereich-karte").forEach(button => {
 });
 
 $("startKalenderNeu")?.addEventListener("click",()=>kalenderNeuFuerDatum(kalenderDatumISO(new Date()),null,"start"));
+$("startKalenderToggle")?.addEventListener("click",()=>{
+  const panel=$("startKalender");
+  if(!panel) return;
+  panel.classList.toggle("versteckt");
+  const offen=!panel.classList.contains("versteckt");
+  $("startKalenderToggle")?.setAttribute("aria-expanded", String(offen));
+  if(offen) startKalenderRendern();
+});
+$("startKalenderSchliessen")?.addEventListener("click",()=>{
+  $("startKalender")?.classList.add("versteckt");
+  $("startKalenderToggle")?.setAttribute("aria-expanded","false");
+});
 $("zurBereichsauswahl").onclick = () => bereichMenuZeigen("kneipe");
 $("bereichMenuZurueck").onclick = startseiteZeigen;
 $("modulZurueck").onclick = () => bereichMenuZeigen(aktiverBereich);

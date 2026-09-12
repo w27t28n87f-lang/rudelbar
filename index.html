@@ -7,8 +7,8 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json?v=127">
-  <link rel="stylesheet" href="style.css?v=127">
+  <link rel="manifest" href="manifest.json?v=128">
+  <link rel="stylesheet" href="style.css?v=128">
 
 
   <script>
@@ -62,13 +62,22 @@
       </button>
     </div>
 
-    <section id="startKalender" class="start-kalender" aria-label="Gesamtkalender">
+    <button id="startKalenderToggle" class="start-kalender-toggle" type="button" aria-expanded="false" aria-controls="startKalender">
+      <span>📅</span>
+      <span><strong>Kalender</strong><small>Alle Bereiche</small></span>
+      <b>›</b>
+    </button>
+
+    <section id="startKalender" class="start-kalender versteckt" aria-label="Gesamtkalender">
       <div class="start-kalender-kopf">
         <div>
-          <strong>📅 Kalender</strong>
-          <small>Alle Bereiche auf einen Blick</small>
+          <strong>📅 Gemeinsamer Kalender</strong>
+          <small>Mobile Kneipe · Facility Service · Security</small>
         </div>
-        <button id="startKalenderNeu" class="start-kalender-neu" type="button">+ Termin</button>
+        <div class="start-kalender-kopf-aktionen">
+          <button id="startKalenderNeu" class="start-kalender-neu" type="button">+ Termin</button>
+          <button id="startKalenderSchliessen" class="start-kalender-schliessen" type="button" aria-label="Kalender schließen">×</button>
+        </div>
       </div>
       <div id="startKalenderInhalt"></div>
     </section>
@@ -805,7 +814,7 @@
   </div>
 </dialog>
 
-<script src="app.js?v=127"></script>
+<script src="app.js?v=128"></script>
 
 </body>
 </html>
