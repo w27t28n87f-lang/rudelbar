@@ -7,8 +7,8 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json?v=128">
-  <link rel="stylesheet" href="style.css?v=128">
+  <link rel="manifest" href="manifest.json?v=129">
+  <link rel="stylesheet" href="style.css?v=129">
 
 
   <script>
@@ -66,6 +66,12 @@
       <span>📅</span>
       <span><strong>Kalender</strong><small>Alle Bereiche</small></span>
       <b>›</b>
+    </button>
+
+    <button id="startNotizenBtn" class="start-notizen-toggle" type="button" aria-controls="notizenDialog">
+      <span>📝</span>
+      <span><strong>Notizen</strong><small>Ideen & Verbesserungen</small></span>
+      <b id="startNotizenBadge" class="versteckt">0</b>
     </button>
 
     <section id="startKalender" class="start-kalender versteckt" aria-label="Gesamtkalender">
@@ -742,6 +748,30 @@
     </div>
     <form id="modulForm" class="modul-form"></form>
     <button class="hauptbutton voll" id="modulFormSpeichern" type="button">Speichern</button>
+    <button class="daten-loeschen voll versteckt" id="kalenderTerminLoeschen" type="button">🗑 Termin löschen</button>
+  </div>
+</dialog>
+
+<!-- NOTIZEN / VERBESSERUNGEN -->
+<dialog id="notizenDialog">
+  <div class="dialogbox gross notizen-dialogbox">
+    <div class="dialog-kopf">
+      <div>
+        <small class="notizen-kicker">RUDELBAR INTERN</small>
+        <h2>Notizen &amp; Verbesserungen</h2>
+      </div>
+      <button class="sekundaer" id="notizenSchliessen" type="button">Fertig</button>
+    </div>
+    <p class="notizen-hinweis">Hier kann jeder im Rudel kurz festhalten, was verbessert, besorgt oder erledigt werden soll.</p>
+    <label class="notizen-neu-label">Neue Nachricht
+      <textarea id="notizenText" rows="3" placeholder="z. B. Bitte noch eine zweite Kabeltrommel für den Bierwagen besorgen."></textarea>
+    </label>
+    <button class="hauptbutton voll" id="notizenHinzufuegen" type="button">+ Nachricht hinterlassen</button>
+    <div class="notizen-filter">
+      <button id="notizenOffenBtn" class="aktiv" type="button">Offen</button>
+      <button id="notizenErledigtBtn" type="button">Erledigt</button>
+    </div>
+    <div id="notizenListe" class="notizen-liste"></div>
   </div>
 </dialog>
 
@@ -814,7 +844,7 @@
   </div>
 </dialog>
 
-<script src="app.js?v=128"></script>
+<script src="app.js?v=129"></script>
 
 </body>
 </html>

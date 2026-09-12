@@ -259,6 +259,8 @@ function remoteModuldatenLokalSpeichern(rows) {
   if (!$('modulAnsicht').classList.contains('versteckt') && aktiverBereich && aktivesModul) {
     modulRendern();
   }
+  if (typeof notizenBadgeAktualisieren === "function") notizenBadgeAktualisieren();
+  if ($("notizenDialog")?.open && typeof notizenRendern === "function") notizenRendern();
 }
 
 async function moduldatenErstSynchronisieren(remoteRows) {
@@ -2564,6 +2566,7 @@ function startseiteZeigen() {
   $("bereichStart").classList.remove("versteckt");
   aktiverBereich = null;
   startKalenderRendern();
+  notizenBadgeAktualisieren();
   nachOben();
 }
 
@@ -2909,8 +2912,8 @@ function kalenderRendern() {
   document.querySelector("[data-kal-heute]").onclick=()=>{const n=new Date();kalenderMonat=new Date(n.getFullYear(),n.getMonth(),1);kalenderRendern();};
   document.querySelectorAll("[data-kal-filter]").forEach(btn=>btn.onclick=()=>{const id=btn.dataset.kalFilter; kalenderFilter.has(id)?kalenderFilter.delete(id):kalenderFilter.add(id); if(!kalenderFilter.size) kalenderFilter.add(id); kalenderRendern();});
   document.querySelectorAll("[data-kal-datum]").forEach(btn=>btn.onclick=(ev)=>{ if(ev.target.closest("[data-kal-event]")) return; kalenderNeuFuerDatum(btn.dataset.kalDatum, bereichFix); });
-  document.querySelectorAll("[data-kal-event]").forEach(el=>el.onclick=(ev)=>{ev.stopPropagation();const [bereich,id]=el.dataset.kalEvent.split("|");kalenderTerminDetails(bereich,id);});
-  document.querySelectorAll("[data-kal-open]").forEach(el=>el.onclick=()=>{const [bereich,id]=el.dataset.kalOpen.split("|");kalenderTerminDetails(bereich,id);});
+  document.querySelectorAll("[data-kal-event]").forEach(el=>el.onclick=(ev)=>{ev.stopPropagation();const [bereich,id]=el.dataset.kalEvent.split("|");kalenderTerminDetails(bereich,id,"modul");});
+  document.querySelectorAll("[data-kal-open]").forEach(el=>el.onclick=()=>{const [bereich,id]=el.dataset.kalOpen.split("|");kalenderTerminDetails(bereich,id,"modul");});
   document.querySelector("[data-kal-neu]").onclick=()=>kalenderNeuFuerDatum(heute, bereichFix);
 }
 function kalenderTerminKarte(x){
@@ -2946,13 +2949,15 @@ function kalenderNeuFuerDatum(datum, bereichVorgabe = null, ursprung = "modul"){
   $("modulFormDialog").dataset.kalenderBereich=ursprungBereich || "";
   $("modulFormDialog").showModal();
 }
-function kalenderTerminDetails(bereich,id){
+function kalenderTerminDetails(bereich,id,origin="modul"){
   const daten=laden(modulKey(bereich,"veranstaltungen"),[]); const x=daten.find(e=>String(e.id)===String(id)); if(!x)return;
   const b=KALENDER_BEREICHE[bereich];
   const text=[`${b.icon} ${b.name}`,x.titel||"Termin",x.datum||"",[x.start,x.ende].filter(Boolean).join(" – "),x.ort?`Ort: ${x.ort}`:"",x.kunde?`Kunde: ${x.kunde}`:"",x.team?`Team: ${x.team}`:"",x.status?`Status: ${x.status}`:"",x.notiz||""].filter(Boolean).join("\n");
   const bearbeiten=confirm(`${text}\n\nOK = bearbeiten · Abbrechen = schließen`);
   if(!bearbeiten)return;
-  aktiverBereich=bereich; aktivesModul="veranstaltungen"; modulFormOeffnen(id);
+  aktiverBereich=bereich; aktivesModul="veranstaltungen";
+  if ($("modulFormDialog")) $("modulFormDialog").dataset.kalenderEditOrigin=origin;
+  modulFormOeffnen(id);
 }
 
 function startKalenderRendern(){
@@ -2989,9 +2994,67 @@ function startKalenderRendern(){
   root.querySelector("[data-start-kal-prev]").onclick=()=>{kalenderMonat=new Date(kalenderMonat.getFullYear(),kalenderMonat.getMonth()-1,1);startKalenderRendern();};
   root.querySelector("[data-start-kal-next]").onclick=()=>{kalenderMonat=new Date(kalenderMonat.getFullYear(),kalenderMonat.getMonth()+1,1);startKalenderRendern();};
   root.querySelectorAll("[data-start-kal-datum]").forEach(btn=>btn.onclick=()=>kalenderNeuFuerDatum(btn.dataset.startKalDatum,null,"start"));
-  root.querySelectorAll("[data-start-kal-open]").forEach(btn=>btn.onclick=()=>{const [bereich,id]=btn.dataset.startKalOpen.split("|");kalenderTerminDetails(bereich,id);});
+  root.querySelectorAll("[data-start-kal-open]").forEach(btn=>btn.onclick=()=>{const [bereich,id]=btn.dataset.startKalOpen.split("|");kalenderTerminDetails(bereich,id,"start");});
 }
 
+
+const NOTIZEN_BEREICH = "global";
+const NOTIZEN_MODUL = "notizen";
+let notizenFilter = "offen";
+
+function notizenKey(){ return modulKey(NOTIZEN_BEREICH, NOTIZEN_MODUL); }
+function notizenLaden(){ return laden(notizenKey(), []); }
+function notizenSpeichern(daten){ localStorage.setItem(notizenKey(), JSON.stringify(daten)); }
+function notizenOffenAnzahl(){ return notizenLaden().filter(n => n.status !== "erledigt").length; }
+function notizenBadgeAktualisieren(){
+  const badge=$("startNotizenBadge"); if(!badge) return;
+  const n=notizenOffenAnzahl(); badge.textContent=String(n); badge.classList.toggle("versteckt", n===0);
+}
+function notizenOeffnen(){
+  notizenFilter="offen";
+  $("notizenText").value="";
+  notizenRendern();
+  $("notizenDialog").showModal();
+}
+function notizenRendern(){
+  const liste=$("notizenListe"); if(!liste) return;
+  $("notizenOffenBtn")?.classList.toggle("aktiv",notizenFilter==="offen");
+  $("notizenErledigtBtn")?.classList.toggle("aktiv",notizenFilter==="erledigt");
+  const daten=[...notizenLaden()].sort((a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
+  const gefiltert=daten.filter(n=>notizenFilter==="erledigt" ? n.status==="erledigt" : n.status!=="erledigt");
+  if(!gefiltert.length){
+    liste.innerHTML=`<div class="daten-leer"><strong>${notizenFilter==="erledigt"?"Noch nichts erledigt":"Keine offenen Notizen"}</strong><span>${notizenFilter==="erledigt"?"Erledigte Punkte erscheinen hier.":"Neue Ideen und Verbesserungen können oben eingetragen werden."}</span></div>`;
+    notizenBadgeAktualisieren(); return;
+  }
+  const superuser = aktuelleRolle === "superuser" || istRudelbarBesitzer();
+  liste.innerHTML=gefiltert.map(n=>{
+    const datum=n.createdAt?new Date(n.createdAt).toLocaleString("de-DE",{dateStyle:"short",timeStyle:"short"}):"";
+    return `<article class="notiz-karte ${n.status==="erledigt"?"erledigt":""}">
+      <div class="notiz-karte-kopf"><strong>${n.status==="erledigt"?"✓ Erledigt":"○ Offen"}</strong><small>${esc(datum)}</small></div>
+      <p>${esc(n.text||"")}</p>
+      <div class="notiz-meta">von ${esc(n.autor||"Rudelbar-Team")}</div>
+      ${superuser?`<div class="notiz-aktionen">${n.status!=="erledigt"?`<button type="button" data-notiz-erledigt="${esc(n.id)}">✓ Erledigt</button>`:""}<button class="gefahr" type="button" data-notiz-loeschen="${esc(n.id)}">🗑 Löschen</button></div>`:""}
+    </article>`;
+  }).join("");
+  liste.querySelectorAll("[data-notiz-erledigt]").forEach(btn=>btn.onclick=()=>notizErledigen(btn.dataset.notizErledigt));
+  liste.querySelectorAll("[data-notiz-loeschen]").forEach(btn=>btn.onclick=()=>notizLoeschen(btn.dataset.notizLoeschen));
+  notizenBadgeAktualisieren();
+}
+function notizHinzufuegen(){
+  const text=$("notizenText").value.trim(); if(!text){ alert("Bitte zuerst eine Nachricht eingeben."); return; }
+  const daten=notizenLaden();
+  const neu={id:neueID(),text,status:"offen",autor:aktuellerUser?.user_metadata?.name || aktuellerUser?.email || "Rudelbar-Team",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  daten.push(neu); notizenSpeichern(daten); queueUpsert("moduldaten",modulZuDB(NOTIZEN_BEREICH,NOTIZEN_MODUL,neu));
+  $("notizenText").value=""; notizenFilter="offen"; notizenRendern();
+}
+function notizErledigen(id){
+  const daten=notizenLaden(); const n=daten.find(x=>String(x.id)===String(id)); if(!n)return;
+  n.status="erledigt"; n.updatedAt=new Date().toISOString(); notizenSpeichern(daten); queueUpsert("moduldaten",modulZuDB(NOTIZEN_BEREICH,NOTIZEN_MODUL,n)); notizenRendern();
+}
+function notizLoeschen(id){
+  if(!confirm("Diese Notiz wirklich löschen?")) return;
+  const daten=notizenLaden().filter(x=>String(x.id)!==String(id)); notizenSpeichern(daten); queueDelete("moduldaten",id); notizenRendern();
+}
 
 function datenKarteHTML(x) {
   const titel = esc(x.titel || x.name || "Eintrag");
@@ -3036,6 +3099,13 @@ function modulFormOeffnen(id = null) {
   const felder = modulDefinition();
   const modul = BEREICHE[aktiverBereich]?.module.find(m => m.id === aktivesModul);
   $("modulFormTitel").textContent = id ? `${modul?.titel || "Eintrag"} bearbeiten` : `${modul?.titel || "Eintrag"} anlegen`;
+  const terminLoeschenBtn = $("kalenderTerminLoeschen");
+  if (terminLoeschenBtn) {
+    const istTerminBearbeitung = !!id && aktivesModul === "veranstaltungen" && ["kneipe","service","security"].includes(aktiverBereich);
+    terminLoeschenBtn.classList.toggle("versteckt", !istTerminBearbeitung);
+    terminLoeschenBtn.dataset.id = istTerminBearbeitung ? String(id) : "";
+    terminLoeschenBtn.dataset.bereich = istTerminBearbeitung ? aktiverBereich : "";
+  }
 
   $("modulForm").innerHTML = felder.map(f => {
     const value = eintrag[f.key] ?? "";
@@ -3095,6 +3165,32 @@ function modulFormSpeichern() {
     }
   }
   modulRendern();
+}
+
+function kalenderTerminLoeschenAusForm() {
+  const btn = $("kalenderTerminLoeschen");
+  const id = btn?.dataset.id || modulEditID;
+  const bereich = btn?.dataset.bereich || aktiverBereich;
+  if (!id || !["kneipe","service","security"].includes(bereich)) return;
+  const daten = laden(modulKey(bereich,"veranstaltungen"),[]);
+  const termin = daten.find(x => String(x.id) === String(id));
+  if (!termin) return;
+  const titel = termin.titel || "Termin";
+  if (!confirm(`Termin „${titel}“ wirklich löschen?`)) return;
+  const neu = daten.filter(x => String(x.id) !== String(id));
+  localStorage.setItem(modulKey(bereich,"veranstaltungen"), JSON.stringify(neu));
+  queueDelete("moduldaten", id);
+  const origin = $("modulFormDialog")?.dataset.kalenderEditOrigin || "modul";
+  $("modulFormDialog")?.close();
+  delete $("modulFormDialog").dataset.kalenderEditOrigin;
+  modulEditID = null;
+  if (origin === "start") {
+    startseiteZeigen();
+    return;
+  }
+  aktiverBereich = bereich;
+  aktivesModul = "veranstaltungen";
+  kalenderRendern();
 }
 
 function modulEintragLoeschen(id) {
@@ -3888,6 +3984,11 @@ $("startKalenderSchliessen")?.addEventListener("click",()=>{
   $("startKalender")?.classList.add("versteckt");
   $("startKalenderToggle")?.setAttribute("aria-expanded","false");
 });
+$("startNotizenBtn")?.addEventListener("click",notizenOeffnen);
+$("notizenSchliessen")?.addEventListener("click",()=>$("notizenDialog")?.close());
+$("notizenHinzufuegen")?.addEventListener("click",notizHinzufuegen);
+$("notizenOffenBtn")?.addEventListener("click",()=>{notizenFilter="offen";notizenRendern();});
+$("notizenErledigtBtn")?.addEventListener("click",()=>{notizenFilter="erledigt";notizenRendern();});
 $("zurBereichsauswahl").onclick = () => bereichMenuZeigen("kneipe");
 $("bereichMenuZurueck").onclick = startseiteZeigen;
 $("modulZurueck").onclick = () => bereichMenuZeigen(aktiverBereich);
@@ -3901,6 +4002,7 @@ $("modulNeu").onclick = () => {
 $("modulExport").onclick = modulExportieren;
 $("modulFormAbbrechen").onclick = () => $("modulFormDialog").close();
 $("modulFormSpeichern").onclick = modulFormSpeichern;
+$("kalenderTerminLoeschen")?.addEventListener("click",kalenderTerminLoeschenAusForm);
 $("modulMonatExport").onclick = rechnungenMonatsauszug;
 $("rechnungAbbrechen").onclick = () => $("rechnungDialog").close();
 $("rechnungPositionNeu").onclick = () => rechnungPositionNeu();

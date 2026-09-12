@@ -1,4 +1,4 @@
-const CACHE_NAME = "rudelbar-v128";
+const CACHE_NAME = "rudelbar-v129";
 
 const APP_SHELL = [
   "./",
