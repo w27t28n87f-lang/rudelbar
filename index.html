@@ -7,8 +7,8 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json?v=130">
-  <link rel="stylesheet" href="style.css?v=130">
+  <link rel="manifest" href="manifest.json?v=131">
+  <link rel="stylesheet" href="style.css?v=131">
 
 
   <script>
@@ -40,45 +40,55 @@
 <section id="bereichStart" class="bereich-start versteckt" aria-label="Rudelbar Bereiche">
   <div class="bereich-start-inhalt">
     <img src="Wolf-Hintergrund.png" class="start-wolf-bg" alt="" aria-hidden="true">
-    <img src="Logo-Haupt.png" class="bereich-hauptlogo" alt="Rudelbar">
-    <button id="settingsBtn" class="settings-trigger" type="button" aria-label="Einstellungen öffnen" title="Einstellungen">⚙</button>
+    <div class="start-hero">
+      <img src="Logo-Haupt.png" class="bereich-hauptlogo" alt="Rudelbar">
+      <button id="settingsBtn" class="settings-trigger" type="button" aria-label="Einstellungen öffnen" title="Einstellungen">⚙</button>
+    </div>
+
+    <div class="start-begruessung">
+      <h2 id="startBegruessung">Moin!</h2>
+      <p>Gemeinsam. Überall. Rudelbar.</p>
+      <span id="startRolleBadge" class="start-rolle-badge versteckt"></span>
+    </div>
 
     <div class="bereich-grid">
-      <button class="bereich-karte" data-bereich="kneipe">
+      <button class="bereich-karte start-card-kneipe" data-bereich="kneipe">
         <img src="Logo-Mobile_Kneipe.png" alt="Rudelbar Die mobile Kneipe">
       </button>
 
-      <button class="bereich-karte" data-bereich="mode">
+      <button class="bereich-karte start-card-mode" data-bereich="mode">
         <img src="Logo-Mode.png" alt="Rudelbar Mode">
       </button>
 
-      <button class="bereich-karte" data-bereich="service">
+      <button class="bereich-karte start-card-service" data-bereich="service">
         <img src="Logo-Service.png" alt="Rudelbar Facility Service">
       </button>
 
-      <button class="bereich-karte security-karte" data-bereich="security">
+      <button class="bereich-karte security-karte start-card-security" data-bereich="security">
         <img src="Logo-Haupt.png" alt="Rudelbar Security">
         <span>SECURITY</span>
       </button>
     </div>
 
-    <button id="startKalenderToggle" class="start-kalender-toggle" type="button" aria-expanded="false" aria-controls="startKalender">
-      <span>📅</span>
-      <span><strong>Kalender</strong><small>Alle Bereiche</small></span>
-      <b>›</b>
-    </button>
+    <div class="start-schnellzugriff">
+      <button id="startKalenderToggle" class="start-kalender-toggle" type="button" aria-expanded="false" aria-controls="startKalender">
+        <span>📅</span>
+        <span><strong>Kalender</strong><small>Alle Bereiche auf einen Blick</small></span>
+        <b>›</b>
+      </button>
 
-    <button id="startNotizenBtn" class="start-notizen-toggle" type="button" aria-controls="notizenDialog">
-      <span>📝</span>
-      <span><strong>Notizen</strong><small>Ideen & Verbesserungen</small></span>
-      <b id="startNotizenBadge" class="versteckt">0</b>
-    </button>
+      <button id="startTeamBtn" class="start-team-toggle versteckt" type="button" aria-controls="teamDialog">
+        <span>👥</span>
+        <span><strong>Team</strong><small>Mitglieder & Einsatzbereiche</small></span>
+        <b id="startTeamBadge">0</b>
+      </button>
 
-    <button id="startTeamBtn" class="start-team-toggle versteckt" type="button" aria-controls="teamDialog">
-      <span>👥</span>
-      <span><strong>Team</strong><small>Mitglieder & Einsatzbereiche</small></span>
-      <b id="startTeamBadge">0</b>
-    </button>
+      <button id="startNotizenBtn" class="start-notizen-toggle" type="button" aria-controls="notizenDialog">
+        <span>📝</span>
+        <span><strong>Notizen</strong><small>Ideen & Verbesserungen</small></span>
+        <b id="startNotizenBadge" class="versteckt">0</b>
+      </button>
+    </div>
 
     <section id="startKalender" class="start-kalender versteckt" aria-label="Gesamtkalender">
       <div class="start-kalender-kopf">
@@ -768,7 +778,8 @@
       </div>
       <button class="sekundaer" id="teamSchliessen" type="button">Fertig</button>
     </div>
-    <p class="notizen-hinweis">Hier siehst du die Rudelbar-Mitglieder und kannst festlegen, wo sie eingesetzt werden können.</p>
+    <p class="notizen-hinweis">Hier siehst du alle registrierten Rudelbar-Mitglieder, ihre Einsatzbereiche und kannst Konten verwalten.</p>
+    <button id="teamEinladenBtn" class="hauptbutton voll team-einladen" type="button">👤 + Mitglied einladen</button>
     <div id="teamListe" class="team-liste"></div>
   </div>
 </dialog>
@@ -864,7 +875,7 @@
   </div>
 </dialog>
 
-<script src="app.js?v=130"></script>
+<script src="app.js?v=131"></script>
 
 </body>
 </html>

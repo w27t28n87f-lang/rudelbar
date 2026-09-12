@@ -2773,3 +2773,240 @@ body.register-offen{overflow:hidden!important}
   .team-bereiche{grid-template-columns:1fr}
   .start-team-toggle{min-height:54px;padding:8px 12px}
 }
+
+/* ==========================================================
+   RUDELBAR v131 – Startseite wie freigegebene Skizze + Teamverwaltung
+   ========================================================== */
+#bereichStart.bereich-start{
+  min-height:100dvh;
+  background:#111;
+  overflow-x:hidden;
+}
+#bereichStart .bereich-start-inhalt{
+  width:min(100%,470px);
+  margin:0 auto;
+  padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 34px);
+  box-sizing:border-box;
+}
+#bereichStart .start-wolf-bg{
+  position:fixed;
+  left:50%;
+  top:18%;
+  width:min(125vw,620px);
+  transform:translate(-50%,-18%);
+  opacity:.22;
+  mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.88) 48%,rgba(0,0,0,.18) 76%,transparent 96%);
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.88) 48%,rgba(0,0,0,.18) 76%,transparent 96%);
+  filter:contrast(1.08) brightness(.78);
+}
+#bereichStart .start-hero{
+  position:relative;
+  min-height:198px;
+  display:grid;
+  place-items:center;
+  z-index:2;
+}
+#bereichStart .bereich-hauptlogo{
+  width:min(210px,52vw);
+  max-height:190px;
+  object-fit:contain;
+  filter:drop-shadow(0 8px 24px rgba(0,0,0,.48));
+}
+#bereichStart .settings-trigger{
+  position:absolute;
+  top:8px;
+  right:0;
+  width:46px;
+  height:46px;
+  border-radius:50%;
+  border:1px solid rgba(242,171,47,.64);
+  background:rgba(18,18,18,.78);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  color:#fff;
+  font-size:22px;
+  box-shadow:0 8px 20px rgba(0,0,0,.22);
+}
+#bereichStart .start-begruessung{
+  position:relative;
+  z-index:2;
+  text-align:left;
+  margin:-2px 2px 16px;
+}
+#bereichStart .start-begruessung h2{
+  margin:0;
+  color:#fff;
+  font-size:30px;
+  line-height:1.05;
+  letter-spacing:-.02em;
+}
+#bereichStart .start-begruessung p{
+  margin:7px 0 0;
+  color:#aaa;
+  font-size:14px;
+}
+#bereichStart .start-rolle-badge{
+  display:inline-flex;
+  margin-top:8px;
+  padding:5px 9px;
+  border-radius:999px;
+  border:1px solid rgba(242,171,47,.48);
+  background:rgba(242,171,47,.13);
+  color:var(--gold2);
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.04em;
+}
+#bereichStart .bereich-grid{
+  position:relative;
+  z-index:2;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin:0 0 14px;
+}
+#bereichStart .bereich-karte{
+  position:relative;
+  isolation:isolate;
+  min-height:178px;
+  padding:0;
+  overflow:hidden;
+  border:1.5px solid rgba(242,171,47,.92);
+  border-radius:18px;
+  background:#0b0b0b;
+  box-shadow:0 12px 28px rgba(0,0,0,.28);
+}
+#bereichStart .bereich-karte::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-2;
+  background-size:cover;
+  background-position:center;
+  opacity:.34;
+  transform:scale(1.12);
+  filter:blur(.3px) saturate(.78) brightness(.7);
+}
+#bereichStart .bereich-karte::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.64));
+}
+#bereichStart .start-card-kneipe::before{background-image:url("Logo-Mobile_Kneipe.png");}
+#bereichStart .start-card-mode::before{background-image:url("Logo-Mode.png");}
+#bereichStart .start-card-service::before{background-image:url("Logo-Service.png");}
+#bereichStart .start-card-security::before{background-image:url("Logo-Haupt.png");}
+#bereichStart .bereich-karte img{
+  width:74%;
+  height:74%;
+  max-width:150px;
+  max-height:150px;
+  object-fit:contain;
+  position:relative;
+  z-index:1;
+  filter:drop-shadow(0 7px 18px rgba(0,0,0,.6));
+}
+#bereichStart .security-karte span{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:18px;
+  z-index:2;
+  font-size:20px;
+  letter-spacing:.12em;
+  text-shadow:0 3px 12px #000;
+}
+#bereichStart .start-schnellzugriff{
+  position:relative;
+  z-index:3;
+  display:grid;
+  gap:9px;
+  margin-top:4px;
+}
+#bereichStart .start-kalender-toggle,
+#bereichStart .start-team-toggle,
+#bereichStart .start-notizen-toggle{
+  width:100%;
+  margin:0;
+  min-height:64px;
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:9px 12px;
+  border:1px solid rgba(242,171,47,.56);
+  border-radius:16px;
+  background:linear-gradient(135deg,rgba(28,28,28,.96),rgba(16,16,16,.96));
+  color:#fff;
+  text-align:left;
+  box-shadow:0 8px 22px rgba(0,0,0,.20);
+}
+#bereichStart .start-kalender-toggle>span:first-child,
+#bereichStart .start-team-toggle>span:first-child,
+#bereichStart .start-notizen-toggle>span:first-child{
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border-radius:12px;
+  background:rgba(242,171,47,.10);
+  font-size:22px;
+}
+#bereichStart .start-kalender-toggle strong,
+#bereichStart .start-team-toggle strong,
+#bereichStart .start-notizen-toggle strong{font-size:16px;line-height:1.1}
+#bereichStart .start-kalender-toggle small,
+#bereichStart .start-team-toggle small,
+#bereichStart .start-notizen-toggle small{font-size:10px;color:#9f9f9f;margin-top:3px}
+#bereichStart .start-kalender-toggle>b{font-size:27px;color:var(--gold)}
+#bereichStart .start-team-toggle>b,
+#bereichStart .start-notizen-toggle>b{
+  min-width:30px;height:30px;padding:0 7px;border-radius:999px;
+  display:grid;place-items:center;background:var(--gold);color:#1b1200;font-size:12px;font-weight:900;
+}
+#bereichStart .start-kalender{margin-top:12px;width:100%;}
+
+/* Team wie Skizze */
+.team-dialogbox{max-width:720px}
+.team-einladen{margin:4px 0 12px}
+.team-liste{gap:10px}
+.team-karte{background:linear-gradient(145deg,#171717,#111);border-color:#343434;padding:13px;border-radius:16px}
+.team-identitaet{display:flex;align-items:center;gap:10px;min-width:0}
+.team-identitaet>div{min-width:0}
+.team-avatar{width:42px;height:42px;flex:0 0 42px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#b6bbc2,#6f747b);color:#fff;font-weight:900;font-size:14px}
+.team-kopf{align-items:center}
+.team-kopf strong{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team-kopf small{font-size:11px}
+.team-bereiche{grid-template-columns:repeat(2,minmax(0,1fr))}
+.team-bereiche label{padding:8px 9px;border-radius:10px}
+.team-bereiche .team-bereich-kneipe:has(input:checked){border-color:#16b85a;background:rgba(22,184,90,.10)}
+.team-bereiche .team-bereich-service:has(input:checked){border-color:#398af4;background:rgba(57,138,244,.10)}
+.team-bereiche .team-bereich-security:has(input:checked){border-color:#d44141;background:rgba(212,65,65,.10)}
+.team-bereiche .team-bereich-mode:has(input:checked){border-color:#a955d9;background:rgba(169,85,217,.10)}
+.team-aktionen{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}
+.team-aktionen .team-speichern{margin:0}
+.team-loeschen{min-height:48px;padding:0 13px;white-space:nowrap}
+
+@media(max-width:430px){
+  #bereichStart .bereich-start-inhalt{padding-left:12px;padding-right:12px}
+  #bereichStart .start-hero{min-height:175px}
+  #bereichStart .bereich-hauptlogo{width:min(190px,50vw)}
+  #bereichStart .start-begruessung h2{font-size:27px}
+  #bereichStart .bereich-grid{gap:8px}
+  #bereichStart .bereich-karte{min-height:154px;border-radius:17px}
+  #bereichStart .security-karte span{bottom:14px;font-size:17px}
+  #bereichStart .start-kalender-toggle,
+  #bereichStart .start-team-toggle,
+  #bereichStart .start-notizen-toggle{min-height:59px;padding:8px 10px;grid-template-columns:40px minmax(0,1fr) auto}
+  #bereichStart .start-kalender-toggle>span:first-child,
+  #bereichStart .start-team-toggle>span:first-child,
+  #bereichStart .start-notizen-toggle>span:first-child{width:38px;height:38px;font-size:20px}
+  #bereichStart .start-kalender-toggle strong,
+  #bereichStart .start-team-toggle strong,
+  #bereichStart .start-notizen-toggle strong{font-size:15px}
+  .team-bereiche{grid-template-columns:1fr 1fr}
+  .team-aktionen{grid-template-columns:1fr}
+  .team-loeschen{width:100%}
+}

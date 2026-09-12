@@ -593,7 +593,19 @@ async function appAdresseTeilen(){
   try{ await navigator.clipboard.writeText(url); alert("App-Adresse kopiert."); }
   catch{ alert(url); }
 }
+function startHomePersonalisieren(){
+  const name=(aktuellerUser?.user_metadata?.name || aktuellerUser?.email?.split("@")[0] || "").trim();
+  const vorname=name ? name.split(/\s+/)[0] : "";
+  const h=$("startBegruessung");
+  if(h) h.textContent=vorname ? `Moin ${vorname}!` : "Moin!";
+  const badge=$("startRolleBadge");
+  if(badge){
+    badge.textContent=aktuelleRolle === "superuser" ? "Superuser" : "Mitarbeiter";
+    badge.classList.toggle("versteckt", !aktuellerUser);
+  }
+}
 function startNachLogin(){
+  startHomePersonalisieren();
   const ziel=appSettings.startbereich||"start";
   if(["kneipe","mode","service","security"].includes(ziel)) bereichMenuZeigen(ziel);
   else startseiteZeigen();
@@ -3081,18 +3093,26 @@ function teamRendern(){
   liste.innerHTML=daten.map(m=>{
     const bereiche=Array.isArray(m.einsatzbereiche)?m.einsatzbereiche:[];
     const login=m.letzterLogin?new Date(m.letzterLogin).toLocaleString("de-DE",{dateStyle:"short",timeStyle:"short"}):"–";
+    const istEigenesKonto=String(m.id)===String(aktuellerUser?.id||"");
     return `<article class="team-karte" data-team-id="${esc(m.id)}">
-      <div class="team-kopf"><div><strong>${esc(m.name||"Teammitglied")}</strong><small>${esc(m.email||"")}</small></div><span class="team-rolle ${m.rolle==="superuser"?"superuser":""}">${m.rolle==="superuser"?"Superuser":"Mitarbeiter"}</span></div>
+      <div class="team-kopf">
+        <div class="team-identitaet"><span class="team-avatar">${esc((m.name||m.email||"?").trim().slice(0,2).toUpperCase())}</span><div><strong>${esc(m.name||"Teammitglied")}</strong><small>${esc(m.email||"")}</small></div></div>
+        <span class="team-rolle ${m.rolle==="superuser"?"superuser":""}">${m.rolle==="superuser"?"Superuser":"Mitarbeiter"}</span>
+      </div>
       <div class="team-meta">Zuletzt angemeldet: ${esc(login)}</div>
       <div class="team-bereich-label">Einsetzbar in</div>
       <div class="team-bereiche">
-        ${["kneipe","service","security","mode"].map(k=>`<label><input type="checkbox" data-team-bereich="${k}" ${bereiche.includes(k)?"checked":""}> <span>${teamBereichLabel(k)}</span></label>`).join("")}
+        ${["kneipe","service","security","mode"].map(k=>`<label class="team-bereich-${k}"><input type="checkbox" data-team-bereich="${k}" ${bereiche.includes(k)?"checked":""}> <span>${teamBereichLabel(k)}</span></label>`).join("")}
       </div>
       <label class="team-notiz-label">Notiz<textarea data-team-notiz rows="2" placeholder="z. B. 34a Sachkunde, Zapferfahrung, Führerschein…">${esc(m.notiz||"")}</textarea></label>
-      <button class="hauptbutton team-speichern" type="button" data-team-save="${esc(m.id)}">Speichern</button>
+      <div class="team-aktionen">
+        <button class="hauptbutton team-speichern" type="button" data-team-save="${esc(m.id)}">Speichern</button>
+        ${istEigenesKonto?"":`<button class="danger-button team-loeschen" type="button" data-team-delete="${esc(m.id)}">🗑 Konto löschen</button>`}
+      </div>
     </article>`;
   }).join("");
   liste.querySelectorAll("[data-team-save]").forEach(btn=>btn.onclick=()=>teamProfilSpeichern(btn.dataset.teamSave));
+  liste.querySelectorAll("[data-team-delete]").forEach(btn=>btn.onclick=()=>teamMitgliedLoeschen(btn.dataset.teamDelete));
 }
 
 function teamProfilSpeichern(id){
@@ -3108,6 +3128,35 @@ function teamProfilSpeichern(id){
   queueUpsert("moduldaten",modulZuDB(TEAM_BEREICH,TEAM_MODUL,profil));
   syncStarten();
   teamRendern();
+}
+
+async function teamMitgliedLoeschen(id){
+  if(aktuelleRolle !== "superuser") return;
+  if(String(id)===String(aktuellerUser?.id||"")){
+    alert("Dein eigenes Superuser-Konto kann hier nicht gelöscht werden.");
+    return;
+  }
+  const profil=teamLaden().find(x=>String(x.id)===String(id));
+  const name=profil?.name || profil?.email || "dieses Teammitglied";
+  if(!confirm(`${name} wirklich dauerhaft löschen?\n\nDas Benutzerkonto wird aus der Rudelbar-Anmeldung entfernt.`)) return;
+  const { data, error } = await sb.rpc("delete_rudelbar_team_member", { p_user_id: id });
+  if(error){
+    console.error(error);
+    const fehlt=/could not find the function|schema cache|does not exist/i.test(String(error.message||""));
+    alert(fehlt
+      ? "Die sichere Team-Löschfunktion ist in Supabase noch nicht eingerichtet. Bitte einmal das v131-Team-Setup im SQL Editor ausführen."
+      : `Konto konnte nicht gelöscht werden.\n\nSupabase meldet: ${error.message||"Unbekannter Fehler"}`);
+    return;
+  }
+  if(data !== true){
+    alert("Das Konto wurde von Supabase nicht bestätigt gelöscht.");
+    return;
+  }
+  const daten=teamLaden().filter(x=>String(x.id)!==String(id));
+  teamSpeichern(daten);
+  teamRendern();
+  teamButtonAktualisieren();
+  try{ await remoteNeuLaden(); }catch{}
 }
 
 const NOTIZEN_MODUL = "notizen";
@@ -4096,6 +4145,7 @@ $("startKalenderSchliessen")?.addEventListener("click",()=>{
   $("startKalenderToggle")?.setAttribute("aria-expanded","false");
 });
 $("startTeamBtn")?.addEventListener("click",teamOeffnen);
+$("teamEinladenBtn")?.addEventListener("click",()=>{ $("teamDialog")?.close(); einladungenOeffnen(); });
 $("teamSchliessen")?.addEventListener("click",()=>$("teamDialog")?.close());
 $("startNotizenBtn")?.addEventListener("click",notizenOeffnen);
 $("notizenSchliessen")?.addEventListener("click",()=>$("notizenDialog")?.close());
