@@ -690,7 +690,81 @@ function registrierungInviteStatusAktualisieren(token) {
   status.textContent = clean
     ? "✓ Persönliche Einladung erkannt. Du kannst jetzt dein eigenes Konto anlegen."
     : "Registrierung ist nur über einen persönlichen Rudelbar-Einladungslink möglich.";
-  $("registerInviteFallback")?.classList.add("versteckt");
+}
+
+function basisAppURL() {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
+  return url;
+}
+
+async function adminStatusLaden() {
+  istAdmin = false;
+  aktuelleRolle = "mitarbeiter";
+  $("settingsInviteBtn")?.classList.add("versteckt");
+
+  if (!aktuellerUser) {
+    settingsRolleAnwenden();
+    return;
+  }
+
+  if (istRudelbarBesitzer()) {
+    aktuelleRolle = "superuser";
+    istAdmin = true;
+  } else {
+    const { data: roleData, error: roleError } = await sb.rpc("get_rudelbar_role");
+    if (!roleError && typeof roleData === "string") {
+      aktuelleRolle = roleData === "superuser" ? "superuser" : "mitarbeiter";
+      istAdmin = aktuelleRolle === "superuser";
+    } else {
+      const { data, error } = await sb.rpc("is_rudelbar_admin");
+      if (error) console.warn("Rollenstatus konnte nicht geladen werden:", error.message);
+      istAdmin = data === true;
+      aktuelleRolle = istAdmin ? "superuser" : "mitarbeiter";
+    }
+  }
+
+  if (istAdmin) $("settingsInviteBtn")?.classList.remove("versteckt");
+  settingsRolleAnwenden();
+}
+
+function registrierungOeffnen() {
+  const token = einladungsTokenAusURL();
+  if ($("loginDialog").open) $("loginDialog").close();
+  $("registerFehler").textContent = "";
+  $("registerErfolg").textContent = "";
+  $("registerPasswort").value = "";
+  $("registerPasswort2").value = "";
+  registrierungInviteStatusAktualisieren(token);
+
+  ["registerName","registerEmail","registerPasswort","registerPasswort2","registerButton"].forEach(id=>{
+    const el=$(id);
+    if(!el) return;
+    el.disabled=false;
+    el.removeAttribute("readonly");
+    el.style.pointerEvents="auto";
+    el.style.webkitUserSelect="text";
+    el.style.userSelect="text";
+  });
+
+  const reg = $("registrierungDialog");
+  reg.classList.remove("versteckt");
+  document.body.classList.add("register-offen");
+  setTimeout(() => {
+    const feld = $("registerName");
+    if (feld) {
+      feld.removeAttribute("readonly");
+      feld.disabled = false;
+      feld.focus({preventScroll:true});
+    }
+  }, 180);
+}
+
+function registrierungZurLogin() {
+  $("registrierungDialog").classList.add("versteckt");
+  document.body.classList.remove("register-offen");
+  $("loginDialog").showModal();
 }
 
 async function registrierenMitEinladung() {
