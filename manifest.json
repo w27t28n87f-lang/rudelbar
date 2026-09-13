@@ -10,11 +10,11 @@
   "theme_color": "#151515",
   "icons": [
     {
-      "src": "Logo-Haupt.png",
+      "src": "Logo-Haupt-Home.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     }
   ],
-  "version": "132"
+  "version": "133"
 }
