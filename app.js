@@ -1226,6 +1226,8 @@ async function ersteSynchronisierung() {
 
   syncStatus("wartet", "Lade Daten…");
 
+  // Jede Tabelle wird unabhängig ausgewertet. Ein Fehler in nur einer Tabelle darf
+  // niemals mehr den kompletten Datenabgleich der Rudelbar blockieren.
   const [
     remoteGetraenke,
     remoteVerkaeufe,
@@ -1238,52 +1240,60 @@ async function ersteSynchronisierung() {
     sb.from("moduldaten").select("*")
   ]);
 
-  if (
-    remoteGetraenke.error ||
-    remoteVerkaeufe.error ||
-    remoteAbschluesse.error ||
-    remoteModuldaten.error
-  ) {
-    console.error(
-      remoteGetraenke.error,
-      remoteVerkaeufe.error,
-      remoteAbschluesse.error,
-      remoteModuldaten.error
-    );
+  const fehler = [];
 
-    syncStatus("fehler", "Verbindung fehlerhaft");
-    return;
-  }
-
-  if (remoteGetraenke.data.length === 0 && getraenke.length) {
+  if (remoteGetraenke.error) {
+    fehler.push("Getränke");
+    console.error("Getränke laden:", remoteGetraenke.error);
+  } else if (remoteGetraenke.data.length === 0 && getraenke.length) {
     getraenke.forEach(g => queueUpsert("getraenke", getraenkZuDB(g)));
-  } else if (remoteGetraenke.data.length) {
-    getraenke = remoteGetraenke.data.map(getraenkVonDB);
+  } else {
+    getraenke = (remoteGetraenke.data || []).map(getraenkVonDB);
   }
 
-  if (remoteVerkaeufe.data.length === 0 && verkaeufe.length) {
+  if (remoteVerkaeufe.error) {
+    fehler.push("Verkäufe");
+    console.error("Verkäufe laden:", remoteVerkaeufe.error);
+  } else if (remoteVerkaeufe.data.length === 0 && verkaeufe.length) {
     verkaeufe.forEach(v => queueUpsert("verkaeufe", verkaufZuDB(v)));
-  } else if (remoteVerkaeufe.data.length) {
-    verkaeufe = remoteVerkaeufe.data.map(verkaufVonDB);
+  } else {
+    verkaeufe = (remoteVerkaeufe.data || []).map(verkaufVonDB);
   }
 
-  if (remoteAbschluesse.data.length === 0 && abschluesse.length) {
-    abschluesse.forEach(a =>
-      queueUpsert("tagesabschluesse", abschlussZuDB(a))
-    );
-  } else if (remoteAbschluesse.data.length) {
-    abschluesse = remoteAbschluesse.data.map(abschlussVonDB);
+  if (remoteAbschluesse.error) {
+    fehler.push("Abschlüsse");
+    console.error("Abschlüsse laden:", remoteAbschluesse.error);
+  } else if (remoteAbschluesse.data.length === 0 && abschluesse.length) {
+    abschluesse.forEach(a => queueUpsert("tagesabschluesse", abschlussZuDB(a)));
+  } else {
+    abschluesse = (remoteAbschluesse.data || []).map(abschlussVonDB);
   }
 
-  await moduldatenErstSynchronisieren(remoteModuldaten.data || []);
-  await teamEigenesProfilSicherstellen();
-  if(aktuelleRolle === "superuser") await teamRemoteLaden();
+  if (remoteModuldaten.error) {
+    fehler.push("Module");
+    console.error("Moduldaten laden:", remoteModuldaten.error);
+  } else {
+    await moduldatenErstSynchronisieren(remoteModuldaten.data || []);
+  }
+
+  // Team-Funktionen ebenfalls nicht den restlichen Sync blockieren lassen.
+  try {
+    await teamEigenesProfilSicherstellen();
+    if (aktuelleRolle === "superuser") await teamRemoteLaden();
+  } catch (error) {
+    console.warn("Team-Synchronisierung:", error);
+  }
 
   speichernLokal();
   render();
 
   await syncStarten();
-  statusAktualisieren();
+
+  if (fehler.length) {
+    syncStatus("fehler", `Sync-Fehler: ${fehler.join(", ")}`);
+  } else {
+    statusAktualisieren();
+  }
 }
 
 
@@ -1305,11 +1315,7 @@ function remoteMitWarteschlangeMischen(table, remoteRows) {
 }
 
 async function remoteNeuLaden() {
-  if (
-    remoteNeuLadenLaeuft ||
-    !angemeldet ||
-    !navigator.onLine
-  ) return;
+  if (remoteNeuLadenLaeuft || !angemeldet || !navigator.onLine) return;
 
   remoteNeuLadenLaeuft = true;
 
@@ -1321,22 +1327,61 @@ async function remoteNeuLaden() {
       sb.from("moduldaten").select("*")
     ]);
 
-    if (g.error || v.error || a.error || m.error) {
-      console.warn("Remote-Neuladen fehlgeschlagen:", g.error, v.error, a.error, m.error);
-      return;
+    const fehler = [];
+    let etwasGeladen = false;
+
+    // Ganz bewusst getrennt: Ein defekter Bereich darf nicht mehr alle anderen
+    // gemeinsamen Daten einfrieren.
+    if (g.error) {
+      fehler.push("Getränke");
+      console.warn("Getränke neu laden:", g.error);
+    } else {
+      getraenke = remoteMitWarteschlangeMischen("getraenke", g.data || []).map(getraenkVonDB);
+      etwasGeladen = true;
     }
 
-    // Remote-Daten werden geladen, ohne noch nicht hochgeladene lokale Änderungen zu überschreiben.
-    getraenke = remoteMitWarteschlangeMischen("getraenke", g.data).map(getraenkVonDB);
-    verkaeufe = remoteMitWarteschlangeMischen("verkaeufe", v.data).map(verkaufVonDB);
-    abschluesse = remoteMitWarteschlangeMischen("tagesabschluesse", a.data).map(abschlussVonDB);
-    remoteModuldatenLokalSpeichern(remoteMitWarteschlangeMischen("moduldaten", m.data));
+    if (v.error) {
+      fehler.push("Verkäufe");
+      console.warn("Verkäufe neu laden:", v.error);
+    } else {
+      verkaeufe = remoteMitWarteschlangeMischen("verkaeufe", v.data || []).map(verkaufVonDB);
+      etwasGeladen = true;
+    }
 
-    speichernLokal();
-    render();
+    if (a.error) {
+      fehler.push("Abschlüsse");
+      console.warn("Abschlüsse neu laden:", a.error);
+    } else {
+      abschluesse = remoteMitWarteschlangeMischen("tagesabschluesse", a.data || []).map(abschlussVonDB);
+      etwasGeladen = true;
+    }
 
-    if ($("statistikDialog")?.open) statistikInhaltRendern();
-    if ($("abschlussDialog")?.open) abschlussAktualisieren();
+    if (m.error) {
+      fehler.push("Module");
+      console.warn("Moduldaten neu laden:", m.error);
+    } else {
+      remoteModuldatenLokalSpeichern(remoteMitWarteschlangeMischen("moduldaten", m.data || []));
+      etwasGeladen = true;
+    }
+
+    if (etwasGeladen) {
+      speichernLokal();
+      render();
+
+      if ($("statistikDialog")?.open) statistikInhaltRendern();
+      if ($("abschlussDialog")?.open) abschlussAktualisieren();
+      if ($("notizenDialog")?.open) notizenRendern();
+      if ($("teamDialog")?.open && typeof teamRendern === "function") teamRendern();
+    }
+
+    if (fehler.length) {
+      syncStatus("fehler", `Sync-Fehler: ${fehler.join(", ")}`);
+    } else if (!syncQueue.length) {
+      statusAktualisieren();
+    }
+  } catch (error) {
+    console.error("Remote-Neuladen Ausnahme:", error);
+    syncStatus("fehler", "Sync-Verbindung fehlerhaft");
   } finally {
     remoteNeuLadenLaeuft = false;
   }
@@ -4680,6 +4725,7 @@ function realtimeFallbackStarten() {
       navigator.onLine &&
       document.visibilityState === "visible"
     ) {
+      await syncStarten();
       await remoteNeuLaden();
     }
   }, 2500);
