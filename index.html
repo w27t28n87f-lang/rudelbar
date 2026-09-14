@@ -7,9 +7,9 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json?v=138">
   <link rel="apple-touch-icon" href="Logo-Haupt-Home.png">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=138">
 
 
   <script>
@@ -312,6 +312,7 @@
       <div class="zahlung">
         <button id="barButton" class="zahlung-button bar">BAR</button>
         <button id="karteButton" class="zahlung-button karte">KARTE</button>
+        <button id="pfandButton" class="zahlung-button pfand" type="button">♻️ PFANDRÜCKGABE</button>
       </div>
 
       <button id="bestellungLoeschen" class="loeschen-button">
@@ -480,7 +481,7 @@
       <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">App-Informationen</h3>
       <section class="settings-section">
         <div class="settings-info">
-          <div><span>Version</span><strong>Rudelbar v137</strong></div>
+          <div><span>Version</span><strong>Rudelbar v138</strong></div>
           <div><span>Zugang</span><strong id="settingsZugangInfo">–</strong></div>
         </div>
         <p class="settings-hinweis">Superuser verwalten die App vollständig. Mitarbeiter sehen in den Einstellungen ausschließlich ihr eigenes Konto und die App-Informationen.</p>
@@ -876,7 +877,46 @@
   </div>
 </dialog>
 
-<script src="app.js"></script>
+
+<dialog id="pfandDialog">
+  <div class="dialogbox barzahlung-dialogbox pfand-dialogbox">
+    <div class="dialog-kopf">
+      <div>
+        <small class="barzahlung-kicker">PFANDRÜCKGABE</small>
+        <h2>Becher zurücknehmen</h2>
+      </div>
+      <button type="button" class="sekundaer" id="pfandAbbrechen">✕</button>
+    </div>
+
+    <label class="barzahlung-label" for="pfandWert">Pfand je Becher</label>
+    <div class="barzahlung-eingabe pfand-wert-eingabe">
+      <input id="pfandWert" type="text" inputmode="decimal" autocomplete="off" value="2,00">
+      <span>€</span>
+    </div>
+    <button type="button" class="sekundaer pfand-speichern" id="pfandWertSpeichern">Pfandwert speichern</button>
+
+    <label class="barzahlung-label" for="pfandMenge">Anzahl zurückgegebener Becher</label>
+    <div class="pfand-mengen-zeile">
+      <button type="button" id="pfandMinus" aria-label="Menge verringern">−</button>
+      <input id="pfandMenge" type="number" inputmode="numeric" min="1" step="1" value="1">
+      <button type="button" id="pfandPlus" aria-label="Menge erhöhen">+</button>
+    </div>
+
+    <div class="barzahlung-gesamt pfand-gesamt">
+      <span>Zurückzahlen</span>
+      <strong id="pfandGesamt">2,00 €</strong>
+    </div>
+
+    <p class="barzahlung-hinweis" id="pfandHinweis">Zahlungsweg der ursprünglichen Zahlung wählen.</p>
+
+    <div class="pfand-zahlung">
+      <button type="button" class="zahlung-button bar" id="pfandBar">BAR ZURÜCK</button>
+      <button type="button" class="zahlung-button karte" id="pfandKarte">AUF KARTE ZURÜCK</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="app.js?v=138"></script>
 
 </body>
 </html>

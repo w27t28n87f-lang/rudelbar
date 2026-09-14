@@ -3017,3 +3017,48 @@ body.register-offen{overflow:hidden!important}
   .team-aktionen{grid-template-columns:1fr}
   .team-loeschen{width:100%}
 }
+
+
+/* ===== RUDELBAR v138: Pfandrückgabe ===== */
+.zahlung .pfand {
+  grid-column: 1 / -1;
+  background: #2f6f4e;
+  color: #fff;
+  border: 1px solid #4b9a70;
+}
+.pfand-dialogbox { width: min(94vw, 520px); }
+.pfand-wert-eingabe { margin-bottom: 10px; }
+.pfand-speichern { width: 100%; margin-bottom: 6px; }
+.pfand-mengen-zeile {
+  display: grid;
+  grid-template-columns: 58px 1fr 58px;
+  gap: 10px;
+  align-items: stretch;
+  margin-bottom: 18px;
+}
+.pfand-mengen-zeile button {
+  min-height: 56px;
+  border-radius: 12px;
+  border: 1px solid #555;
+  background: #303030;
+  color: white;
+  font-size: 1.65rem;
+  font-weight: 900;
+}
+.pfand-mengen-zeile input {
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+  font-size: 1.55rem;
+  font-weight: 900;
+  border: 2px solid var(--gold2);
+  border-radius: 12px;
+  background: #111;
+  color: #fff;
+}
+.pfand-gesamt { margin-top: 4px; border-color: #4b9a70; }
+.pfand-gesamt strong { color: #72e39a; }
+.pfand-zahlung { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+@media (max-width: 430px) {
+  .pfand-zahlung { grid-template-columns: 1fr; }
+}

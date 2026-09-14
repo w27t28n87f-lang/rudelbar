@@ -1828,6 +1828,80 @@ function bildVerkleinern(file, maxGroesse = 700, qualitaet = 0.65) {
 }
 
 
+/* PFAND v138 */
+const PFAND_BEREICH = "_system";
+const PFAND_MODUL = "kasse_einstellungen";
+const PFAND_EINSTELLUNG_ID = "7e0c0f10-0138-4138-8138-000000000138";
+const PFAND_STANDARD = 2;
+
+function pfandEinstellungLaden() {
+  const key = modulKey(PFAND_BEREICH, PFAND_MODUL);
+  const daten = laden(key, []);
+  const eintrag = daten.find(x => String(x.id) === PFAND_EINSTELLUNG_ID);
+  const wert = Number(eintrag?.pfandWert);
+  return Number.isFinite(wert) && wert > 0 ? wert : PFAND_STANDARD;
+}
+
+function pfandEinstellungSpeichern(wert) {
+  const zahlWert = Math.round(Number(wert) * 100) / 100;
+  if (!Number.isFinite(zahlWert) || zahlWert <= 0) return false;
+
+  const key = modulKey(PFAND_BEREICH, PFAND_MODUL);
+  const daten = laden(key, []);
+  const jetzt = new Date().toISOString();
+  const eintrag = {
+    id: PFAND_EINSTELLUNG_ID,
+    pfandWert: zahlWert,
+    titel: "Pfand je Becher",
+    updatedAt: jetzt,
+    createdAt: daten.find(x => String(x.id) === PFAND_EINSTELLUNG_ID)?.createdAt || jetzt
+  };
+  const ohneAlt = daten.filter(x => String(x.id) !== PFAND_EINSTELLUNG_ID);
+  ohneAlt.push(eintrag);
+  localStorage.setItem(key, JSON.stringify(ohneAlt));
+  queueUpsert("moduldaten", modulZuDB(PFAND_BEREICH, PFAND_MODUL, eintrag));
+  return true;
+}
+
+function istPfandRueckgabe(verkauf) {
+  return Array.isArray(verkauf?.positionen) && verkauf.positionen.some(p => p?.typ === "pfandrueckgabe");
+}
+
+function pfandRueckgabenSumme(liste, zahlungsart = null) {
+  return (liste || [])
+    .filter(v => istPfandRueckgabe(v) && (!zahlungsart || v.zahlungsart === zahlungsart))
+    .reduce((summe, v) => summe + Math.abs(Number(v.gesamt || 0)), 0);
+}
+
+function pfandRueckgabeBuchen(zahlungsart, menge, pfandWert) {
+  const anzahl = Math.max(1, Math.floor(Number(menge) || 1));
+  const wert = Math.round(Number(pfandWert) * 100) / 100;
+  if (!Number.isFinite(wert) || wert <= 0) return;
+
+  const gesamt = -(Math.round(anzahl * wert * 100) / 100);
+  const verkauf = {
+    id: neueID(),
+    datum: new Date().toISOString(),
+    zahlungsart,
+    gesamt,
+    positionen: [{
+      getraenkId: null,
+      name: "Pfandrückgabe Becher",
+      preis: -wert,
+      anzahl,
+      typ: "pfandrueckgabe",
+      pfandWert: wert
+    }],
+    abgeschlossen: false,
+    abschlussID: null
+  };
+
+  verkaeufe.push(verkauf);
+  speichernLokal();
+  queueUpsert("verkaeufe", verkaufZuDB(verkauf));
+  render();
+}
+
 /* VERKAUF */
 
 function verkaufAbschliessen(zahlungsart) {
@@ -1887,6 +1961,8 @@ function aggregieren(liste) {
     gesamt += Number(v.gesamt);
 
     v.positionen.forEach(p => {
+      if (p?.typ === "pfandrueckgabe") return;
+
       anzahl += p.anzahl;
 
       if (!map[p.name]) {
@@ -1957,7 +2033,7 @@ function statistikInhaltRendern() {
 
       <div class="stat">
         <span>Verkäufe</span>
-        <strong>${v.length}</strong>
+        <strong>${v.filter(x => !istPfandRueckgabe(x)).length}</strong>
       </div>
 
       <div class="stat">
@@ -2294,6 +2370,16 @@ function abschlussAktualisieren() {
         <tr>
           <td>Kartenumsatz</td>
           <td>${euro(d.karte)}</td>
+        </tr>
+
+        <tr>
+          <td>davon Pfandrückgabe Bar</td>
+          <td>− ${euro(pfandRueckgabenSumme(d.v, "Bar"))}</td>
+        </tr>
+
+        <tr>
+          <td>davon Pfandrückgabe Karte</td>
+          <td>− ${euro(pfandRueckgabenSumme(d.v, "Karte"))}</td>
         </tr>
 
         <tr class="gesamt">
@@ -4658,6 +4744,62 @@ $("kartenzahlungBestaetigen").onclick = () => {
   $("kartenzahlungDialog").close();
   verkaufAbschliessen("Karte");
 };
+
+function pfandDialogAktualisieren() {
+  const wertRoh = $("pfandWert").value.trim().replace(/\s/g, "").replace(",", ".");
+  const wert = Number(wertRoh);
+  const menge = Math.max(1, Math.floor(Number($("pfandMenge").value) || 1));
+  $("pfandMenge").value = String(menge);
+  const gueltig = Number.isFinite(wert) && wert > 0;
+  $("pfandGesamt").textContent = gueltig ? euro(Math.round(wert * menge * 100) / 100) : "0,00 €";
+  $("pfandBar").disabled = !gueltig;
+  $("pfandKarte").disabled = !gueltig;
+  $("pfandHinweis").textContent = gueltig
+    ? "Zahlungsweg der ursprünglichen Zahlung wählen."
+    : "Bitte einen gültigen Pfandwert eingeben.";
+}
+
+function pfandOeffnen() {
+  $("pfandWert").value = pfandEinstellungLaden().toFixed(2).replace(".", ",");
+  $("pfandMenge").value = "1";
+  pfandDialogAktualisieren();
+  $("pfandDialog").showModal();
+}
+
+$("pfandButton").onclick = pfandOeffnen;
+$("pfandAbbrechen").onclick = () => $("pfandDialog").close();
+$("pfandWert").addEventListener("input", pfandDialogAktualisieren);
+$("pfandMenge").addEventListener("input", pfandDialogAktualisieren);
+$("pfandMinus").onclick = () => {
+  $("pfandMenge").value = String(Math.max(1, (Number($("pfandMenge").value) || 1) - 1));
+  pfandDialogAktualisieren();
+};
+$("pfandPlus").onclick = () => {
+  $("pfandMenge").value = String(Math.max(1, (Number($("pfandMenge").value) || 1) + 1));
+  pfandDialogAktualisieren();
+};
+$("pfandWertSpeichern").onclick = () => {
+  const wert = Number($("pfandWert").value.trim().replace(/\s/g, "").replace(",", "."));
+  if (!pfandEinstellungSpeichern(wert)) {
+    $("pfandHinweis").textContent = "Pfandwert konnte nicht gespeichert werden.";
+    return;
+  }
+  $("pfandWert").value = wert.toFixed(2).replace(".", ",");
+  $("pfandHinweis").textContent = "Pfandwert gespeichert und für das Rudel synchronisiert.";
+  pfandDialogAktualisieren();
+};
+
+function pfandRueckgabeAusDialog(zahlungsart) {
+  const wert = Number($("pfandWert").value.trim().replace(/\s/g, "").replace(",", "."));
+  const menge = Math.max(1, Math.floor(Number($("pfandMenge").value) || 1));
+  if (!Number.isFinite(wert) || wert <= 0) return;
+  pfandEinstellungSpeichern(wert);
+  pfandRueckgabeBuchen(zahlungsart, menge, wert);
+  $("pfandDialog").close();
+}
+
+$("pfandBar").onclick = () => pfandRueckgabeAusDialog("Bar");
+$("pfandKarte").onclick = () => pfandRueckgabeAusDialog("Karte");
 
 $("bestellungLoeschen").onclick = () => {
   warenkorb = {};
