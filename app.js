@@ -1758,7 +1758,7 @@ function settingsPfandRendern() {
   box.innerHTML = pfandArtikelLaden().map(a => `
     <div class="kassen-settings-zeile">
       <div class="kassen-settings-icon">♻️</div>
-      <div class="kassen-settings-info"><strong>${escapeHTML(a.name)}</strong><small>${euro(a.preis)}</small></div>
+      <div class="kassen-settings-info"><strong>${esc(a.name)}</strong><small>${euro(a.preis)}</small></div>
       <button type="button" class="aktion bearbeiten" data-settings-pfand-edit="${a.id}" aria-label="Pfand bearbeiten">${stiftSVG()}</button>
       <button type="button" class="aktion entfernen" data-settings-pfand-delete="${a.id}" aria-label="Pfand löschen">${trashSVG()}</button>
     </div>`).join("");
@@ -4760,7 +4760,7 @@ $("kartenzahlungBestaetigen").onclick = () => {
 
 
 function pfandOptionenHTML() {
-  return pfandArtikelLaden().map(a => `<option value="${a.id}">${escapeHTML(a.name)} · ${euro(a.preis)}</option>`).join("");
+  return pfandArtikelLaden().map(a => `<option value="${a.id}">${esc(a.name)} · ${euro(a.preis)}</option>`).join("");
 }
 
 function zahlungsPfandUI(art) {
@@ -4797,11 +4797,11 @@ function pfandMengeAendern(art, delta) {
   if (art === "Bar") barzahlungBerechnen(); else kartenzahlungBerechnen();
 }
 
-// v146: explizit global für iOS/PWA-Inline-Bedienung.
+// v147: explizit global für iOS/PWA-Inline-Bedienung.
 window.pfandToggle = pfandToggle;
 window.pfandMengeAendern = pfandMengeAendern;
 
-// v146: BAR/KARTE-Pfand ist zusätzlich direkt im HTML verdrahtet.
+// v147: BAR/KARTE-Pfand ist zusätzlich direkt im HTML verdrahtet.
 // Diese Fallbacks greifen nur, falls die Inline-Bindung später einmal entfernt wird.
 if ($("barPfandToggle") && !$('barPfandToggle').getAttribute('onclick')) $("barPfandToggle").onclick = () => pfandToggle("Bar");
 if ($("kartePfandToggle") && !$('kartePfandToggle').getAttribute('onclick')) $("kartePfandToggle").onclick = () => pfandToggle("Karte");
@@ -4816,7 +4816,7 @@ function pfandEinstellungenRendern() {
   const liste = pfandArtikelLaden();
   $("pfandArtikelListe").innerHTML = liste.map(a => `
     <div class="pfand-artikel-zeile" data-id="${a.id}">
-      <div><strong>${escapeHTML(a.name)}</strong></div>
+      <div><strong>${esc(a.name)}</strong></div>
       <strong>${euro(a.preis)}</strong>
       <button type="button" class="sekundaer" data-pfand-edit="${a.id}">✏️</button>
       <button type="button" class="daten-loeschen" data-pfand-delete="${a.id}">🗑</button>
