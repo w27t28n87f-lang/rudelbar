@@ -3165,7 +3165,7 @@ body.register-offen{overflow:hidden!important}
   z-index:9999;
 }
 
-/* ===== RUDELBAR v144: aufgeräumte Kasse + zentrale Verwaltung ===== */
+/* ===== RUDELBAR v145: aufgeräumte Kasse + zentrale Verwaltung ===== */
 .getraenk-menge{display:grid;grid-template-columns:40px 1fr 40px;gap:6px;align-items:center;padding:8px 10px 10px}
 .getraenk-menge button{height:38px;border:1px solid #555;border-radius:10px;background:#303030;color:#fff;font-size:24px;font-weight:800}
 .getraenk-menge button:last-child{border-color:#c9892d;color:#f2aa2d}
@@ -3181,3 +3181,8 @@ body.register-offen{overflow:hidden!important}
 .kassen-settings-info small{color:#e9a12d;font-size:15px;font-weight:800}
 .kassen-settings-zeile .aktion{width:48px;height:48px}
 @media(max-width:520px){.getraenk-menge{grid-template-columns:34px 1fr 34px;padding:6px}.getraenk-menge button{height:34px}.kassen-settings-zeile{grid-template-columns:46px minmax(0,1fr) 44px 44px;padding:8px;gap:7px}.kassen-settings-thumb,.kassen-settings-icon{width:46px;height:46px}.kassen-settings-zeile .aktion{width:44px;height:44px}}
+
+/* v145: Der Einstellungsbutton in der Kasse zeigt ausschließlich Kassenfunktionen. */
+#einstellungenDialog.kassen-only-mode #settingsHome > .settings-menu-group:not(.kassen-only-group),
+#einstellungenDialog.kassen-only-mode #settingsHome > .settings-logout { display:none !important; }
+#einstellungenDialog.kassen-only-mode .settings-shell .settings-topbar p { display:none !important; }

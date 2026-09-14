@@ -651,6 +651,7 @@ async function eigenesKontoLoeschen(){
 }
 
 function einstellungenOeffnen(){
+  $("einstellungenDialog")?.classList.remove("kassen-only-mode");
   settingsSeiteOeffnen("home");
   $("settingsName").textContent=aktuellerUser?.user_metadata?.name||"–";
   $("settingsEmail").textContent=aktuellerUser?.email||"–";
@@ -676,6 +677,7 @@ function einstellungenSchliessen(){
     rechnungsSettingsAusUI();
   }
   if($("einstellungenDialog").open) $("einstellungenDialog").close();
+  $("einstellungenDialog")?.classList.remove("kassen-only-mode");
 }
 async function appAdresseTeilen(){
   const url=basisAppURL().toString();
@@ -1737,7 +1739,7 @@ function getraenkLoeschen(id) {
 }
 
 
-/* KASSEN-EINSTELLUNGEN v144 */
+/* KASSEN-EINSTELLUNGEN v145 */
 function settingsGetraenkeRendern() {
   const box = $("settingsGetraenkeListe");
   if (!box) return;
@@ -4824,8 +4826,16 @@ function pfandEinstellungenOeffnen() {
 }
 window.pfandEinstellungenOeffnen = pfandEinstellungenOeffnen;
 
+function kassenEinstellungenOeffnen(){
+  const dlg = $("einstellungenDialog");
+  if (!dlg) return;
+  dlg.classList.add("kassen-only-mode");
+  settingsSeiteOeffnen("home");
+  if (!dlg.open) dlg.showModal();
+}
+
 const kassenSettingsButton = $("kassenEinstellungenBtn");
-if (kassenSettingsButton) kassenSettingsButton.onclick = () => { einstellungenOeffnen(); settingsSeiteOeffnen("home"); };
+if (kassenSettingsButton) kassenSettingsButton.onclick = kassenEinstellungenOeffnen;
 
 $("pfandEinstellungenSchliessen").onclick = () => $("pfandEinstellungenDialog").close();
 $("pfandArtikelHinzufuegen").onclick = () => {
