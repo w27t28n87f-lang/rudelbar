@@ -277,7 +277,7 @@
           </svg>
         </button>
 
-        <button type="button" class="iconbutton pfand-einstellungen-button" id="pfandEinstellungenBtn" aria-label="Pfand-Einstellungen öffnen" title="Pfand-Einstellungen">⚙️</button>
+        <button type="button" class="iconbutton pfand-einstellungen-button" id="pfandEinstellungenBtn" aria-label="Pfand-Einstellungen öffnen" title="Pfand-Einstellungen" onclick="window.pfandEinstellungenOeffnen && window.pfandEinstellungenOeffnen()">⚙️</button>
 
         <button class="hauptbutton" id="getraenkHinzufuegen">
           + Getränk
@@ -483,7 +483,7 @@
       <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">App-Informationen</h3>
       <section class="settings-section">
         <div class="settings-info">
-          <div><span>Version</span><strong>Rudelbar v142</strong></div>
+          <div><span>Version</span><strong>Rudelbar v143</strong></div>
           <div><span>Zugang</span><strong id="settingsZugangInfo">–</strong></div>
         </div>
         <p class="settings-hinweis">Superuser verwalten die App vollständig. Mitarbeiter sehen in den Einstellungen ausschließlich ihr eigenes Konto und die App-Informationen.</p>
@@ -840,6 +840,7 @@
         <label>Pfandartikel
           <select id="barPfandArtikel"></select>
         </label>
+        <div class="zahlungs-pfand-menge-label">Anzahl</div>
         <div class="zahlungs-pfand-menge">
           <button type="button" id="barPfandMinus">−</button>
           <strong id="barPfandMenge">1</strong>
@@ -892,6 +893,7 @@
         <label>Pfandartikel
           <select id="kartePfandArtikel"></select>
         </label>
+        <div class="zahlungs-pfand-menge-label">Anzahl</div>
         <div class="zahlungs-pfand-menge">
           <button type="button" id="kartePfandMinus">−</button>
           <strong id="kartePfandMenge">1</strong>

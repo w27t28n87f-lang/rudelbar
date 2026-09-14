@@ -1828,7 +1828,7 @@ function bildVerkleinern(file, maxGroesse = 700, qualitaet = 0.65) {
 }
 
 
-/* PFAND v142: zentrale Pfandartikel + Verkauf/Rückgabe */
+/* PFAND v143: zentrale Pfandartikel + Verkauf/Rückgabe */
 const PFAND_BEREICH = "_system";
 const PFAND_MODUL = "kasse_pfandartikel";
 const PFAND_STANDARD_ID = "pfand-becher-standard";
@@ -4609,7 +4609,7 @@ function barzahlungOeffnen() {
   const grundCent = centWert(gesamtpreis());
   if (grundCent <= 0) return;
 
-  // v142: Die Zahlungsfunktion darf niemals an der optionalen Pfand-Erweiterung scheitern.
+  // v143: Die Zahlungsfunktion darf niemals an der optionalen Pfand-Erweiterung scheitern.
   try { zahlungsPfandReset("Bar"); } catch (err) {
     console.error("Pfand-Initialisierung Bar fehlgeschlagen:", err);
     zahlungsPfand.Bar = { aktiv:false, artikelId:null, menge:1 };
@@ -4688,7 +4688,7 @@ function kartenzahlungOeffnen() {
   const grundCent = centWert(gesamtpreis());
   if (grundCent <= 0) return;
 
-  // v142: Karte bleibt nutzbar, selbst wenn Pfand lokal/synchron nicht initialisiert werden kann.
+  // v143: Karte bleibt nutzbar, selbst wenn Pfand lokal/synchron nicht initialisiert werden kann.
   try { zahlungsPfandReset("Karte"); } catch (err) {
     console.error("Pfand-Initialisierung Karte fehlgeschlagen:", err);
     zahlungsPfand.Karte = { aktiv:false, artikelId:null, menge:1 };
@@ -4825,7 +4825,18 @@ function pfandEinstellungenOeffnen() {
 window.pfandEinstellungenOeffnen = pfandEinstellungenOeffnen;
 
 const pfandSettingsButton = $("pfandEinstellungenBtn");
-if (pfandSettingsButton) pfandSettingsButton.onclick = pfandEinstellungenOeffnen;
+if (pfandSettingsButton) {
+  pfandSettingsButton.onclick = (e) => { e.preventDefault(); e.stopPropagation(); pfandEinstellungenOeffnen(); };
+  pfandSettingsButton.addEventListener("touchend", (e) => { e.preventDefault(); e.stopPropagation(); pfandEinstellungenOeffnen(); }, { passive:false });
+}
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest?.("#pfandEinstellungenBtn");
+  if (!btn) return;
+  e.preventDefault();
+  try { pfandEinstellungenOeffnen(); } catch (err) { console.error("Pfand-Einstellungen konnten nicht geöffnet werden", err); }
+}, true);
+
 $("pfandEinstellungenSchliessen").onclick = () => $("pfandEinstellungenDialog").close();
 $("pfandArtikelHinzufuegen").onclick = () => {
   const name = $("pfandNeuName").value.trim();
