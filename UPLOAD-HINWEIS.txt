@@ -1,0 +1,14 @@
+RUDELBAR – EINMALIGES GITHUB-UPDATE
+
+Diese drei Dateien im GitHub-Repository ersetzen:
+1. index.html
+2. app.js
+3. service-worker.js
+
+Wichtig:
+- Die Dateinamen bleiben ab jetzt dauerhaft gleich.
+- index.html lädt nur noch app.js, style.css und manifest.json ohne ?v123 usw.
+- Der Service Worker lädt HTML/CSS/JS/Manifest online immer frisch und nutzt den Cache nur als Offline-Fallback.
+- app.js fordert beim Start zusätzlich ein Service-Worker-Update an.
+
+style.css und manifest.json müssen für diese Umstellung nicht ersetzt werden.

@@ -4576,7 +4576,11 @@ authStart();
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
-    .register("service-worker.js")
+    .register("service-worker.js", { updateViaCache: "none" })
+    .then(registration => {
+      // Bei jedem App-Start aktiv nach einer neuen Service-Worker-Version suchen.
+      registration.update().catch(() => {});
+    })
     .catch(error => {
       console.error("Service Worker:", error);
     });
