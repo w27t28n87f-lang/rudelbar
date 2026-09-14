@@ -7,9 +7,9 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json?v=142">
+  <link rel="manifest" href="manifest.json?v=146">
   <link rel="apple-touch-icon" href="Logo-Haupt-Home.png">
-  <link rel="stylesheet" href="style.css?v=142">
+  <link rel="stylesheet" href="style.css?v=146">
 
 
   <script>
@@ -507,7 +507,7 @@
       <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">App-Informationen</h3>
       <section class="settings-section">
         <div class="settings-info">
-          <div><span>Version</span><strong>Rudelbar v144</strong></div>
+          <div><span>Version</span><strong>Rudelbar v146</strong></div>
           <div><span>Zugang</span><strong id="settingsZugangInfo">–</strong></div>
         </div>
         <p class="settings-hinweis">Superuser verwalten die App vollständig. Mitarbeiter sehen in den Einstellungen ausschließlich ihr eigenes Konto und die App-Informationen.</p>
@@ -859,16 +859,16 @@
     <div class="barzahlung-schnellwahl" id="barzahlungSchnellwahl"></div>
 
     <div class="zahlungs-pfandbox">
-      <button type="button" class="zahlungs-pfand-toggle" id="barPfandToggle">♻️ Pfand hinzufügen</button>
+      <button type="button" class="zahlungs-pfand-toggle" id="barPfandToggle" onclick="pfandToggle('Bar')">♻️ Pfand hinzufügen</button>
       <div class="zahlungs-pfand-inhalt versteckt" id="barPfandInhalt">
         <label>Pfandartikel
           <select id="barPfandArtikel"></select>
         </label>
         <div class="zahlungs-pfand-menge-label">Anzahl</div>
         <div class="zahlungs-pfand-menge">
-          <button type="button" id="barPfandMinus">−</button>
+          <button type="button" id="barPfandMinus" onclick="pfandMengeAendern('Bar', -1)">−</button>
           <strong id="barPfandMenge">1</strong>
-          <button type="button" id="barPfandPlus">+</button>
+          <button type="button" id="barPfandPlus" onclick="pfandMengeAendern('Bar', 1)">+</button>
         </div>
         <div class="zahlungs-pfand-summe"><span>Pfand gesamt</span><strong id="barPfandSumme">0,00 €</strong></div>
       </div>
@@ -912,16 +912,16 @@
     </div>
 
     <div class="zahlungs-pfandbox">
-      <button type="button" class="zahlungs-pfand-toggle" id="kartePfandToggle">♻️ Pfand hinzufügen</button>
+      <button type="button" class="zahlungs-pfand-toggle" id="kartePfandToggle" onclick="pfandToggle('Karte')">♻️ Pfand hinzufügen</button>
       <div class="zahlungs-pfand-inhalt versteckt" id="kartePfandInhalt">
         <label>Pfandartikel
           <select id="kartePfandArtikel"></select>
         </label>
         <div class="zahlungs-pfand-menge-label">Anzahl</div>
         <div class="zahlungs-pfand-menge">
-          <button type="button" id="kartePfandMinus">−</button>
+          <button type="button" id="kartePfandMinus" onclick="pfandMengeAendern('Karte', -1)">−</button>
           <strong id="kartePfandMenge">1</strong>
-          <button type="button" id="kartePfandPlus">+</button>
+          <button type="button" id="kartePfandPlus" onclick="pfandMengeAendern('Karte', 1)">+</button>
         </div>
         <div class="zahlungs-pfand-summe"><span>Pfand gesamt</span><strong id="kartePfandSumme">0,00 €</strong></div>
       </div>
@@ -971,7 +971,7 @@
   </div>
 </dialog>
 
-<script src="app.js?v=144"></script>
+<script src="app.js?v=146"></script>
 
 
 </body>

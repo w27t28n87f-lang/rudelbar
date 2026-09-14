@@ -4797,12 +4797,18 @@ function pfandMengeAendern(art, delta) {
   if (art === "Bar") barzahlungBerechnen(); else kartenzahlungBerechnen();
 }
 
-$("barPfandToggle").onclick = () => pfandToggle("Bar");
-$("kartePfandToggle").onclick = () => pfandToggle("Karte");
-$("barPfandMinus").onclick = () => pfandMengeAendern("Bar", -1);
-$("barPfandPlus").onclick = () => pfandMengeAendern("Bar", 1);
-$("kartePfandMinus").onclick = () => pfandMengeAendern("Karte", -1);
-$("kartePfandPlus").onclick = () => pfandMengeAendern("Karte", 1);
+// v146: explizit global für iOS/PWA-Inline-Bedienung.
+window.pfandToggle = pfandToggle;
+window.pfandMengeAendern = pfandMengeAendern;
+
+// v146: BAR/KARTE-Pfand ist zusätzlich direkt im HTML verdrahtet.
+// Diese Fallbacks greifen nur, falls die Inline-Bindung später einmal entfernt wird.
+if ($("barPfandToggle") && !$('barPfandToggle').getAttribute('onclick')) $("barPfandToggle").onclick = () => pfandToggle("Bar");
+if ($("kartePfandToggle") && !$('kartePfandToggle').getAttribute('onclick')) $("kartePfandToggle").onclick = () => pfandToggle("Karte");
+if ($("barPfandMinus") && !$('barPfandMinus').getAttribute('onclick')) $("barPfandMinus").onclick = () => pfandMengeAendern("Bar", -1);
+if ($("barPfandPlus") && !$('barPfandPlus').getAttribute('onclick')) $("barPfandPlus").onclick = () => pfandMengeAendern("Bar", 1);
+if ($("kartePfandMinus") && !$('kartePfandMinus').getAttribute('onclick')) $("kartePfandMinus").onclick = () => pfandMengeAendern("Karte", -1);
+if ($("kartePfandPlus") && !$('kartePfandPlus').getAttribute('onclick')) $("kartePfandPlus").onclick = () => pfandMengeAendern("Karte", 1);
 $("barPfandArtikel").onchange = e => { zahlungsPfand.Bar.artikelId = e.target.value; zahlungsPfandUI("Bar"); barzahlungBerechnen(); };
 $("kartePfandArtikel").onchange = e => { zahlungsPfand.Karte.artikelId = e.target.value; zahlungsPfandUI("Karte"); kartenzahlungBerechnen(); };
 
