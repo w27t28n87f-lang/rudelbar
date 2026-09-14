@@ -277,7 +277,7 @@
           </svg>
         </button>
 
-        <button type="button" class="iconbutton pfand-einstellungen-button" id="pfandEinstellungenBtn" aria-label="Pfand-Einstellungen öffnen" title="Pfand-Einstellungen" onclick="window.pfandEinstellungenOeffnen && window.pfandEinstellungenOeffnen()">⚙️</button>
+        <button type="button" class="iconbutton pfand-einstellungen-button" id="kassenEinstellungenBtn" aria-label="Kassen-Einstellungen öffnen" title="Einstellungen">⚙️</button>
 
         <button class="hauptbutton" id="getraenkHinzufuegen">
           + Getränk
@@ -428,6 +428,11 @@
         <button class="settings-menu-row" type="button" data-settings-page="unternehmen"><span class="settings-menu-icon">🏢</span><span><strong>Unternehmensdaten</strong><small>Kontakt, Bank und Steuer</small></span><b>›</b></button>
         <button class="settings-menu-row" type="button" data-settings-page="rechnungen"><span class="settings-menu-icon">📄</span><span><strong>Rechnungen</strong><small>Mode, Facility Service, Security</small></span><b>›</b></button>
       </div>
+      <div class="settings-menu-group">
+        <span class="settings-group-title">KASSE</span>
+        <button class="settings-menu-row" type="button" data-settings-page="getraenke"><span class="settings-menu-icon">🍺</span><span><strong>Getränke verwalten</strong><small>Anlegen, bearbeiten und löschen</small></span><b>›</b></button>
+        <button class="settings-menu-row" type="button" data-settings-page="pfand"><span class="settings-menu-icon">♻️</span><span><strong>Pfand verwalten</strong><small>Bezeichnung und Preis</small></span><b>›</b></button>
+      </div>
       <div class="settings-menu-group superuser-only">
         <span class="settings-group-title">APP</span>
         <button class="settings-menu-row" type="button" data-settings-page="darstellung"><span class="settings-menu-icon">🎨</span><span><strong>Darstellung</strong><small>Startbereich, Ansicht, Animationen</small></span><b>›</b></button>
@@ -475,6 +480,25 @@
       <button id="rechnungSettingsSpeichernRechnung" class="hauptbutton voll settings-save" type="button">Rechnungseinstellungen speichern</button></section>
     </div>
 
+    <div id="settingsPageGetraenke" class="settings-page">
+      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Getränke verwalten</h3>
+      <p class="settings-page-sub">Getränke zentral anlegen, bearbeiten oder löschen. Die Kassenansicht bleibt dadurch aufgeräumt.</p>
+      <div id="settingsGetraenkeListe" class="kassen-settings-liste"></div>
+      <button id="settingsGetraenkNeu" class="hauptbutton voll settings-save" type="button">+ Neues Getränk anlegen</button>
+    </div>
+
+    <div id="settingsPagePfand" class="settings-page">
+      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Pfand verwalten</h3>
+      <p class="settings-page-sub">Nur Bezeichnung und Preis. Diese Pfandartikel stehen anschließend in Barzahlung, Kartenzahlung und Pfandrückgabe zur Verfügung.</p>
+      <div id="settingsPfandListe" class="kassen-settings-liste"></div>
+      <div class="pfand-neu-box settings-section">
+        <label>Bezeichnung<input id="settingsPfandName" type="text" placeholder="z. B. Becher"></label>
+        <label>Preis<input id="settingsPfandPreis" type="text" inputmode="decimal" placeholder="2,00"></label>
+        <button type="button" class="hauptbutton voll" id="settingsPfandNeu">+ Pfandartikel anlegen</button>
+      </div>
+      <p class="barzahlung-hinweis" id="settingsPfandHinweis"></p>
+    </div>
+
     <div id="settingsPageDarstellung" class="settings-page superuser-only-page">
       <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Darstellung</h3><section class="settings-section"><label>Startbereich nach der Anmeldung<select id="settingsStartbereich"><option value="start">Bereichsauswahl</option><option value="kneipe">Mobile Kneipe</option><option value="mode">Mode</option><option value="service">Facility Service</option><option value="security">Security</option></select></label><label>Creator-Produktkarten auf dem Handy<select id="settingsCreatorSpalten"><option value="2">2 Spalten, größere Vorschau</option><option value="3">3 Spalten, kompakter</option></select></label><label class="settings-check"><input id="settingsAnimationen" type="checkbox" checked> Animationen verwenden</label></section>
     </div>
@@ -483,7 +507,7 @@
       <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">App-Informationen</h3>
       <section class="settings-section">
         <div class="settings-info">
-          <div><span>Version</span><strong>Rudelbar v143</strong></div>
+          <div><span>Version</span><strong>Rudelbar v144</strong></div>
           <div><span>Zugang</span><strong id="settingsZugangInfo">–</strong></div>
         </div>
         <p class="settings-hinweis">Superuser verwalten die App vollständig. Mitarbeiter sehen in den Einstellungen ausschließlich ihr eigenes Konto und die App-Informationen.</p>
@@ -947,7 +971,7 @@
   </div>
 </dialog>
 
-<script src="app.js?v=142"></script>
+<script src="app.js?v=144"></script>
 
 
 </body>

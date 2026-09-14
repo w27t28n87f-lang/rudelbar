@@ -3164,3 +3164,20 @@ body.register-offen{overflow:hidden!important}
 #pfandEinstellungenDialog{
   z-index:9999;
 }
+
+/* ===== RUDELBAR v144: aufgeräumte Kasse + zentrale Verwaltung ===== */
+.getraenk-menge{display:grid;grid-template-columns:40px 1fr 40px;gap:6px;align-items:center;padding:8px 10px 10px}
+.getraenk-menge button{height:38px;border:1px solid #555;border-radius:10px;background:#303030;color:#fff;font-size:24px;font-weight:800}
+.getraenk-menge button:last-child{border-color:#c9892d;color:#f2aa2d}
+.getraenk-menge button:disabled{opacity:.32}
+.getraenk-menge strong{text-align:center;font-size:18px}
+.kassen-settings-liste{display:flex;flex-direction:column;gap:10px;margin:16px 0}
+.kassen-settings-zeile{display:grid;grid-template-columns:54px minmax(0,1fr) 48px 48px;gap:10px;align-items:center;padding:10px;border:1px solid #454545;border-radius:14px;background:#191919}
+.kassen-settings-thumb,.kassen-settings-icon{width:54px;height:54px;border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;font-size:26px}
+.kassen-settings-thumb img{width:100%;height:100%;object-fit:contain}
+.kassen-settings-thumb svg{max-width:38px;max-height:38px}
+.kassen-settings-info{display:flex;flex-direction:column;gap:4px;min-width:0}
+.kassen-settings-info strong{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kassen-settings-info small{color:#e9a12d;font-size:15px;font-weight:800}
+.kassen-settings-zeile .aktion{width:48px;height:48px}
+@media(max-width:520px){.getraenk-menge{grid-template-columns:34px 1fr 34px;padding:6px}.getraenk-menge button{height:34px}.kassen-settings-zeile{grid-template-columns:46px minmax(0,1fr) 44px 44px;padding:8px;gap:7px}.kassen-settings-thumb,.kassen-settings-icon{width:46px;height:46px}.kassen-settings-zeile .aktion{width:44px;height:44px}}

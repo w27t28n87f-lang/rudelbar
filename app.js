@@ -282,6 +282,8 @@ function remoteModuldatenLokalSpeichern(rows) {
   if ($("notizenDialog")?.open && typeof notizenRendern === "function") notizenRendern();
   if (typeof teamButtonAktualisieren === "function") teamButtonAktualisieren();
   if ($("teamDialog")?.open && typeof teamRendern === "function") teamRendern();
+  if ($("settingsPagePfand")?.classList.contains("aktiv") && typeof settingsPfandRendern === "function") settingsPfandRendern();
+  if ($("settingsPageGetraenke")?.classList.contains("aktiv") && typeof settingsGetraenkeRendern === "function") settingsGetraenkeRendern();
 }
 
 async function moduldatenErstSynchronisieren(remoteRows) {
@@ -613,6 +615,8 @@ function settingsSeiteOeffnen(name="home") {
   document.querySelectorAll(".settings-page").forEach(el=>el.classList.remove("aktiv"));
   const id=name==="home"?"settingsHome":"settingsPage"+name[0].toUpperCase()+name.slice(1);
   $(id)?.classList.add("aktiv");
+  if (name === "getraenke") settingsGetraenkeRendern();
+  if (name === "pfand") settingsPfandRendern();
 }
 function settingsRolleAnwenden(){
   document.body.classList.toggle("rolle-mitarbeiter", aktuelleRolle !== "superuser");
@@ -1550,60 +1554,29 @@ function render() {
 function renderGetraenke() {
   $("getraenkeListe").innerHTML = getraenke.map(g => {
     const anzahl = warenkorb[g.id] || 0;
-
     return `
       <article class="getraenk">
-
         <button class="getraenk-hauptbereich" data-add="${g.id}">
-
-          <div class="getraenk-bild">
-            ${
-              g.bild
-                ? `<img src="${g.bild}" alt="${esc(g.name)}">`
-                : bierSVG()
-            }
-          </div>
-
+          <div class="getraenk-bild">${g.bild ? `<img src="${g.bild}" alt="${esc(g.name)}">` : bierSVG()}</div>
           <div class="getraenk-name">${esc(g.name)}</div>
           <div class="getraenk-preis">${euro(g.preis)}</div>
-
-          ${
-            anzahl
-              ? `<div class="ausgewaehlt">${anzahl} × gewählt</div>`
-              : ""
-          }
-
         </button>
-
-        <div class="getraenk-aktionen">
-
-          <button class="aktion bearbeiten" data-edit="${g.id}">
-            ${stiftSVG()}
-          </button>
-
-          <button class="aktion entfernen" data-delete="${g.id}">
-            ${trashSVG()}
-          </button>
-
+        <div class="getraenk-menge" aria-label="Stückzahl ${esc(g.name)}">
+          <button type="button" data-card-minus="${g.id}" ${anzahl <= 0 ? "disabled" : ""}>−</button>
+          <strong>${anzahl}</strong>
+          <button type="button" data-card-plus="${g.id}">+</button>
         </div>
-
       </article>`;
   }).join("");
 
   document.querySelectorAll("[data-add]").forEach(button => {
-    button.onclick = () => {
-      const id = button.dataset.add;
-      warenkorb[id] = (warenkorb[id] || 0) + 1;
-      render();
-    };
+    button.onclick = () => { const id=button.dataset.add; warenkorb[id]=(warenkorb[id]||0)+1; render(); };
   });
-
-  document.querySelectorAll("[data-edit]").forEach(button => {
-    button.onclick = () => getraenkBearbeiten(button.dataset.edit);
+  document.querySelectorAll("[data-card-minus]").forEach(button => {
+    button.onclick = (e) => { e.stopPropagation(); const id=button.dataset.cardMinus; const n=(warenkorb[id]||0)-1; if(n<=0) delete warenkorb[id]; else warenkorb[id]=n; render(); };
   });
-
-  document.querySelectorAll("[data-delete]").forEach(button => {
-    button.onclick = () => getraenkLoeschen(button.dataset.delete);
+  document.querySelectorAll("[data-card-plus]").forEach(button => {
+    button.onclick = (e) => { e.stopPropagation(); const id=button.dataset.cardPlus; warenkorb[id]=(warenkorb[id]||0)+1; render(); };
   });
 }
 
@@ -1744,6 +1717,7 @@ function getraenkSpeichern() {
   queueUpsert("getraenke", getraenkZuDB(g));
 
   render();
+  if ($("settingsPageGetraenke")?.classList.contains("aktiv")) settingsGetraenkeRendern();
   $("getraenkDialog").close();
 }
 
@@ -1760,6 +1734,32 @@ function getraenkLoeschen(id) {
   queueDelete("getraenke", id);
 
   render();
+}
+
+
+/* KASSEN-EINSTELLUNGEN v144 */
+function settingsGetraenkeRendern() {
+  const box = $("settingsGetraenkeListe");
+  if (!box) return;
+  box.innerHTML = getraenke.map(g => `
+    <div class="kassen-settings-zeile">
+      <div class="kassen-settings-thumb">${g.bild ? `<img src="${g.bild}" alt="">` : bierSVG()}</div>
+      <div class="kassen-settings-info"><strong>${esc(g.name)}</strong><small>${euro(g.preis)}</small></div>
+      <button type="button" class="aktion bearbeiten" data-settings-drink-edit="${g.id}" aria-label="${esc(g.name)} bearbeiten">${stiftSVG()}</button>
+      <button type="button" class="aktion entfernen" data-settings-drink-delete="${g.id}" aria-label="${esc(g.name)} löschen">${trashSVG()}</button>
+    </div>`).join("");
+}
+
+function settingsPfandRendern() {
+  const box = $("settingsPfandListe");
+  if (!box) return;
+  box.innerHTML = pfandArtikelLaden().map(a => `
+    <div class="kassen-settings-zeile">
+      <div class="kassen-settings-icon">♻️</div>
+      <div class="kassen-settings-info"><strong>${escapeHTML(a.name)}</strong><small>${euro(a.preis)}</small></div>
+      <button type="button" class="aktion bearbeiten" data-settings-pfand-edit="${a.id}" aria-label="Pfand bearbeiten">${stiftSVG()}</button>
+      <button type="button" class="aktion entfernen" data-settings-pfand-delete="${a.id}" aria-label="Pfand löschen">${trashSVG()}</button>
+    </div>`).join("");
 }
 
 
@@ -4824,18 +4824,8 @@ function pfandEinstellungenOeffnen() {
 }
 window.pfandEinstellungenOeffnen = pfandEinstellungenOeffnen;
 
-const pfandSettingsButton = $("pfandEinstellungenBtn");
-if (pfandSettingsButton) {
-  pfandSettingsButton.onclick = (e) => { e.preventDefault(); e.stopPropagation(); pfandEinstellungenOeffnen(); };
-  pfandSettingsButton.addEventListener("touchend", (e) => { e.preventDefault(); e.stopPropagation(); pfandEinstellungenOeffnen(); }, { passive:false });
-}
-
-document.addEventListener("click", (e) => {
-  const btn = e.target.closest?.("#pfandEinstellungenBtn");
-  if (!btn) return;
-  e.preventDefault();
-  try { pfandEinstellungenOeffnen(); } catch (err) { console.error("Pfand-Einstellungen konnten nicht geöffnet werden", err); }
-}, true);
+const kassenSettingsButton = $("kassenEinstellungenBtn");
+if (kassenSettingsButton) kassenSettingsButton.onclick = () => { einstellungenOeffnen(); settingsSeiteOeffnen("home"); };
 
 $("pfandEinstellungenSchliessen").onclick = () => $("pfandEinstellungenDialog").close();
 $("pfandArtikelHinzufuegen").onclick = () => {
@@ -4885,6 +4875,33 @@ function pfandRueckgabeAusDialog(zahlungsart) { const a = pfandArtikelLaden().fi
 $("pfandBar").onclick = () => pfandRueckgabeAusDialog("Bar");
 $("pfandKarte").onclick = () => pfandRueckgabeAusDialog("Karte");
 
+
+$("settingsGetraenkNeu")?.addEventListener("click", () => { neuesGetraenkOeffnen(); });
+$("settingsGetraenkeListe")?.addEventListener("click", e => {
+  const edit=e.target.closest("[data-settings-drink-edit]");
+  const del=e.target.closest("[data-settings-drink-delete]");
+  if(edit){ getraenkBearbeiten(edit.dataset.settingsDrinkEdit); return; }
+  if(del){ getraenkLoeschen(del.dataset.settingsDrinkDelete); settingsGetraenkeRendern(); }
+});
+$("settingsPfandNeu")?.addEventListener("click", () => {
+  const name=$("settingsPfandName").value.trim();
+  const preis=Number($("settingsPfandPreis").value.trim().replace(",","."));
+  if(!name || !Number.isFinite(preis) || preis<=0){ $("settingsPfandHinweis").textContent="Bitte Bezeichnung und gültigen Preis eingeben."; return; }
+  pfandArtikelSpeichern({id:neueID(),name,beschreibung:"",preis,aktiv:true});
+  $("settingsPfandName").value=""; $("settingsPfandPreis").value=""; $("settingsPfandHinweis").textContent="Pfandartikel gespeichert."; settingsPfandRendern();
+});
+$("settingsPfandListe")?.addEventListener("click", e => {
+  const edit=e.target.closest("[data-settings-pfand-edit]");
+  const del=e.target.closest("[data-settings-pfand-delete]");
+  if(edit){
+    const a=pfandArtikelLaden().find(x=>String(x.id)===String(edit.dataset.settingsPfandEdit)); if(!a)return;
+    const name=prompt("Bezeichnung",a.name); if(name===null)return;
+    const pr=prompt("Preis in €",Number(a.preis).toFixed(2).replace(".",",")); if(pr===null)return;
+    const preis=Number(pr.replace(",",".")); if(!name.trim()||!Number.isFinite(preis)||preis<=0)return;
+    pfandArtikelSpeichern({...a,name:name.trim(),beschreibung:"",preis}); settingsPfandRendern(); return;
+  }
+  if(del){ const l=pfandArtikelLaden(); if(l.length<=1){$("settingsPfandHinweis").textContent="Mindestens ein Pfandartikel muss bestehen bleiben.";return;} pfandArtikelLoeschen(del.dataset.settingsPfandDelete); settingsPfandRendern(); }
+});
 
 $("bestellungLoeschen").onclick = () => {
   warenkorb = {};
