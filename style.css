@@ -372,7 +372,7 @@ svg {
 
 .zahlung {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -2212,7 +2212,7 @@ body.register-offen{overflow:hidden!important}
   }
 
   #kassenApp .zahlung {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
 
@@ -2363,8 +2363,8 @@ body.register-offen{overflow:hidden!important}
 
   #kassenApp .zahlung {
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 7px !important;
     margin: 0 !important;
   }
 
@@ -3019,12 +3019,24 @@ body.register-offen{overflow:hidden!important}
 }
 
 
-/* ===== RUDELBAR v138: Pfandrückgabe ===== */
+/* ===== RUDELBAR v139: Pfandrückgabe als 3. Kassenbutton ===== */
 .zahlung .pfand {
-  grid-column: 1 / -1;
+  grid-column: auto;
   background: #2f6f4e;
   color: #fff;
   border: 1px solid #4b9a70;
+  min-width: 0;
+  padding: 6px 4px;
+}
+.pfand-button-text {
+  display: block;
+  line-height: 1.05;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .1px;
+}
+@media (min-width: 520px) {
+  .pfand-button-text { font-size: 14px; }
 }
 .pfand-dialogbox { width: min(94vw, 520px); }
 .pfand-wert-eingabe { margin-bottom: 10px; }

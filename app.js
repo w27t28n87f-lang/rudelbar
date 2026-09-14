@@ -1828,7 +1828,7 @@ function bildVerkleinern(file, maxGroesse = 700, qualitaet = 0.65) {
 }
 
 
-/* PFAND v138 */
+/* PFAND v139 */
 const PFAND_BEREICH = "_system";
 const PFAND_MODUL = "kasse_einstellungen";
 const PFAND_EINSTELLUNG_ID = "7e0c0f10-0138-4138-8138-000000000138";
