@@ -1828,7 +1828,7 @@ function bildVerkleinern(file, maxGroesse = 700, qualitaet = 0.65) {
 }
 
 
-/* PFAND v141: zentrale Pfandartikel + Verkauf/Rückgabe */
+/* PFAND v142: zentrale Pfandartikel + Verkauf/Rückgabe */
 const PFAND_BEREICH = "_system";
 const PFAND_MODUL = "kasse_pfandartikel";
 const PFAND_STANDARD_ID = "pfand-becher-standard";
@@ -1838,7 +1838,7 @@ function pfandArtikelLaden() {
   let daten = laden(key, []);
   daten = Array.isArray(daten) ? daten.filter(x => x && x.aktiv !== false) : [];
   if (!daten.length) {
-    daten = [{ id: PFAND_STANDARD_ID, name: "Becher", beschreibung: "Mehrwegbecher Rudelbar", preis: 2, aktiv: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }];
+    daten = [{ id: PFAND_STANDARD_ID, name: "Becher", beschreibung: "", preis: 2, aktiv: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }];
     localStorage.setItem(key, JSON.stringify(daten));
   }
   return daten;
@@ -4606,9 +4606,16 @@ function euroAusCent(cent) {
 }
 
 function barzahlungOeffnen() {
-  zahlungsPfandReset("Bar");
-  const gesamtCent = centWert(zahlungGesamtpreis("Bar"));
-  if (gesamtCent <= 0) return;
+  const grundCent = centWert(gesamtpreis());
+  if (grundCent <= 0) return;
+
+  // v142: Die Zahlungsfunktion darf niemals an der optionalen Pfand-Erweiterung scheitern.
+  try { zahlungsPfandReset("Bar"); } catch (err) {
+    console.error("Pfand-Initialisierung Bar fehlgeschlagen:", err);
+    zahlungsPfand.Bar = { aktiv:false, artikelId:null, menge:1 };
+  }
+  let gesamtCent = grundCent;
+  try { gesamtCent = centWert(zahlungGesamtpreis("Bar")); } catch (_) {}
 
   $("barzahlungGesamt").textContent = euroAusCent(gesamtCent);
   $("barzahlungGegeben").value = "";
@@ -4678,9 +4685,16 @@ $("barzahlungBestaetigen").onclick = () => {
 };
 
 function kartenzahlungOeffnen() {
-  zahlungsPfandReset("Karte");
-  const gesamtCent = centWert(zahlungGesamtpreis("Karte"));
-  if (gesamtCent <= 0) return;
+  const grundCent = centWert(gesamtpreis());
+  if (grundCent <= 0) return;
+
+  // v142: Karte bleibt nutzbar, selbst wenn Pfand lokal/synchron nicht initialisiert werden kann.
+  try { zahlungsPfandReset("Karte"); } catch (err) {
+    console.error("Pfand-Initialisierung Karte fehlgeschlagen:", err);
+    zahlungsPfand.Karte = { aktiv:false, artikelId:null, menge:1 };
+  }
+  let gesamtCent = grundCent;
+  try { gesamtCent = centWert(zahlungGesamtpreis("Karte")); } catch (_) {}
 
   $("kartenzahlungGesamt").textContent = euroAusCent(gesamtCent);
   $("kartenzahlungBetrag").value = "";
@@ -4794,7 +4808,7 @@ function pfandEinstellungenRendern() {
   const liste = pfandArtikelLaden();
   $("pfandArtikelListe").innerHTML = liste.map(a => `
     <div class="pfand-artikel-zeile" data-id="${a.id}">
-      <div><strong>${escapeHTML(a.name)}</strong><small>${escapeHTML(a.beschreibung || "")}</small></div>
+      <div><strong>${escapeHTML(a.name)}</strong></div>
       <strong>${euro(a.preis)}</strong>
       <button type="button" class="sekundaer" data-pfand-edit="${a.id}">✏️</button>
       <button type="button" class="daten-loeschen" data-pfand-delete="${a.id}">🗑</button>
@@ -4803,7 +4817,7 @@ function pfandEinstellungenRendern() {
 
 function pfandEinstellungenOeffnen() {
   pfandEinstellungenRendern();
-  $("pfandNeuName").value = ""; $("pfandNeuBeschreibung").value = ""; $("pfandNeuPreis").value = "";
+  $("pfandNeuName").value = ""; $("pfandNeuPreis").value = "";
   $("pfandSettingsHinweis").textContent = "";
   const dlg = $("pfandEinstellungenDialog");
   if (!dlg.open) dlg.showModal();
@@ -4815,11 +4829,10 @@ if (pfandSettingsButton) pfandSettingsButton.onclick = pfandEinstellungenOeffnen
 $("pfandEinstellungenSchliessen").onclick = () => $("pfandEinstellungenDialog").close();
 $("pfandArtikelHinzufuegen").onclick = () => {
   const name = $("pfandNeuName").value.trim();
-  const beschreibung = $("pfandNeuBeschreibung").value.trim();
   const preis = Number($("pfandNeuPreis").value.trim().replace(",", "."));
   if (!name || !Number.isFinite(preis) || preis <= 0) { $("pfandSettingsHinweis").textContent = "Bitte Bezeichnung und gültigen Preis eingeben."; return; }
-  pfandArtikelSpeichern({ id: neueID(), name, beschreibung, preis, aktiv:true });
-  $("pfandNeuName").value = ""; $("pfandNeuBeschreibung").value = ""; $("pfandNeuPreis").value = "";
+  pfandArtikelSpeichern({ id: neueID(), name, beschreibung: "", preis, aktiv:true });
+  $("pfandNeuName").value = ""; $("pfandNeuPreis").value = "";
   $("pfandSettingsHinweis").textContent = "Pfandartikel gespeichert und zur Synchronisierung vorgemerkt.";
   pfandEinstellungenRendern();
 };
@@ -4830,11 +4843,10 @@ $("pfandArtikelListe").onclick = e => {
   if (edit) {
     const a = pfandArtikelLaden().find(x => String(x.id) === String(edit.dataset.pfandEdit)); if (!a) return;
     const name = prompt("Bezeichnung", a.name); if (name === null) return;
-    const beschreibung = prompt("Beschreibung", a.beschreibung || ""); if (beschreibung === null) return;
     const preisRoh = prompt("Preis in €", Number(a.preis).toFixed(2).replace(".", ",")); if (preisRoh === null) return;
     const preis = Number(preisRoh.replace(",", "."));
     if (!name.trim() || !Number.isFinite(preis) || preis <= 0) return;
-    pfandArtikelSpeichern({ ...a, name:name.trim(), beschreibung:beschreibung.trim(), preis }); pfandEinstellungenRendern();
+    pfandArtikelSpeichern({ ...a, name:name.trim(), beschreibung: "", preis }); pfandEinstellungenRendern();
   }
   if (del) {
     const aktive = pfandArtikelLaden(); if (aktive.length <= 1) { $("pfandSettingsHinweis").textContent = "Mindestens ein Pfandartikel muss aktiv bleiben."; return; }

@@ -3096,7 +3096,7 @@ body.register-offen{overflow:hidden!important}
 @media(max-width:520px){.pfand-artikel-zeile{grid-template-columns:minmax(0,1fr) auto 44px 44px}.kopf-buttons{gap:6px}.pfand-einstellungen-button{width:48px;min-width:48px}}
 
 
-/* ===== RUDELBAR v141: symmetrischer Kassenkopf + robuster Pfand-Button ===== */
+/* ===== RUDELBAR v142: symmetrischer Kassenkopf + robuster Pfand-Button ===== */
 #kassenApp .pfand-einstellungen-button{
   display:grid;
   place-items:center;
