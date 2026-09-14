@@ -1,26 +1,28 @@
-RUDELBAR – STABILE GITHUB-ROOT-DATEIEN
+RUDELBAR – SAUBERES GITHUB-ROOT-PAKET
 
-Diese ZIP enthält den kompletten GitHub-Root.
+Bitte zuerst im GitHub-Repository falsch benannte Altdateien löschen, falls sie dort noch existieren:
+- app .js
+- style .css
+- manifest .json
+- service-worker .js
 
-WICHTIGE REGEL AB JETZT:
-- Dateinamen bleiben dauerhaft identisch.
-- app.js bleibt app.js
-- index.html bleibt index.html
-- style.css bleibt style.css
-- manifest.json bleibt manifest.json
-- service-worker.js bleibt service-worker.js
-- Keine ?v123 / ?v134 / Versionssuffixe mehr in Dateireferenzen.
+Danach ALLE Dateien aus diesem ZIP in das ROOT des Repositories hochladen und vorhandene Dateien ersetzen.
 
-Bei zukünftigen Änderungen wird nur der Inhalt der jeweiligen Datei ersetzt, niemals ihr Name.
-Der Service Worker lädt Code-Dateien online mit cache:no-store und verwendet den Cache nur als Offline-Fallback.
-app.js registriert den Service Worker mit updateViaCache:none und stößt beim Start eine Update-Prüfung an.
+Feste Dateinamen ab jetzt:
+- index.html
+- app.js
+- style.css
+- manifest.json
+- service-worker.js
+- Logo-Haupt.png
+- Logo-Haupt-Home.png
+- Logo-Mobile_Kneipe.png
+- Logo-Mode.png
+- Logo-Service.png
+- Wolf-Hintergrund.png
 
-ZUSÄTZLICH IN DIESER VERSION:
-- Realtime/Sync robuster: ein fehlerhafter Queue-Eintrag blockiert nicht mehr alle anderen Änderungen.
-- Remote-Daten werden auch bei wartenden lokalen Änderungen aktualisiert und mit der Queue zusammengeführt.
-- Supabase Presence zeigt im Team-Dialog Online/Offline je Teilnehmer.
-- Auf dem Team-Button steht die Zahl der aktuell online erkannten Teilnehmer.
-- Fehlende Referenz Logo-Haupt-Home.png wurde entfernt; es wird das vorhandene Logo-Haupt.png benutzt.
-
-UPLOAD:
-Alle Dateien/Ordner aus dieser ZIP in das Root des GitHub-Repositories hochladen und vorhandene Dateien ersetzen.
+Wichtig:
+- Keine Leerzeichen vor Dateiendungen.
+- Keine ?v123 / ?v134 Versionsanhänge mehr.
+- Logo-Haupt-Home.png = Homescreen-/App-Icon mit schwarzem Hintergrund.
+- Logo-Haupt.png = normales Logo innerhalb der App.

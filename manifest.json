@@ -10,8 +10,8 @@
   "theme_color": "#151515",
   "icons": [
     {
-      "src": "Logo-Haupt.png",
-      "sizes": "2400x2400",
+      "src": "Logo-Haupt-Home.png",
+      "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any"
     }

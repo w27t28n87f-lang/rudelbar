@@ -7,6 +7,7 @@ const APP_SHELL = [
   "./app.js",
   "./manifest.json",
   "./Logo-Haupt.png",
+  "./Logo-Haupt-Home.png",
   "./Logo-Mobile_Kneipe.png",
   "./Logo-Mode.png",
   "./Logo-Service.png",
