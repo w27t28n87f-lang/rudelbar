@@ -3186,3 +3186,45 @@ body.register-offen{overflow:hidden!important}
 #einstellungenDialog.kassen-only-mode #settingsHome > .settings-menu-group:not(.kassen-only-group),
 #einstellungenDialog.kassen-only-mode #settingsHome > .settings-logout { display:none !important; }
 #einstellungenDialog.kassen-only-mode .settings-shell .settings-topbar p { display:none !important; }
+
+
+/* v148 – ausschließlich kompakteres Notizen-Layout */
+.notizen-liste{gap:7px}
+.notiz-karte{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-rows:auto auto auto;
+  column-gap:10px;
+  row-gap:3px;
+  padding:9px 10px;
+  border-radius:12px;
+}
+.notiz-karte-kopf{grid-column:1 / -1;grid-row:1;margin-bottom:1px}
+.notiz-karte p{grid-column:1;grid-row:2;margin:4px 0 1px;line-height:1.28;font-size:14px}
+.notiz-meta{grid-column:1;grid-row:3;font-size:9px;align-self:end}
+.notiz-aktionen{
+  grid-column:2;
+  grid-row:2 / 4;
+  align-self:center;
+  display:flex;
+  gap:6px;
+  margin:0;
+}
+.notiz-aktionen button{
+  width:38px;
+  height:38px;
+  min-width:38px;
+  padding:0;
+  display:grid;
+  place-items:center;
+  font-size:0;
+  border-radius:9px;
+}
+.notiz-aktionen button[data-notiz-erledigt]::after{content:"✓";font-size:20px;line-height:1}
+.notiz-aktionen .gefahr::after{content:"🗑";font-size:17px;line-height:1}
+@media (max-width:700px){
+  .notizen-liste{gap:6px}
+  .notiz-karte{padding:8px 9px;column-gap:8px}
+  .notiz-karte p{font-size:13px}
+  .notiz-aktionen button{width:36px;height:36px;min-width:36px}
+}
