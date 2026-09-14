@@ -1270,7 +1270,8 @@ async function ersteSynchronisierung() {
   }
 
   if (remoteModuldaten.error) {
-    fehler.push("Module");
+    const code = remoteModuldaten.error.code ? ` ${remoteModuldaten.error.code}` : "";
+    fehler.push(`Module${code}`);
     console.error("Moduldaten laden:", remoteModuldaten.error);
   } else {
     await moduldatenErstSynchronisieren(remoteModuldaten.data || []);
@@ -1357,7 +1358,8 @@ async function remoteNeuLaden() {
     }
 
     if (m.error) {
-      fehler.push("Module");
+      const code = m.error.code ? ` ${m.error.code}` : "";
+      fehler.push(`Module${code}`);
       console.warn("Moduldaten neu laden:", m.error);
     } else {
       remoteModuldatenLokalSpeichern(remoteMitWarteschlangeMischen("moduldaten", m.data || []));
@@ -3431,6 +3433,22 @@ function notizenKey(){ return modulKey(NOTIZEN_BEREICH, NOTIZEN_MODUL); }
 function notizenLaden(){ return laden(notizenKey(), []); }
 function notizenSpeichern(daten){ localStorage.setItem(notizenKey(), JSON.stringify(daten)); }
 function notizenOffenAnzahl(){ return notizenLaden().filter(n => n.status !== "erledigt").length; }
+function notizIstEigene(n){
+  if (!aktuellerUser || !n) return false;
+
+  const uid = String(aktuellerUser.id || "").trim().toLowerCase();
+  const email = String(aktuellerUser.email || "").trim().toLowerCase();
+  const name = String(aktuellerUser?.user_metadata?.name || "").trim().toLowerCase();
+
+  const autorId = String(n.autorId || n.autor_id || "").trim().toLowerCase();
+  const autor = String(n.autor || "").trim().toLowerCase();
+
+  return Boolean(
+    (uid && autorId === uid) ||
+    (email && autor === email) ||
+    (name && autor === name)
+  );
+}
 function notizenBadgeAktualisieren(){
   const badge=$("startNotizenBadge"); if(!badge) return;
   const n=notizenOffenAnzahl(); badge.textContent=String(n); badge.classList.toggle("versteckt", n===0);
@@ -3457,14 +3475,13 @@ function notizenRendern(){
     liste.innerHTML=`<div class="daten-leer"><strong>${notizenFilter==="erledigt"?"Noch nichts erledigt":"Keine offenen Notizen"}</strong><span>${notizenFilter==="erledigt"?"Erledigte Punkte erscheinen hier.":"Neue Ideen und Verbesserungen können oben eingetragen werden."}</span></div>`;
     notizenBadgeAktualisieren(); return;
   }
-  const superuser = aktuelleRolle === "superuser" || istRudelbarBesitzer();
   liste.innerHTML=gefiltert.map(n=>{
     const datum=n.createdAt?new Date(n.createdAt).toLocaleString("de-DE",{dateStyle:"short",timeStyle:"short"}):"";
     return `<article class="notiz-karte ${n.status==="erledigt"?"erledigt":""}">
       <div class="notiz-karte-kopf"><strong>${n.status==="erledigt"?"✓ Erledigt":"○ Offen"}</strong><small>${esc(datum)}</small></div>
       <p>${esc(n.text||"")}</p>
       <div class="notiz-meta">von ${esc(n.autor||"Rudelbar-Team")}</div>
-      ${superuser?`<div class="notiz-aktionen">${n.status!=="erledigt"?`<button type="button" data-notiz-erledigt="${esc(n.id)}">✓ Erledigt</button>`:""}<button class="gefahr" type="button" data-notiz-loeschen="${esc(n.id)}">🗑 Löschen</button></div>`:""}
+      <div class="notiz-aktionen">${n.status!=="erledigt"?`<button type="button" data-notiz-erledigt="${esc(n.id)}">✓ Erledigt</button>`:""}<button class="gefahr" type="button" data-notiz-loeschen="${esc(n.id)}">🗑 Löschen</button></div>
     </article>`;
   }).join("");
   liste.querySelectorAll("[data-notiz-erledigt]").forEach(btn=>btn.onclick=()=>notizErledigen(btn.dataset.notizErledigt));
@@ -3474,7 +3491,7 @@ function notizenRendern(){
 function notizHinzufuegen(){
   const text=$("notizenText").value.trim(); if(!text){ alert("Bitte zuerst eine Nachricht eingeben."); return; }
   const daten=notizenLaden();
-  const neu={id:neueID(),text,status:"offen",autor:aktuellerUser?.user_metadata?.name || aktuellerUser?.email || "Rudelbar-Team",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  const neu={id:neueID(),text,status:"offen",autorId:aktuellerUser?.id || "",autor:aktuellerUser?.user_metadata?.name || aktuellerUser?.email || "Rudelbar-Team",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
   daten.push(neu); notizenSpeichern(daten); queueUpsert("moduldaten",modulZuDB(NOTIZEN_BEREICH,NOTIZEN_MODUL,neu));
   $("notizenText").value=""; notizenFilter="offen"; notizenRendern();
 }
@@ -3483,8 +3500,11 @@ function notizErledigen(id){
   n.status="erledigt"; n.updatedAt=new Date().toISOString(); notizenSpeichern(daten); queueUpsert("moduldaten",modulZuDB(NOTIZEN_BEREICH,NOTIZEN_MODUL,n)); notizenRendern();
 }
 function notizLoeschen(id){
+  const alle = notizenLaden();
+  const n = alle.find(x=>String(x.id)===String(id));
+  if(!n) return;
   if(!confirm("Diese Notiz wirklich löschen?")) return;
-  const daten=notizenLaden().filter(x=>String(x.id)!==String(id)); notizenSpeichern(daten); queueDelete("moduldaten",id); notizenRendern();
+  const daten=alle.filter(x=>String(x.id)!==String(id)); notizenSpeichern(daten); queueDelete("moduldaten",id); notizenRendern();
 }
 
 function datenKarteHTML(x) {

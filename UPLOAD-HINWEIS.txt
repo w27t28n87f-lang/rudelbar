@@ -26,3 +26,10 @@ Wichtig:
 - Keine ?v123 / ?v134 Versionsanhänge mehr.
 - Logo-Haupt-Home.png = Homescreen-/App-Icon mit schwarzem Hintergrund.
 - Logo-Haupt.png = normales Logo innerhalb der App.
+
+
+Rudelbar v137:
+- Notizen sind eine gemeinsame Arbeitsmappe.
+- Jeder angemeldete Teilnehmer kann jede Notiz als erledigt markieren und löschen.
+- Autor/Ersteller bleibt nur als Information sichtbar, nicht als Rechtebeschränkung.
+- Supabase-Fix aus SUPABASE_FIX_MODULDATEN_v136.sql weiterhin einmalig ausführen.
