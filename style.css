@@ -3094,3 +3094,57 @@ body.register-offen{overflow:hidden!important}
 .pfand-artikel-zeile>div{min-width:0;display:flex;flex-direction:column;gap:3px}.pfand-artikel-zeile small{color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pfand-artikel-zeile>strong{color:#f3ad2f}
 .pfand-neu-box{display:grid;gap:10px;border-top:1px solid #444;padding-top:14px}.pfand-neu-box label{display:grid;gap:5px;font-weight:750}.pfand-neu-box input{min-height:46px;border:1px solid #555;border-radius:10px;background:#111;color:#fff;padding:0 12px;font-size:16px}
 @media(max-width:520px){.pfand-artikel-zeile{grid-template-columns:minmax(0,1fr) auto 44px 44px}.kopf-buttons{gap:6px}.pfand-einstellungen-button{width:48px;min-width:48px}}
+
+
+/* ===== RUDELBAR v141: symmetrischer Kassenkopf + robuster Pfand-Button ===== */
+#kassenApp .pfand-einstellungen-button{
+  display:grid;
+  place-items:center;
+  padding:0;
+  font-size:21px;
+  line-height:1;
+  position:relative;
+  z-index:2;
+}
+@media (max-width:760px){
+  #kassenApp .kopf-buttons{
+    grid-template-columns:46px 46px 46px minmax(0,1fr) !important;
+    grid-template-rows:46px;
+    align-items:stretch;
+    gap:8px !important;
+  }
+  #kassenApp .kopf-buttons > #statistikBtn,
+  #kassenApp .kopf-buttons > #abschlussBtn,
+  #kassenApp .kopf-buttons > #pfandEinstellungenBtn{
+    width:46px !important;
+    min-width:46px !important;
+    height:46px !important;
+    min-height:46px !important;
+    margin:0 !important;
+  }
+  #kassenApp .kopf-buttons > #getraenkHinzufuegen{
+    min-width:0 !important;
+    width:100% !important;
+    height:46px !important;
+    min-height:46px !important;
+    margin:0 !important;
+    padding:0 10px !important;
+    white-space:nowrap;
+  }
+}
+@media (max-width:390px){
+  #kassenApp .kopf-buttons{
+    grid-template-columns:44px 44px 44px minmax(0,1fr) !important;
+    gap:6px !important;
+  }
+  #kassenApp .kopf-buttons > #statistikBtn,
+  #kassenApp .kopf-buttons > #abschlussBtn,
+  #kassenApp .kopf-buttons > #pfandEinstellungenBtn{
+    width:44px !important;
+    min-width:44px !important;
+  }
+  #kassenApp .kopf-buttons > #getraenkHinzufuegen{
+    font-size:14px !important;
+    padding:0 7px !important;
+  }
+}

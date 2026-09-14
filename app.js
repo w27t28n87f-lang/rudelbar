@@ -1828,7 +1828,7 @@ function bildVerkleinern(file, maxGroesse = 700, qualitaet = 0.65) {
 }
 
 
-/* PFAND v140: zentrale Pfandartikel + Verkauf/Rückgabe */
+/* PFAND v141: zentrale Pfandartikel + Verkauf/Rückgabe */
 const PFAND_BEREICH = "_system";
 const PFAND_MODUL = "kasse_pfandartikel";
 const PFAND_STANDARD_ID = "pfand-becher-standard";
@@ -4805,10 +4805,13 @@ function pfandEinstellungenOeffnen() {
   pfandEinstellungenRendern();
   $("pfandNeuName").value = ""; $("pfandNeuBeschreibung").value = ""; $("pfandNeuPreis").value = "";
   $("pfandSettingsHinweis").textContent = "";
-  $("pfandEinstellungenDialog").showModal();
+  const dlg = $("pfandEinstellungenDialog");
+  if (!dlg.open) dlg.showModal();
 }
+window.pfandEinstellungenOeffnen = pfandEinstellungenOeffnen;
 
-$("pfandEinstellungenBtn").onclick = pfandEinstellungenOeffnen;
+const pfandSettingsButton = $("pfandEinstellungenBtn");
+if (pfandSettingsButton) pfandSettingsButton.onclick = pfandEinstellungenOeffnen;
 $("pfandEinstellungenSchliessen").onclick = () => $("pfandEinstellungenDialog").close();
 $("pfandArtikelHinzufuegen").onclick = () => {
   const name = $("pfandNeuName").value.trim();

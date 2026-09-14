@@ -7,9 +7,9 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json?v=140">
+  <link rel="manifest" href="manifest.json?v=141">
   <link rel="apple-touch-icon" href="Logo-Haupt-Home.png">
-  <link rel="stylesheet" href="style.css?v=140">
+  <link rel="stylesheet" href="style.css?v=141">
 
 
   <script>
@@ -277,7 +277,7 @@
           </svg>
         </button>
 
-        <button class="iconbutton pfand-einstellungen-button" id="pfandEinstellungenBtn" aria-label="Pfand Einstellungen" title="Pfand Einstellungen">⚙️</button>
+        <button type="button" class="iconbutton pfand-einstellungen-button" id="pfandEinstellungenBtn" aria-label="Pfand-Einstellungen öffnen" title="Pfand-Einstellungen">⚙️</button>
 
         <button class="hauptbutton" id="getraenkHinzufuegen">
           + Getränk
@@ -483,7 +483,7 @@
       <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">App-Informationen</h3>
       <section class="settings-section">
         <div class="settings-info">
-          <div><span>Version</span><strong>Rudelbar v140</strong></div>
+          <div><span>Version</span><strong>Rudelbar v141</strong></div>
           <div><span>Zugang</span><strong id="settingsZugangInfo">–</strong></div>
         </div>
         <p class="settings-hinweis">Superuser verwalten die App vollständig. Mitarbeiter sehen in den Einstellungen ausschließlich ihr eigenes Konto und die App-Informationen.</p>
@@ -946,7 +946,30 @@
   </div>
 </dialog>
 
-<script src="app.js?v=140"></script>
+<script src="app.js?v=141"></script>
+<script>
+  // v141: robuster Fallback für iOS/PWA – Pfand-Einstellungen immer klickbar halten.
+  (() => {
+    const btn = document.getElementById("pfandEinstellungenBtn");
+    if (!btn) return;
+    btn.onclick = () => {
+      try {
+        if (typeof window.pfandEinstellungenOeffnen === "function") {
+          window.pfandEinstellungenOeffnen();
+          return;
+        }
+      } catch (err) {
+        console.error("Pfand-Einstellungen konnten nicht initialisiert werden:", err);
+      }
+      const dlg = document.getElementById("pfandEinstellungenDialog");
+      if (!dlg) return;
+      try {
+        if (!dlg.open && typeof dlg.showModal === "function") dlg.showModal();
+        else dlg.setAttribute("open", "");
+      } catch (_) { dlg.setAttribute("open", ""); }
+    };
+  })();
+</script>
 
 </body>
 </html>
