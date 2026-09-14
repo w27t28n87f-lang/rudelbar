@@ -353,7 +353,7 @@ function statusAktualisieren() {
 
 function queueUpsert(table, payload) {
   syncQueue = syncQueue.filter(
-    x => !(x.table === table && x.id === payload.id)
+    x => !(x.table === table && String(x.id) === String(payload.id))
   );
 
   syncQueue.push({
@@ -365,12 +365,12 @@ function queueUpsert(table, payload) {
 
   speichernLokal();
   statusAktualisieren();
-  syncStarten();
+  void syncStarten();
 }
 
 function queueDelete(table, id) {
   syncQueue = syncQueue.filter(
-    x => !(x.table === table && x.id === id)
+    x => !(x.table === table && String(x.id) === String(id))
   );
 
   syncQueue.push({
@@ -381,16 +381,33 @@ function queueDelete(table, id) {
 
   speichernLokal();
   statusAktualisieren();
-  syncStarten();
+  void syncStarten();
+}
+
+async function aenderungBroadcasten(job) {
+  if (!realtimeChannel || realtimeVerbindungsstatus !== "SUBSCRIBED") return;
+
+  try {
+    await realtimeChannel.send({
+      type: "broadcast",
+      event: "data_changed",
+      payload: {
+        table: job.table,
+        id: job.id,
+        action: job.action,
+        user_id: aktuellerUser?.id || null,
+        at: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.warn("Änderungs-Broadcast fehlgeschlagen:", error);
+  }
 }
 
 async function syncStarten() {
-  if (
-    syncLaeuft ||
-    !angemeldet ||
-    !navigator.onLine ||
-    !syncQueue.length
-  ) {
+  if (syncLaeuft) return;
+
+  if (!angemeldet || !navigator.onLine || !syncQueue.length) {
     statusAktualisieren();
     return;
   }
@@ -398,48 +415,86 @@ async function syncStarten() {
   syncLaeuft = true;
   syncStatus("wartet", "Synchronisiere…");
 
-  let fehler = 0;
-  const jobs = [...syncQueue];
+  let gesamtFehler = 0;
+  let etwasGespeichert = false;
 
-  for (const job of jobs) {
-    if (!navigator.onLine) break;
+  try {
+    // Wichtig: Die Queue wird in Runden verarbeitet. Kommt während eines laufenden
+    // Syncs ein neuer Eintrag hinzu, wird er in der nächsten Runde direkt mitgenommen.
+    // So bleibt kein Getränk, Verkauf, Abschluss oder Moduleintrag bis zum nächsten
+    // App-Neustart hängen.
+    while (navigator.onLine && angemeldet && syncQueue.length) {
+      const jobs = [...syncQueue];
+      let fortschritt = false;
+      let rundenFehler = 0;
 
-    let result;
+      for (const job of jobs) {
+        if (!navigator.onLine || !angemeldet) break;
 
-    try {
-      if (job.action === "delete") {
-        result = await sb
-          .from(job.table)
-          .delete()
-          .eq("id", job.id);
-      } else {
-        result = await sb
-          .from(job.table)
-          .upsert(job.payload);
+        // Falls derselbe Datensatz inzwischen erneut geändert wurde, nur den aktuellsten
+        // Queue-Eintrag verarbeiten. Ältere Snapshots werden übersprungen.
+        const aktuell = syncQueue.find(
+          x => x.table === job.table && String(x.id) === String(job.id)
+        );
+        if (aktuell !== job) continue;
+
+        let result;
+        try {
+          if (job.action === "delete") {
+            result = await sb
+              .from(job.table)
+              .delete()
+              .eq("id", job.id);
+          } else {
+            result = await sb
+              .from(job.table)
+              .upsert(job.payload, { onConflict: "id" });
+          }
+        } catch (error) {
+          result = { error };
+        }
+
+        if (result?.error) {
+          rundenFehler += 1;
+          gesamtFehler += 1;
+          console.error("Sync Fehler:", job.table, job.id, result.error);
+          continue;
+        }
+
+        const index = syncQueue.indexOf(job);
+        if (index >= 0) syncQueue.splice(index, 1);
+        fortschritt = true;
+        etwasGespeichert = true;
+        speichernLokal();
+
+        // Zusätzlich zu postgres_changes wird auf dem bereits funktionierenden
+        // Realtime-Kanal ein Broadcast verschickt. Damit sehen andere Geräte die
+        // Änderung selbst dann sofort, wenn Postgres-Realtime auf iOS zickt.
+        await aenderungBroadcasten(job);
       }
-    } catch (error) {
-      result = { error };
-    }
 
-    if (result?.error) {
-      fehler += 1;
-      console.error("Sync Fehler:", job.table, job.id, result.error);
-      // Ein fehlerhafter Datensatz darf nicht mehr die komplette Warteschlange blockieren.
-      continue;
+      // Verhindert Endlosschleifen bei einem dauerhaft fehlerhaften Datensatz.
+      if (!fortschritt) {
+        if (rundenFehler > 0) break;
+        break;
+      }
     }
-
-    const index = syncQueue.indexOf(job);
-    if (index >= 0) syncQueue.splice(index, 1);
+  } finally {
+    syncLaeuft = false;
     speichernLokal();
   }
 
-  syncLaeuft = false;
-  speichernLokal();
-
-  if (fehler > 0) {
-    syncStatus("fehler", `${fehler} Sync-Fehler`);
+  if (gesamtFehler > 0 && syncQueue.length) {
+    syncStatus("fehler", `${syncQueue.length} Sync-Fehler`);
   } else {
     statusAktualisieren();
+  }
+
+  // Den Ursprung ebenfalls noch einmal vom Server abgleichen. Damit ist nach einem
+  // erfolgreichen Schreiben garantiert derselbe Datenstand sichtbar wie auf allen
+  // anderen Geräten.
+  if (etwasGespeichert && navigator.onLine && angemeldet) {
+    setTimeout(() => void remoteNeuLaden(), 150);
   }
 }
 
@@ -1369,6 +1424,11 @@ function realtimeStarten() {
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "moduldaten" },
+      () => remoteNeuLaden()
+    )
+    .on(
+      "broadcast",
+      { event: "data_changed" },
       () => remoteNeuLaden()
     )
     .on("presence", { event: "sync" }, presenceAusStateAktualisieren)
@@ -3330,11 +3390,17 @@ function notizenBadgeAktualisieren(){
   const badge=$("startNotizenBadge"); if(!badge) return;
   const n=notizenOffenAnzahl(); badge.textContent=String(n); badge.classList.toggle("versteckt", n===0);
 }
-function notizenOeffnen(){
+async function notizenOeffnen(){
   notizenFilter="offen";
   $("notizenText").value="";
   notizenRendern();
   $("notizenDialog").showModal();
+
+  if (angemeldet && navigator.onLine) {
+    await syncStarten();
+    await remoteNeuLaden();
+    notizenRendern();
+  }
 }
 function notizenRendern(){
   const liste=$("notizenListe"); if(!liste) return;
