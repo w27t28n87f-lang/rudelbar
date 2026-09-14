@@ -7,9 +7,9 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json?v=139">
+  <link rel="manifest" href="manifest.json?v=140">
   <link rel="apple-touch-icon" href="Logo-Haupt-Home.png">
-  <link rel="stylesheet" href="style.css?v=139">
+  <link rel="stylesheet" href="style.css?v=140">
 
 
   <script>
@@ -277,6 +277,8 @@
           </svg>
         </button>
 
+        <button class="iconbutton pfand-einstellungen-button" id="pfandEinstellungenBtn" aria-label="Pfand Einstellungen" title="Pfand Einstellungen">⚙️</button>
+
         <button class="hauptbutton" id="getraenkHinzufuegen">
           + Getränk
         </button>
@@ -481,7 +483,7 @@
       <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">App-Informationen</h3>
       <section class="settings-section">
         <div class="settings-info">
-          <div><span>Version</span><strong>Rudelbar v139</strong></div>
+          <div><span>Version</span><strong>Rudelbar v140</strong></div>
           <div><span>Zugang</span><strong id="settingsZugangInfo">–</strong></div>
         </div>
         <p class="settings-hinweis">Superuser verwalten die App vollständig. Mitarbeiter sehen in den Einstellungen ausschließlich ihr eigenes Konto und die App-Informationen.</p>
@@ -832,6 +834,21 @@
 
     <div class="barzahlung-schnellwahl" id="barzahlungSchnellwahl"></div>
 
+    <div class="zahlungs-pfandbox">
+      <button type="button" class="zahlungs-pfand-toggle" id="barPfandToggle">♻️ Pfand hinzufügen</button>
+      <div class="zahlungs-pfand-inhalt versteckt" id="barPfandInhalt">
+        <label>Pfandartikel
+          <select id="barPfandArtikel"></select>
+        </label>
+        <div class="zahlungs-pfand-menge">
+          <button type="button" id="barPfandMinus">−</button>
+          <strong id="barPfandMenge">1</strong>
+          <button type="button" id="barPfandPlus">+</button>
+        </div>
+        <div class="zahlungs-pfand-summe"><span>Pfand gesamt</span><strong id="barPfandSumme">0,00 €</strong></div>
+      </div>
+    </div>
+
     <div class="barzahlung-rueckgeld" id="barzahlungRueckgeldBox">
       <span>Rückgeld</span>
       <strong id="barzahlungRueckgeld">0,00 €</strong>
@@ -869,6 +886,21 @@
       <button type="button" id="kartenzahlungPassend">Passend</button>
     </div>
 
+    <div class="zahlungs-pfandbox">
+      <button type="button" class="zahlungs-pfand-toggle" id="kartePfandToggle">♻️ Pfand hinzufügen</button>
+      <div class="zahlungs-pfand-inhalt versteckt" id="kartePfandInhalt">
+        <label>Pfandartikel
+          <select id="kartePfandArtikel"></select>
+        </label>
+        <div class="zahlungs-pfand-menge">
+          <button type="button" id="kartePfandMinus">−</button>
+          <strong id="kartePfandMenge">1</strong>
+          <button type="button" id="kartePfandPlus">+</button>
+        </div>
+        <div class="zahlungs-pfand-summe"><span>Pfand gesamt</span><strong id="kartePfandSumme">0,00 €</strong></div>
+      </div>
+    </div>
+
     <p class="barzahlung-hinweis" id="kartenzahlungHinweis"></p>
 
     <button type="button" class="hauptbutton barzahlung-bestaetigen" id="kartenzahlungBestaetigen" disabled>
@@ -881,42 +913,40 @@
 <dialog id="pfandDialog">
   <div class="dialogbox barzahlung-dialogbox pfand-dialogbox">
     <div class="dialog-kopf">
-      <div>
-        <small class="barzahlung-kicker">PFANDRÜCKGABE</small>
-        <h2>Becher zurücknehmen</h2>
-      </div>
+      <div><small class="barzahlung-kicker">PFANDRÜCKGABE</small><h2>Pfand zurücknehmen</h2></div>
       <button type="button" class="sekundaer" id="pfandAbbrechen">✕</button>
     </div>
-
-    <label class="barzahlung-label" for="pfandWert">Pfand je Becher</label>
-    <div class="barzahlung-eingabe pfand-wert-eingabe">
-      <input id="pfandWert" type="text" inputmode="decimal" autocomplete="off" value="2,00">
-      <span>€</span>
-    </div>
-    <button type="button" class="sekundaer pfand-speichern" id="pfandWertSpeichern">Pfandwert speichern</button>
-
-    <label class="barzahlung-label" for="pfandMenge">Anzahl zurückgegebener Becher</label>
+    <label class="barzahlung-label">Pfandartikel</label>
+    <select id="pfandRueckgabeArtikel" class="pfand-select"></select>
+    <label class="barzahlung-label">Anzahl</label>
     <div class="pfand-mengen-zeile">
-      <button type="button" id="pfandMinus" aria-label="Menge verringern">−</button>
-      <input id="pfandMenge" type="number" inputmode="numeric" min="1" step="1" value="1">
-      <button type="button" id="pfandPlus" aria-label="Menge erhöhen">+</button>
+      <button type="button" id="pfandMinus">−</button><input id="pfandMenge" type="number" inputmode="numeric" min="1" step="1" value="1"><button type="button" id="pfandPlus">+</button>
     </div>
-
-    <div class="barzahlung-gesamt pfand-gesamt">
-      <span>Zurückzahlen</span>
-      <strong id="pfandGesamt">2,00 €</strong>
-    </div>
-
+    <div class="barzahlung-gesamt pfand-gesamt"><span>Zurückzahlen</span><strong id="pfandGesamt">0,00 €</strong></div>
     <p class="barzahlung-hinweis" id="pfandHinweis">Zahlungsweg der ursprünglichen Zahlung wählen.</p>
-
-    <div class="pfand-zahlung">
-      <button type="button" class="zahlung-button bar" id="pfandBar">BAR ZURÜCK</button>
-      <button type="button" class="zahlung-button karte" id="pfandKarte">AUF KARTE ZURÜCK</button>
-    </div>
+    <div class="pfand-zahlung"><button type="button" class="zahlung-button bar" id="pfandBar">BAR ZURÜCK</button><button type="button" class="zahlung-button karte" id="pfandKarte">AUF KARTE ZURÜCK</button></div>
   </div>
 </dialog>
 
-<script src="app.js?v=139"></script>
+<dialog id="pfandEinstellungenDialog">
+  <div class="dialogbox gross pfand-settings-dialogbox">
+    <div class="dialog-kopf">
+      <div><small class="barzahlung-kicker">GETRÄNKE · EINSTELLUNGEN</small><h2>Pfand Einstellungen</h2></div>
+      <button type="button" class="sekundaer" id="pfandEinstellungenSchliessen">Fertig</button>
+    </div>
+    <p class="notizen-hinweis">Pfandartikel hier einmal beschreiben und mit einem Preis versehen. In Bar- und Kartenzahlung wird danach nur noch Artikel und Anzahl gewählt.</p>
+    <div id="pfandArtikelListe" class="pfand-artikel-liste"></div>
+    <div class="pfand-neu-box">
+      <label>Bezeichnung<input id="pfandNeuName" type="text" placeholder="z. B. Becher"></label>
+      <label>Beschreibung<input id="pfandNeuBeschreibung" type="text" placeholder="z. B. Mehrwegbecher Rudelbar"></label>
+      <label>Preis<input id="pfandNeuPreis" type="text" inputmode="decimal" placeholder="2,00"></label>
+      <button type="button" class="hauptbutton voll" id="pfandArtikelHinzufuegen">+ Pfandartikel hinzufügen</button>
+    </div>
+    <p class="barzahlung-hinweis" id="pfandSettingsHinweis"></p>
+  </div>
+</dialog>
+
+<script src="app.js?v=140"></script>
 
 </body>
 </html>

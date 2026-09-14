@@ -3074,3 +3074,23 @@ body.register-offen{overflow:hidden!important}
 @media (max-width: 430px) {
   .pfand-zahlung { grid-template-columns: 1fr; }
 }
+
+/* ===== RUDELBAR v140: Pfandverwaltung + Pfand beim Bezahlen ===== */
+.pfand-einstellungen-button{font-size:20px;line-height:1}
+.zahlungs-pfandbox{margin:14px 0;border:1px solid #8b5a20;border-radius:14px;overflow:hidden;background:#171717}
+.zahlungs-pfand-toggle{width:100%;min-height:52px;border:0;background:#242424;color:#fff;text-align:left;padding:12px 16px;font-size:16px;font-weight:850}
+.zahlungs-pfand-toggle.aktiv{background:#3a2a13;color:#f3ad2f}
+.zahlungs-pfand-inhalt{padding:12px 14px;border-top:1px solid #644119}
+.zahlungs-pfand-inhalt label{display:block;color:#ddd;font-size:13px;font-weight:750}
+.zahlungs-pfand-inhalt select,.pfand-select{width:100%;margin-top:6px;min-height:46px;border:1px solid #555;border-radius:10px;background:#111;color:#fff;padding:0 12px;font-size:16px}
+.zahlungs-pfand-menge{display:grid;grid-template-columns:52px 1fr 52px;gap:8px;margin-top:12px;align-items:center}
+.zahlungs-pfand-menge button{height:46px;border-radius:10px;border:1px solid #555;background:#303030;color:#fff;font-size:24px;font-weight:900}
+.zahlungs-pfand-menge strong{height:46px;display:grid;place-items:center;background:#111;border:1px solid #444;border-radius:10px;font-size:20px}
+.zahlungs-pfand-summe{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid #3d3d3d}
+.zahlungs-pfand-summe strong{color:#f3ad2f;font-size:20px}
+.pfand-settings-dialogbox{width:min(94vw,620px)}
+.pfand-artikel-liste{display:grid;gap:9px;margin:14px 0}
+.pfand-artikel-zeile{display:grid;grid-template-columns:minmax(0,1fr) auto 48px 48px;gap:8px;align-items:center;border:1px solid #444;border-radius:12px;padding:10px;background:#1a1a1a}
+.pfand-artikel-zeile>div{min-width:0;display:flex;flex-direction:column;gap:3px}.pfand-artikel-zeile small{color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pfand-artikel-zeile>strong{color:#f3ad2f}
+.pfand-neu-box{display:grid;gap:10px;border-top:1px solid #444;padding-top:14px}.pfand-neu-box label{display:grid;gap:5px;font-weight:750}.pfand-neu-box input{min-height:46px;border:1px solid #555;border-radius:10px;background:#111;color:#fff;padding:0 12px;font-size:16px}
+@media(max-width:520px){.pfand-artikel-zeile{grid-template-columns:minmax(0,1fr) auto 44px 44px}.kopf-buttons{gap:6px}.pfand-einstellungen-button{width:48px;min-width:48px}}

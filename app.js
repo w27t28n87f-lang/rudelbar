@@ -1828,39 +1828,50 @@ function bildVerkleinern(file, maxGroesse = 700, qualitaet = 0.65) {
 }
 
 
-/* PFAND v139 */
+/* PFAND v140: zentrale Pfandartikel + Verkauf/Rückgabe */
 const PFAND_BEREICH = "_system";
-const PFAND_MODUL = "kasse_einstellungen";
-const PFAND_EINSTELLUNG_ID = "7e0c0f10-0138-4138-8138-000000000138";
-const PFAND_STANDARD = 2;
+const PFAND_MODUL = "kasse_pfandartikel";
+const PFAND_STANDARD_ID = "pfand-becher-standard";
 
-function pfandEinstellungLaden() {
+function pfandArtikelLaden() {
   const key = modulKey(PFAND_BEREICH, PFAND_MODUL);
-  const daten = laden(key, []);
-  const eintrag = daten.find(x => String(x.id) === PFAND_EINSTELLUNG_ID);
-  const wert = Number(eintrag?.pfandWert);
-  return Number.isFinite(wert) && wert > 0 ? wert : PFAND_STANDARD;
+  let daten = laden(key, []);
+  daten = Array.isArray(daten) ? daten.filter(x => x && x.aktiv !== false) : [];
+  if (!daten.length) {
+    daten = [{ id: PFAND_STANDARD_ID, name: "Becher", beschreibung: "Mehrwegbecher Rudelbar", preis: 2, aktiv: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }];
+    localStorage.setItem(key, JSON.stringify(daten));
+  }
+  return daten;
 }
 
-function pfandEinstellungSpeichern(wert) {
-  const zahlWert = Math.round(Number(wert) * 100) / 100;
-  if (!Number.isFinite(zahlWert) || zahlWert <= 0) return false;
-
+function pfandArtikelAlleLaden() {
   const key = modulKey(PFAND_BEREICH, PFAND_MODUL);
   const daten = laden(key, []);
+  return Array.isArray(daten) && daten.length ? daten : pfandArtikelLaden();
+}
+
+function pfandArtikelSpeichern(artikel) {
+  const key = modulKey(PFAND_BEREICH, PFAND_MODUL);
+  const daten = pfandArtikelAlleLaden();
+  const idx = daten.findIndex(x => String(x.id) === String(artikel.id));
   const jetzt = new Date().toISOString();
-  const eintrag = {
-    id: PFAND_EINSTELLUNG_ID,
-    pfandWert: zahlWert,
-    titel: "Pfand je Becher",
-    updatedAt: jetzt,
-    createdAt: daten.find(x => String(x.id) === PFAND_EINSTELLUNG_ID)?.createdAt || jetzt
-  };
-  const ohneAlt = daten.filter(x => String(x.id) !== PFAND_EINSTELLUNG_ID);
-  ohneAlt.push(eintrag);
-  localStorage.setItem(key, JSON.stringify(ohneAlt));
-  queueUpsert("moduldaten", modulZuDB(PFAND_BEREICH, PFAND_MODUL, eintrag));
+  const neu = { ...artikel, preis: Math.round(Number(artikel.preis) * 100) / 100, updatedAt: jetzt, createdAt: artikel.createdAt || jetzt };
+  if (!neu.name || !Number.isFinite(neu.preis) || neu.preis <= 0) return false;
+  if (idx >= 0) daten[idx] = neu; else daten.push(neu);
+  localStorage.setItem(key, JSON.stringify(daten));
+  queueUpsert("moduldaten", modulZuDB(PFAND_BEREICH, PFAND_MODUL, neu));
   return true;
+}
+
+function pfandArtikelLoeschen(id) {
+  const key = modulKey(PFAND_BEREICH, PFAND_MODUL);
+  const daten = pfandArtikelAlleLaden();
+  const artikel = daten.find(x => String(x.id) === String(id));
+  if (!artikel) return;
+  artikel.aktiv = false;
+  artikel.updatedAt = new Date().toISOString();
+  localStorage.setItem(key, JSON.stringify(daten));
+  queueUpsert("moduldaten", modulZuDB(PFAND_BEREICH, PFAND_MODUL, artikel));
 }
 
 function istPfandRueckgabe(verkauf) {
@@ -1868,77 +1879,61 @@ function istPfandRueckgabe(verkauf) {
 }
 
 function pfandRueckgabenSumme(liste, zahlungsart = null) {
-  return (liste || [])
-    .filter(v => istPfandRueckgabe(v) && (!zahlungsart || v.zahlungsart === zahlungsart))
-    .reduce((summe, v) => summe + Math.abs(Number(v.gesamt || 0)), 0);
+  return (liste || []).filter(v => istPfandRueckgabe(v) && (!zahlungsart || v.zahlungsart === zahlungsart)).reduce((summe, v) => summe + Math.abs(Number(v.gesamt || 0)), 0);
 }
 
-function pfandRueckgabeBuchen(zahlungsart, menge, pfandWert) {
+function pfandRueckgabeBuchen(zahlungsart, menge, artikel) {
   const anzahl = Math.max(1, Math.floor(Number(menge) || 1));
-  const wert = Math.round(Number(pfandWert) * 100) / 100;
+  const wert = Math.round(Number(artikel?.preis) * 100) / 100;
   if (!Number.isFinite(wert) || wert <= 0) return;
-
   const gesamt = -(Math.round(anzahl * wert * 100) / 100);
   const verkauf = {
-    id: neueID(),
-    datum: new Date().toISOString(),
-    zahlungsart,
-    gesamt,
-    positionen: [{
-      getraenkId: null,
-      name: "Pfandrückgabe Becher",
-      preis: -wert,
-      anzahl,
-      typ: "pfandrueckgabe",
-      pfandWert: wert
-    }],
-    abgeschlossen: false,
-    abschlussID: null
+    id: neueID(), datum: new Date().toISOString(), zahlungsart, gesamt,
+    positionen: [{ getraenkId: null, name: "Pfandrückgabe " + artikel.name, preis: -wert, anzahl, typ: "pfandrueckgabe", pfandArtikelId: artikel.id, pfandWert: wert }],
+    abgeschlossen: false, abschlussID: null
   };
-
-  verkaeufe.push(verkauf);
-  speichernLokal();
-  queueUpsert("verkaeufe", verkaufZuDB(verkauf));
-  render();
+  verkaeufe.push(verkauf); speichernLokal(); queueUpsert("verkaeufe", verkaufZuDB(verkauf)); render();
 }
+
+const zahlungsPfand = {
+  Bar: { aktiv: false, artikelId: null, menge: 1 },
+  Karte: { aktiv: false, artikelId: null, menge: 1 }
+};
+
+function gewaehlterPfandArtikel(art) {
+  const liste = pfandArtikelLaden();
+  const zustand = zahlungsPfand[art];
+  return liste.find(x => String(x.id) === String(zustand.artikelId)) || liste[0] || null;
+}
+
+function pfandZuschlag(art) {
+  const z = zahlungsPfand[art];
+  if (!z?.aktiv) return 0;
+  const a = gewaehlterPfandArtikel(art);
+  return a ? Math.round(a.preis * Math.max(1, z.menge) * 100) / 100 : 0;
+}
+
+function zahlungGesamtpreis(art) { return Math.round((gesamtpreis() + pfandZuschlag(art)) * 100) / 100; }
 
 /* VERKAUF */
 
 function verkaufAbschliessen(zahlungsart) {
-  const gesamt = gesamtpreis();
-  if (!gesamt) return;
-
-  const positionen = getraenke
-    .filter(g => warenkorb[g.id])
-    .map(g => ({
-      getraenkId: g.id,
-      name: g.name,
-      preis: g.preis,
-      anzahl: warenkorb[g.id]
-    }));
-
-  const verkauf = {
-    id: neueID(),
-    datum: new Date().toISOString(),
-    zahlungsart,
-    gesamt,
-    positionen,
-    abgeschlossen: false,
-    abschlussID: null
-  };
-
+  const grundGesamt = gesamtpreis();
+  if (!grundGesamt) return;
+  const positionen = getraenke.filter(g => warenkorb[g.id]).map(g => ({ getraenkId: g.id, name: g.name, preis: g.preis, anzahl: warenkorb[g.id] }));
+  const z = zahlungsPfand[zahlungsart];
+  if (z?.aktiv) {
+    const a = gewaehlterPfandArtikel(zahlungsart);
+    if (a) positionen.push({ getraenkId: null, name: "Pfand " + a.name, preis: a.preis, anzahl: Math.max(1, z.menge), typ: "pfandverkauf", pfandArtikelId: a.id, pfandWert: a.preis });
+  }
+  const gesamt = zahlungGesamtpreis(zahlungsart);
+  const verkauf = { id: neueID(), datum: new Date().toISOString(), zahlungsart, gesamt, positionen, abgeschlossen: false, abschlussID: null };
   verkaeufe.push(verkauf);
-
   warenkorb = {};
-
-  speichernLokal();
-  queueUpsert("verkaeufe", verkaufZuDB(verkauf));
-
-  render();
+  zahlungsPfand.Bar = { aktiv:false, artikelId:null, menge:1 };
+  zahlungsPfand.Karte = { aktiv:false, artikelId:null, menge:1 };
+  speichernLokal(); queueUpsert("verkaeufe", verkaufZuDB(verkauf)); render();
 }
-
-
-/* STATISTIK */
 
 function heuteVerkaeufe() {
   const heute = new Date().toDateString();
@@ -1961,7 +1956,7 @@ function aggregieren(liste) {
     gesamt += Number(v.gesamt);
 
     v.positionen.forEach(p => {
-      if (p?.typ === "pfandrueckgabe") return;
+      if (p?.typ === "pfandrueckgabe" || p?.typ === "pfandverkauf") return;
 
       anzahl += p.anzahl;
 
@@ -4611,7 +4606,8 @@ function euroAusCent(cent) {
 }
 
 function barzahlungOeffnen() {
-  const gesamtCent = centWert(gesamtpreis());
+  zahlungsPfandReset("Bar");
+  const gesamtCent = centWert(zahlungGesamtpreis("Bar"));
   if (gesamtCent <= 0) return;
 
   $("barzahlungGesamt").textContent = euroAusCent(gesamtCent);
@@ -4632,7 +4628,7 @@ function barzahlungOeffnen() {
 }
 
 function barzahlungBerechnen() {
-  const gesamtCent = centWert(gesamtpreis());
+  const gesamtCent = centWert(zahlungGesamtpreis("Bar"));
   const roh = $("barzahlungGegeben").value.trim().replace(/\s/g, "").replace(",", ".");
   const gegebenCent = Math.round(Number(roh) * 100);
   const gueltig = roh !== "" && Number.isFinite(gegebenCent);
@@ -4668,7 +4664,7 @@ $("barzahlungSchnellwahl").onclick = event => {
   const wert = event.target.closest("[data-bar-wert]");
   if (!exakt && !wert) return;
   $("barzahlungGegeben").value = exakt
-    ? (centWert(gesamtpreis()) / 100).toFixed(2).replace(".", ",")
+    ? (centWert(zahlungGesamtpreis("Bar")) / 100).toFixed(2).replace(".", ",")
     : Number(wert.dataset.barWert).toFixed(2).replace(".", ",");
   barzahlungBerechnen();
 };
@@ -4682,7 +4678,8 @@ $("barzahlungBestaetigen").onclick = () => {
 };
 
 function kartenzahlungOeffnen() {
-  const gesamtCent = centWert(gesamtpreis());
+  zahlungsPfandReset("Karte");
+  const gesamtCent = centWert(zahlungGesamtpreis("Karte"));
   if (gesamtCent <= 0) return;
 
   $("kartenzahlungGesamt").textContent = euroAusCent(gesamtCent);
@@ -4696,7 +4693,7 @@ function kartenzahlungOeffnen() {
 }
 
 function kartenzahlungBerechnen() {
-  const gesamtCent = centWert(gesamtpreis());
+  const gesamtCent = centWert(zahlungGesamtpreis("Karte"));
   const roh = $("kartenzahlungBetrag").value.trim().replace(/\s/g, "").replace(",", ".");
   const betragCent = Math.round(Number(roh) * 100);
   const gueltig = roh !== "" && Number.isFinite(betragCent);
@@ -4733,7 +4730,7 @@ $("karteButton").onclick = kartenzahlungOeffnen;
 $("kartenzahlungBetrag").addEventListener("input", kartenzahlungBerechnen);
 
 $("kartenzahlungPassend").onclick = () => {
-  $("kartenzahlungBetrag").value = (centWert(gesamtpreis()) / 100).toFixed(2).replace(".", ",");
+  $("kartenzahlungBetrag").value = (centWert(zahlungGesamtpreis("Karte")) / 100).toFixed(2).replace(".", ",");
   kartenzahlungBerechnen();
 };
 
@@ -4745,61 +4742,123 @@ $("kartenzahlungBestaetigen").onclick = () => {
   verkaufAbschliessen("Karte");
 };
 
-function pfandDialogAktualisieren() {
-  const wertRoh = $("pfandWert").value.trim().replace(/\s/g, "").replace(",", ".");
-  const wert = Number(wertRoh);
-  const menge = Math.max(1, Math.floor(Number($("pfandMenge").value) || 1));
-  $("pfandMenge").value = String(menge);
-  const gueltig = Number.isFinite(wert) && wert > 0;
-  $("pfandGesamt").textContent = gueltig ? euro(Math.round(wert * menge * 100) / 100) : "0,00 €";
-  $("pfandBar").disabled = !gueltig;
-  $("pfandKarte").disabled = !gueltig;
-  $("pfandHinweis").textContent = gueltig
-    ? "Zahlungsweg der ursprünglichen Zahlung wählen."
-    : "Bitte einen gültigen Pfandwert eingeben.";
+
+function pfandOptionenHTML() {
+  return pfandArtikelLaden().map(a => `<option value="${a.id}">${escapeHTML(a.name)} · ${euro(a.preis)}</option>`).join("");
 }
 
-function pfandOeffnen() {
-  $("pfandWert").value = pfandEinstellungLaden().toFixed(2).replace(".", ",");
-  $("pfandMenge").value = "1";
-  pfandDialogAktualisieren();
-  $("pfandDialog").showModal();
+function zahlungsPfandUI(art) {
+  const prefix = art === "Bar" ? "bar" : "karte";
+  const z = zahlungsPfand[art];
+  const select = $(prefix + "PfandArtikel");
+  if (!select) return;
+  select.innerHTML = pfandOptionenHTML();
+  if (!z.artikelId && select.options.length) z.artikelId = select.options[0].value;
+  if (z.artikelId) select.value = z.artikelId;
+  $(prefix + "PfandInhalt").classList.toggle("versteckt", !z.aktiv);
+  $(prefix + "PfandToggle").classList.toggle("aktiv", z.aktiv);
+  $(prefix + "PfandMenge").textContent = String(Math.max(1, z.menge));
+  $(prefix + "PfandSumme").textContent = euro(pfandZuschlag(art));
+  if (art === "Bar") $("barzahlungGesamt").textContent = euro(zahlungGesamtpreis("Bar"));
+  else $("kartenzahlungGesamt").textContent = euro(zahlungGesamtpreis("Karte"));
 }
 
+function zahlungsPfandReset(art) {
+  zahlungsPfand[art] = { aktiv:false, artikelId:pfandArtikelLaden()[0]?.id || null, menge:1 };
+  zahlungsPfandUI(art);
+}
+
+function pfandToggle(art) {
+  zahlungsPfand[art].aktiv = !zahlungsPfand[art].aktiv;
+  if (!zahlungsPfand[art].artikelId) zahlungsPfand[art].artikelId = pfandArtikelLaden()[0]?.id || null;
+  zahlungsPfandUI(art);
+  if (art === "Bar") barzahlungBerechnen(); else kartenzahlungBerechnen();
+}
+
+function pfandMengeAendern(art, delta) {
+  zahlungsPfand[art].menge = Math.max(1, (Number(zahlungsPfand[art].menge) || 1) + delta);
+  zahlungsPfandUI(art);
+  if (art === "Bar") barzahlungBerechnen(); else kartenzahlungBerechnen();
+}
+
+$("barPfandToggle").onclick = () => pfandToggle("Bar");
+$("kartePfandToggle").onclick = () => pfandToggle("Karte");
+$("barPfandMinus").onclick = () => pfandMengeAendern("Bar", -1);
+$("barPfandPlus").onclick = () => pfandMengeAendern("Bar", 1);
+$("kartePfandMinus").onclick = () => pfandMengeAendern("Karte", -1);
+$("kartePfandPlus").onclick = () => pfandMengeAendern("Karte", 1);
+$("barPfandArtikel").onchange = e => { zahlungsPfand.Bar.artikelId = e.target.value; zahlungsPfandUI("Bar"); barzahlungBerechnen(); };
+$("kartePfandArtikel").onchange = e => { zahlungsPfand.Karte.artikelId = e.target.value; zahlungsPfandUI("Karte"); kartenzahlungBerechnen(); };
+
+function pfandEinstellungenRendern() {
+  const liste = pfandArtikelLaden();
+  $("pfandArtikelListe").innerHTML = liste.map(a => `
+    <div class="pfand-artikel-zeile" data-id="${a.id}">
+      <div><strong>${escapeHTML(a.name)}</strong><small>${escapeHTML(a.beschreibung || "")}</small></div>
+      <strong>${euro(a.preis)}</strong>
+      <button type="button" class="sekundaer" data-pfand-edit="${a.id}">✏️</button>
+      <button type="button" class="daten-loeschen" data-pfand-delete="${a.id}">🗑</button>
+    </div>`).join("");
+}
+
+function pfandEinstellungenOeffnen() {
+  pfandEinstellungenRendern();
+  $("pfandNeuName").value = ""; $("pfandNeuBeschreibung").value = ""; $("pfandNeuPreis").value = "";
+  $("pfandSettingsHinweis").textContent = "";
+  $("pfandEinstellungenDialog").showModal();
+}
+
+$("pfandEinstellungenBtn").onclick = pfandEinstellungenOeffnen;
+$("pfandEinstellungenSchliessen").onclick = () => $("pfandEinstellungenDialog").close();
+$("pfandArtikelHinzufuegen").onclick = () => {
+  const name = $("pfandNeuName").value.trim();
+  const beschreibung = $("pfandNeuBeschreibung").value.trim();
+  const preis = Number($("pfandNeuPreis").value.trim().replace(",", "."));
+  if (!name || !Number.isFinite(preis) || preis <= 0) { $("pfandSettingsHinweis").textContent = "Bitte Bezeichnung und gültigen Preis eingeben."; return; }
+  pfandArtikelSpeichern({ id: neueID(), name, beschreibung, preis, aktiv:true });
+  $("pfandNeuName").value = ""; $("pfandNeuBeschreibung").value = ""; $("pfandNeuPreis").value = "";
+  $("pfandSettingsHinweis").textContent = "Pfandartikel gespeichert und zur Synchronisierung vorgemerkt.";
+  pfandEinstellungenRendern();
+};
+
+$("pfandArtikelListe").onclick = e => {
+  const edit = e.target.closest("[data-pfand-edit]");
+  const del = e.target.closest("[data-pfand-delete]");
+  if (edit) {
+    const a = pfandArtikelLaden().find(x => String(x.id) === String(edit.dataset.pfandEdit)); if (!a) return;
+    const name = prompt("Bezeichnung", a.name); if (name === null) return;
+    const beschreibung = prompt("Beschreibung", a.beschreibung || ""); if (beschreibung === null) return;
+    const preisRoh = prompt("Preis in €", Number(a.preis).toFixed(2).replace(".", ",")); if (preisRoh === null) return;
+    const preis = Number(preisRoh.replace(",", "."));
+    if (!name.trim() || !Number.isFinite(preis) || preis <= 0) return;
+    pfandArtikelSpeichern({ ...a, name:name.trim(), beschreibung:beschreibung.trim(), preis }); pfandEinstellungenRendern();
+  }
+  if (del) {
+    const aktive = pfandArtikelLaden(); if (aktive.length <= 1) { $("pfandSettingsHinweis").textContent = "Mindestens ein Pfandartikel muss aktiv bleiben."; return; }
+    pfandArtikelLoeschen(del.dataset.pfandDelete); pfandEinstellungenRendern();
+  }
+};
+
+function pfandRueckgabeUI() {
+  const liste = pfandArtikelLaden();
+  $("pfandRueckgabeArtikel").innerHTML = pfandOptionenHTML();
+  $("pfandMenge").value = Math.max(1, Number($("pfandMenge").value) || 1);
+  const a = liste.find(x => String(x.id) === String($("pfandRueckgabeArtikel").value)) || liste[0];
+  const menge = Math.max(1, Number($("pfandMenge").value) || 1);
+  $("pfandGesamt").textContent = a ? euro(a.preis * menge) : "0,00 €";
+  $("pfandBar").disabled = !a; $("pfandKarte").disabled = !a;
+}
+function pfandOeffnen() { $("pfandMenge").value = "1"; pfandRueckgabeUI(); $("pfandDialog").showModal(); }
 $("pfandButton").onclick = pfandOeffnen;
 $("pfandAbbrechen").onclick = () => $("pfandDialog").close();
-$("pfandWert").addEventListener("input", pfandDialogAktualisieren);
-$("pfandMenge").addEventListener("input", pfandDialogAktualisieren);
-$("pfandMinus").onclick = () => {
-  $("pfandMenge").value = String(Math.max(1, (Number($("pfandMenge").value) || 1) - 1));
-  pfandDialogAktualisieren();
-};
-$("pfandPlus").onclick = () => {
-  $("pfandMenge").value = String(Math.max(1, (Number($("pfandMenge").value) || 1) + 1));
-  pfandDialogAktualisieren();
-};
-$("pfandWertSpeichern").onclick = () => {
-  const wert = Number($("pfandWert").value.trim().replace(/\s/g, "").replace(",", "."));
-  if (!pfandEinstellungSpeichern(wert)) {
-    $("pfandHinweis").textContent = "Pfandwert konnte nicht gespeichert werden.";
-    return;
-  }
-  $("pfandWert").value = wert.toFixed(2).replace(".", ",");
-  $("pfandHinweis").textContent = "Pfandwert gespeichert und für das Rudel synchronisiert.";
-  pfandDialogAktualisieren();
-};
-
-function pfandRueckgabeAusDialog(zahlungsart) {
-  const wert = Number($("pfandWert").value.trim().replace(/\s/g, "").replace(",", "."));
-  const menge = Math.max(1, Math.floor(Number($("pfandMenge").value) || 1));
-  if (!Number.isFinite(wert) || wert <= 0) return;
-  pfandEinstellungSpeichern(wert);
-  pfandRueckgabeBuchen(zahlungsart, menge, wert);
-  $("pfandDialog").close();
-}
-
+$("pfandRueckgabeArtikel").onchange = pfandRueckgabeUI;
+$("pfandMenge").oninput = pfandRueckgabeUI;
+$("pfandMinus").onclick = () => { $("pfandMenge").value = Math.max(1, (Number($("pfandMenge").value)||1)-1); pfandRueckgabeUI(); };
+$("pfandPlus").onclick = () => { $("pfandMenge").value = Math.max(1, (Number($("pfandMenge").value)||1)+1); pfandRueckgabeUI(); };
+function pfandRueckgabeAusDialog(zahlungsart) { const a = pfandArtikelLaden().find(x => String(x.id) === String($("pfandRueckgabeArtikel").value)); if (!a) return; pfandRueckgabeBuchen(zahlungsart, $("pfandMenge").value, a); $("pfandDialog").close(); }
 $("pfandBar").onclick = () => pfandRueckgabeAusDialog("Bar");
 $("pfandKarte").onclick = () => pfandRueckgabeAusDialog("Karte");
+
 
 $("bestellungLoeschen").onclick = () => {
   warenkorb = {};
