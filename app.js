@@ -42,6 +42,8 @@ let neuesBild = null;
 let verkaufEditID = null;
 let verkaufEditPositionen = [];
 let realtimeChannel = null;
+let onlineTeam = new Map();
+let realtimeVerbindungsstatus = "GETRENNT";
 let angemeldet = false;
 let syncLaeuft = false;
 let aktuellerUser = null;
@@ -396,34 +398,49 @@ async function syncStarten() {
   syncLaeuft = true;
   syncStatus("wartet", "Synchronisiere…");
 
-  while (syncQueue.length && navigator.onLine) {
-    const job = syncQueue[0];
+  let fehler = 0;
+  const jobs = [...syncQueue];
+
+  for (const job of jobs) {
+    if (!navigator.onLine) break;
 
     let result;
 
-    if (job.action === "delete") {
-      result = await sb
-        .from(job.table)
-        .delete()
-        .eq("id", job.id);
-    } else {
-      result = await sb
-        .from(job.table)
-        .upsert(job.payload);
+    try {
+      if (job.action === "delete") {
+        result = await sb
+          .from(job.table)
+          .delete()
+          .eq("id", job.id);
+      } else {
+        result = await sb
+          .from(job.table)
+          .upsert(job.payload);
+      }
+    } catch (error) {
+      result = { error };
     }
 
-    if (result.error) {
-      console.error("Sync Fehler:", result.error);
-      syncStatus("fehler", "Sync-Fehler");
-      break;
+    if (result?.error) {
+      fehler += 1;
+      console.error("Sync Fehler:", job.table, job.id, result.error);
+      // Ein fehlerhafter Datensatz darf nicht mehr die komplette Warteschlange blockieren.
+      continue;
     }
 
-    syncQueue.shift();
+    const index = syncQueue.indexOf(job);
+    if (index >= 0) syncQueue.splice(index, 1);
     speichernLokal();
   }
 
   syncLaeuft = false;
-  statusAktualisieren();
+  speichernLokal();
+
+  if (fehler > 0) {
+    syncStatus("fehler", `${fehler} Sync-Fehler`);
+  } else {
+    statusAktualisieren();
+  }
 }
 
 
@@ -1125,6 +1142,8 @@ async function abmelden() {
     try { await sb.removeChannel(realtimeChannel); } catch {}
     realtimeChannel = null;
   }
+  onlineTeam = new Map();
+  teamOnlineAnzeigeAktualisieren();
 
   await sb.auth.signOut();
   angemeldet = false;
@@ -1217,12 +1236,24 @@ async function ersteSynchronisierung() {
 
 let remoteNeuLadenLaeuft = false;
 
+function remoteMitWarteschlangeMischen(table, remoteRows) {
+  const map = new Map((remoteRows || []).map(row => [String(row.id), row]));
+  const jobs = syncQueue.filter(job => job.table === table);
+
+  jobs.forEach(job => {
+    const id = String(job.id);
+    if (job.action === "delete") map.delete(id);
+    else if (job.payload) map.set(id, job.payload);
+  });
+
+  return [...map.values()];
+}
+
 async function remoteNeuLaden() {
   if (
     remoteNeuLadenLaeuft ||
     !angemeldet ||
-    !navigator.onLine ||
-    syncQueue.length
+    !navigator.onLine
   ) return;
 
   remoteNeuLadenLaeuft = true;
@@ -1240,10 +1271,11 @@ async function remoteNeuLaden() {
       return;
     }
 
-    getraenke = g.data.map(getraenkVonDB);
-    verkaeufe = v.data.map(verkaufVonDB);
-    abschluesse = a.data.map(abschlussVonDB);
-    remoteModuldatenLokalSpeichern(m.data || []);
+    // Remote-Daten werden geladen, ohne noch nicht hochgeladene lokale Änderungen zu überschreiben.
+    getraenke = remoteMitWarteschlangeMischen("getraenke", g.data).map(getraenkVonDB);
+    verkaeufe = remoteMitWarteschlangeMischen("verkaeufe", v.data).map(verkaufVonDB);
+    abschluesse = remoteMitWarteschlangeMischen("tagesabschluesse", a.data).map(abschlussVonDB);
+    remoteModuldatenLokalSpeichern(remoteMitWarteschlangeMischen("moduldaten", m.data));
 
     speichernLokal();
     render();
@@ -1258,55 +1290,101 @@ async function remoteNeuLaden() {
 
 /* REALTIME */
 
+function teamIstOnline(id) {
+  return onlineTeam.has(String(id));
+}
+
+function teamOnlineAnzeigeAktualisieren() {
+  const text = $("startTeamOnlineText");
+  const anzahl = onlineTeam.size;
+
+  if (text) {
+    text.textContent = anzahl > 0
+      ? `${anzahl} online · Mitglieder & Einsatzbereiche`
+      : "Niemand online · Mitglieder & Einsatzbereiche";
+  }
+
+  if ($("teamDialog")?.open && typeof teamRendern === "function") {
+    teamRendern();
+  }
+}
+
+function presenceAusStateAktualisieren() {
+  if (!realtimeChannel) return;
+
+  const state = realtimeChannel.presenceState?.() || {};
+  const neu = new Map();
+
+  Object.values(state).flat().forEach(p => {
+    if (p?.user_id) neu.set(String(p.user_id), p);
+  });
+
+  onlineTeam = neu;
+  teamOnlineAnzeigeAktualisieren();
+}
+
+async function presenceTracken() {
+  if (!realtimeChannel || !aktuellerUser || document.visibilityState !== "visible") return;
+
+  try {
+    await realtimeChannel.track({
+      user_id: aktuellerUser.id,
+      email: aktuellerUser.email || "",
+      name: aktuellerUser?.user_metadata?.name || aktuellerUser?.email?.split("@")[0] || "Rudelbar-Mitglied",
+      rolle: aktuelleRolle,
+      online_at: new Date().toISOString()
+    });
+  } catch (error) {
+    console.warn("Presence konnte nicht gesetzt werden:", error);
+  }
+}
+
 function realtimeStarten() {
-  if (realtimeChannel) return;
+  if (realtimeChannel || !aktuellerUser) return;
+
+  realtimeVerbindungsstatus = "VERBINDET";
 
   realtimeChannel = sb
-    .channel("rudelbar-live")
+    .channel("rudelbar-live", {
+      config: {
+        presence: { key: String(aktuellerUser.id) }
+      }
+    })
 
     .on(
       "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "getraenke"
-      },
+      { event: "*", schema: "public", table: "getraenke" },
       () => remoteNeuLaden()
     )
-
     .on(
       "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "verkaeufe"
-      },
+      { event: "*", schema: "public", table: "verkaeufe" },
       () => remoteNeuLaden()
     )
-
     .on(
       "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "tagesabschluesse"
-      },
+      { event: "*", schema: "public", table: "tagesabschluesse" },
       () => remoteNeuLaden()
     )
-
     .on(
       "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "moduldaten"
-      },
+      { event: "*", schema: "public", table: "moduldaten" },
       () => remoteNeuLaden()
     )
+    .on("presence", { event: "sync" }, presenceAusStateAktualisieren)
+    .on("presence", { event: "join" }, presenceAusStateAktualisieren)
+    .on("presence", { event: "leave" }, presenceAusStateAktualisieren)
+    .subscribe(async status => {
+      realtimeVerbindungsstatus = status;
 
-    .subscribe(status => {
       if (status === "SUBSCRIBED") {
+        await presenceTracken();
+        presenceAusStateAktualisieren();
         statusAktualisieren();
+      }
+
+      if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) {
+        console.warn("Realtime Status:", status);
       }
     });
 }
@@ -3165,7 +3243,10 @@ function teamRendern(){
     return `<article class="team-karte" data-team-id="${esc(m.id)}">
       <div class="team-kopf">
         <div class="team-identitaet"><span class="team-avatar">${esc((m.name||m.email||"?").trim().slice(0,2).toUpperCase())}</span><div><strong>${esc(m.name||"Teammitglied")}</strong><small>${esc(m.email||"")}</small></div></div>
-        <span class="team-rolle ${m.rolle==="superuser"?"superuser":""}">${m.rolle==="superuser"?"Superuser":"Mitarbeiter"}</span>
+        <div class="team-status-zeile">
+          <span class="team-online-status ${teamIstOnline(m.id)?"online":"offline"}"><i></i>${teamIstOnline(m.id)?"Online":"Offline"}</span>
+          <span class="team-rolle ${m.rolle==="superuser"?"superuser":""}">${m.rolle==="superuser"?"Superuser":"Mitarbeiter"}</span>
+        </div>
       </div>
       <div class="team-meta">Zuletzt angemeldet: ${esc(login)}</div>
       <div class="team-bereich-label">Einsetzbar in</div>
@@ -4515,11 +4596,9 @@ window.addEventListener("online", async () => {
 
   await syncStarten();
 
-  if (!syncQueue.length) {
-    await remoteNeuLaden();
-  }
-
+  await remoteNeuLaden();
   realtimeStarten();
+  await presenceTracken();
 });
 
 
@@ -4533,8 +4612,7 @@ function realtimeFallbackStarten() {
     if (
       angemeldet &&
       navigator.onLine &&
-      document.visibilityState === "visible" &&
-      !syncQueue.length
+      document.visibilityState === "visible"
     ) {
       await remoteNeuLaden();
     }
@@ -4542,22 +4620,27 @@ function realtimeFallbackStarten() {
 }
 
 document.addEventListener("visibilitychange", async () => {
-  if (
-    document.visibilityState === "visible" &&
-    angemeldet &&
-    navigator.onLine
-  ) {
+  if (!angemeldet) return;
+
+  if (document.visibilityState === "hidden") {
+    try { await realtimeChannel?.untrack(); } catch {}
+    return;
+  }
+
+  if (navigator.onLine) {
     await syncStarten();
-    if (!syncQueue.length) await remoteNeuLaden();
+    await remoteNeuLaden();
     realtimeStarten();
+    await presenceTracken();
   }
 });
 
 window.addEventListener("focus", async () => {
   if (angemeldet && navigator.onLine) {
     await syncStarten();
-    if (!syncQueue.length) await remoteNeuLaden();
+    await remoteNeuLaden();
     realtimeStarten();
+    await presenceTracken();
   }
 });
 
@@ -4577,10 +4660,7 @@ authStart();
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
     .register("service-worker.js", { updateViaCache: "none" })
-    .then(registration => {
-      // Bei jedem App-Start aktiv nach einer neuen Service-Worker-Version suchen.
-      registration.update().catch(() => {});
-    })
+    .then(registration => registration.update().catch(() => {}))
     .catch(error => {
       console.error("Service Worker:", error);
     });

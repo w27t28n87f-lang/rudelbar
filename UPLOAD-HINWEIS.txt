@@ -1,14 +1,26 @@
-RUDELBAR – EINMALIGES GITHUB-UPDATE
+RUDELBAR – STABILE GITHUB-ROOT-DATEIEN
 
-Diese drei Dateien im GitHub-Repository ersetzen:
-1. index.html
-2. app.js
-3. service-worker.js
+Diese ZIP enthält den kompletten GitHub-Root.
 
-Wichtig:
-- Die Dateinamen bleiben ab jetzt dauerhaft gleich.
-- index.html lädt nur noch app.js, style.css und manifest.json ohne ?v123 usw.
-- Der Service Worker lädt HTML/CSS/JS/Manifest online immer frisch und nutzt den Cache nur als Offline-Fallback.
-- app.js fordert beim Start zusätzlich ein Service-Worker-Update an.
+WICHTIGE REGEL AB JETZT:
+- Dateinamen bleiben dauerhaft identisch.
+- app.js bleibt app.js
+- index.html bleibt index.html
+- style.css bleibt style.css
+- manifest.json bleibt manifest.json
+- service-worker.js bleibt service-worker.js
+- Keine ?v123 / ?v134 / Versionssuffixe mehr in Dateireferenzen.
 
-style.css und manifest.json müssen für diese Umstellung nicht ersetzt werden.
+Bei zukünftigen Änderungen wird nur der Inhalt der jeweiligen Datei ersetzt, niemals ihr Name.
+Der Service Worker lädt Code-Dateien online mit cache:no-store und verwendet den Cache nur als Offline-Fallback.
+app.js registriert den Service Worker mit updateViaCache:none und stößt beim Start eine Update-Prüfung an.
+
+ZUSÄTZLICH IN DIESER VERSION:
+- Realtime/Sync robuster: ein fehlerhafter Queue-Eintrag blockiert nicht mehr alle anderen Änderungen.
+- Remote-Daten werden auch bei wartenden lokalen Änderungen aktualisiert und mit der Queue zusammengeführt.
+- Supabase Presence zeigt im Team-Dialog Online/Offline je Teilnehmer.
+- Auf dem Team-Button steht die Zahl der aktuell online erkannten Teilnehmer.
+- Fehlende Referenz Logo-Haupt-Home.png wurde entfernt; es wird das vorhandene Logo-Haupt.png benutzt.
+
+UPLOAD:
+Alle Dateien/Ordner aus dieser ZIP in das Root des GitHub-Repositories hochladen und vorhandene Dateien ersetzen.
