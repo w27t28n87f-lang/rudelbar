@@ -86,11 +86,28 @@ function euro(wert) {
 }
 
 function zahl(text) {
-  return Number(
-    String(text)
-      .replace(/\./g, "")
-      .replace(",", ".")
-  ) || 0;
+  const raw = String(text ?? "").trim().replace(/\s/g, "");
+  if (!raw) return 0;
+
+  let normalisiert = raw;
+
+  const hatKomma = normalisiert.includes(",");
+  const hatPunkt = normalisiert.includes(".");
+
+  if (hatKomma && hatPunkt) {
+    // Das zuletzt vorkommende Trennzeichen als Dezimaltrenner behandeln.
+    if (normalisiert.lastIndexOf(",") > normalisiert.lastIndexOf(".")) {
+      normalisiert = normalisiert.replace(/\./g, "").replace(",", ".");
+    } else {
+      normalisiert = normalisiert.replace(/,/g, "");
+    }
+  } else if (hatKomma) {
+    normalisiert = normalisiert.replace(",", ".");
+  }
+
+  normalisiert = normalisiert.replace(/[^0-9.-]/g, "");
+  const wert = Number(normalisiert);
+  return Number.isFinite(wert) ? wert : 0;
 }
 
 function esc(text) {
@@ -1198,28 +1215,44 @@ async function ersteSynchronisierung() {
 
 /* REMOTE KOMPLETT NEU LADEN */
 
+let remoteNeuLadenLaeuft = false;
+
 async function remoteNeuLaden() {
-  if (!angemeldet || !navigator.onLine || syncQueue.length) return;
+  if (
+    remoteNeuLadenLaeuft ||
+    !angemeldet ||
+    !navigator.onLine ||
+    syncQueue.length
+  ) return;
 
-  const [g, v, a, m] = await Promise.all([
-    sb.from("getraenke").select("*").eq("aktiv", true),
-    sb.from("verkaeufe").select("*"),
-    sb.from("tagesabschluesse").select("*"),
-    sb.from("moduldaten").select("*")
-  ]);
+  remoteNeuLadenLaeuft = true;
 
-  if (g.error || v.error || a.error || m.error) return;
+  try {
+    const [g, v, a, m] = await Promise.all([
+      sb.from("getraenke").select("*").eq("aktiv", true),
+      sb.from("verkaeufe").select("*"),
+      sb.from("tagesabschluesse").select("*"),
+      sb.from("moduldaten").select("*")
+    ]);
 
-  getraenke = g.data.map(getraenkVonDB);
-  verkaeufe = v.data.map(verkaufVonDB);
-  abschluesse = a.data.map(abschlussVonDB);
-  remoteModuldatenLokalSpeichern(m.data || []);
+    if (g.error || v.error || a.error || m.error) {
+      console.warn("Remote-Neuladen fehlgeschlagen:", g.error, v.error, a.error, m.error);
+      return;
+    }
 
-  speichernLokal();
-  render();
+    getraenke = g.data.map(getraenkVonDB);
+    verkaeufe = v.data.map(verkaufVonDB);
+    abschluesse = a.data.map(abschlussVonDB);
+    remoteModuldatenLokalSpeichern(m.data || []);
 
-  if ($("statistikDialog").open) statistikInhaltRendern();
-  if ($("abschlussDialog").open) abschlussAktualisieren();
+    speichernLokal();
+    render();
+
+    if ($("statistikDialog")?.open) statistikInhaltRendern();
+    if ($("abschlussDialog")?.open) abschlussAktualisieren();
+  } finally {
+    remoteNeuLadenLaeuft = false;
+  }
 }
 
 
@@ -4488,6 +4521,47 @@ window.addEventListener("online", async () => {
 
   realtimeStarten();
 });
+
+
+/* REALTIME / IOS FALLBACK */
+let realtimeFallbackTimer = null;
+
+function realtimeFallbackStarten() {
+  if (realtimeFallbackTimer) clearInterval(realtimeFallbackTimer);
+
+  realtimeFallbackTimer = setInterval(async () => {
+    if (
+      angemeldet &&
+      navigator.onLine &&
+      document.visibilityState === "visible" &&
+      !syncQueue.length
+    ) {
+      await remoteNeuLaden();
+    }
+  }, 2500);
+}
+
+document.addEventListener("visibilitychange", async () => {
+  if (
+    document.visibilityState === "visible" &&
+    angemeldet &&
+    navigator.onLine
+  ) {
+    await syncStarten();
+    if (!syncQueue.length) await remoteNeuLaden();
+    realtimeStarten();
+  }
+});
+
+window.addEventListener("focus", async () => {
+  if (angemeldet && navigator.onLine) {
+    await syncStarten();
+    if (!syncQueue.length) await remoteNeuLaden();
+    realtimeStarten();
+  }
+});
+
+realtimeFallbackStarten();
 
 
 /* START */
