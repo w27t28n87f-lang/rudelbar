@@ -4752,10 +4752,48 @@ $("kartenzahlungPassend").onclick = () => {
 
 $("kartenzahlungAbbrechen").onclick = () => $("kartenzahlungDialog").close();
 
-$("kartenzahlungBestaetigen").onclick = () => {
-  if ($("kartenzahlungBestaetigen").disabled) return;
-  $("kartenzahlungDialog").close();
-  verkaufAbschliessen("Karte");
+$("kartenzahlungBestaetigen").onclick = async () => {
+  const button = $("kartenzahlungBestaetigen");
+  if (button.disabled) return;
+
+  const gesamtCent = centWert(zahlungGesamtpreis("Karte"));
+  if (gesamtCent <= 0) return;
+
+  const hinweis = $("kartenzahlungHinweis");
+  const alterText = button.textContent;
+
+  button.disabled = true;
+  button.textContent = "Wird an SumUp gesendet …";
+  hinweis.classList.remove("zahlung-fehler", "zahlung-ok");
+  hinweis.textContent = "SumUp Solo wird vorbereitet …";
+
+  try {
+    const { data, error } = await sb.functions.invoke("sumup-payment", {
+      body: { amount: gesamtCent / 100 }
+    });
+
+    if (error) throw error;
+    if (!data?.ok) {
+      const detail = data?.result?.errors?.detail || data?.result?.detail || data?.error || "SumUp hat die Zahlung nicht angenommen.";
+      throw new Error(detail);
+    }
+
+    hinweis.textContent = "Zahlung wurde an das SumUp Solo gesendet.";
+    hinweis.classList.add("zahlung-ok");
+
+    // Die Edge Function bestätigt hier zunächst, dass SumUp den Checkout angenommen hat.
+    // Die endgültige Zahlungsbestätigung wird in einem nächsten Schritt per Checkout-Status ergänzt.
+    setTimeout(() => {
+      $("kartenzahlungDialog").close();
+      verkaufAbschliessen("Karte");
+    }, 500);
+  } catch (err) {
+    console.error("SumUp Kartenzahlung fehlgeschlagen:", err);
+    hinweis.textContent = "SumUp-Fehler: " + (err?.message || "Zahlung konnte nicht gestartet werden.");
+    hinweis.classList.add("zahlung-fehler");
+    button.disabled = false;
+    button.textContent = alterText;
+  }
 };
 
 
