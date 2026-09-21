@@ -3228,3 +3228,16 @@ body.register-offen{overflow:hidden!important}
   .notiz-karte p{font-size:13px}
   .notiz-aktionen button{width:36px;height:36px;min-width:36px}
 }
+
+
+/* ===== RUDELBAR v152: Trinkgeld ===== */
+.trinkgeld-box{margin:14px 0;padding:13px 14px;border:1px solid #555;border-radius:14px;background:#171717}
+.trinkgeld-kopf{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-weight:850}
+.trinkgeld-kopf strong{font-size:1.12rem}
+.trinkgeld-schnellwahl{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.trinkgeld-schnellwahl button{min-height:46px;border:1px solid #666;border-radius:10px;background:#292929;color:#fff;font-weight:850;font-size:15px}
+.trinkgeld-schnellwahl button.aktiv{border-color:#f3ad2f;background:#3a2a13;color:#f3ad2f}
+.trinkgeld-frei-label{display:block;margin-top:10px;color:#ddd;font-size:13px;font-weight:750}
+.trinkgeld-frei-eingabe{display:flex;align-items:center;margin-top:6px;border:1px solid #555;border-radius:10px;background:#111;overflow:hidden}
+.trinkgeld-frei-eingabe input{flex:1;min-width:0;min-height:44px;border:0;background:transparent;color:#fff;padding:0 12px;font-size:16px}
+.trinkgeld-frei-eingabe span{padding:0 12px;color:#bbb;font-weight:800}

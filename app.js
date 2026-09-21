@@ -1902,6 +1902,43 @@ const zahlungsPfand = {
   Karte: { aktiv: false, artikelId: null, menge: 1 }
 };
 
+// v152: Trinkgeld wird getrennt vom Waren-/Pfandumsatz gespeichert.
+const zahlungsTrinkgeld = { Bar: 0, Karte: 0 };
+
+function trinkgeldBetrag(art) {
+  return Math.max(0, Math.round(Number(zahlungsTrinkgeld[art] || 0) * 100) / 100);
+}
+
+function trinkgeldAusVerkauf(v) {
+  return (v?.positionen || []).filter(p => p?.typ === "trinkgeld").reduce((s,p) => s + Number(p.preis || 0) * Number(p.anzahl || 1), 0);
+}
+
+function trinkgeldSumme(liste, zahlungsart = null) {
+  return (liste || []).filter(v => !zahlungsart || v.zahlungsart === zahlungsart).reduce((s,v) => s + trinkgeldAusVerkauf(v), 0);
+}
+
+function trinkgeldSetzen(art, wert) {
+  zahlungsTrinkgeld[art] = Math.max(0, Math.round(Number(wert || 0) * 100) / 100);
+  trinkgeldUI(art);
+  if (art === "Bar") barzahlungBerechnen(); else kartenzahlungBerechnen();
+}
+
+function trinkgeldUI(art) {
+  const prefix = art === "Bar" ? "bar" : "karte";
+  const wert = trinkgeldBetrag(art);
+  const anzeige = $(prefix + "TrinkgeldAnzeige");
+  if (anzeige) anzeige.textContent = euro(wert);
+  document.querySelectorAll(`[data-trinkgeld-art="${art}"][data-trinkgeld-wert]`).forEach(btn => {
+    btn.classList.toggle("aktiv", Math.abs(Number(btn.dataset.trinkgeldWert) - wert) < 0.001);
+  });
+  const frei = $(prefix + "TrinkgeldFrei");
+  if (frei && document.activeElement !== frei) frei.value = wert && ![0.5,1,2].includes(wert) ? wert.toFixed(2).replace(".", ",") : "";
+  if (art === "Bar" && $("barzahlungGesamt")) $("barzahlungGesamt").textContent = euro(zahlungGesamtpreis("Bar"));
+  if (art === "Karte" && $("kartenzahlungGesamt")) $("kartenzahlungGesamt").textContent = euro(zahlungGesamtpreis("Karte"));
+}
+
+function trinkgeldReset(art) { zahlungsTrinkgeld[art] = 0; trinkgeldUI(art); }
+
 function gewaehlterPfandArtikel(art) {
   const liste = pfandArtikelLaden();
   const zustand = zahlungsPfand[art];
@@ -1915,11 +1952,11 @@ function pfandZuschlag(art) {
   return a ? Math.round(a.preis * Math.max(1, z.menge) * 100) / 100 : 0;
 }
 
-function zahlungGesamtpreis(art) { return Math.round((gesamtpreis() + pfandZuschlag(art)) * 100) / 100; }
+function zahlungGesamtpreis(art) { return Math.round((gesamtpreis() + pfandZuschlag(art) + trinkgeldBetrag(art)) * 100) / 100; }
 
 /* VERKAUF */
 
-function verkaufAbschliessen(zahlungsart) {
+function verkaufAbschliessen(zahlungsart, zahlungsMeta = null) {
   const grundGesamt = gesamtpreis();
   if (!grundGesamt) return;
   const positionen = getraenke.filter(g => warenkorb[g.id]).map(g => ({ getraenkId: g.id, name: g.name, preis: g.preis, anzahl: warenkorb[g.id] }));
@@ -1928,12 +1965,24 @@ function verkaufAbschliessen(zahlungsart) {
     const a = gewaehlterPfandArtikel(zahlungsart);
     if (a) positionen.push({ getraenkId: null, name: "Pfand " + a.name, preis: a.preis, anzahl: Math.max(1, z.menge), typ: "pfandverkauf", pfandArtikelId: a.id, pfandWert: a.preis });
   }
+  const tip = trinkgeldBetrag(zahlungsart);
+  if (tip > 0) positionen.push({ getraenkId: null, name: "Trinkgeld", preis: tip, anzahl: 1, typ: "trinkgeld" });
   const gesamt = zahlungGesamtpreis(zahlungsart);
+  if (zahlungsart === "Karte" && zahlungsMeta?.sumupTransactionId) {
+    positionen.push({
+      typ: "sumup_meta",
+      sumupTransactionId: zahlungsMeta.sumupTransactionId,
+      sumupCheckoutId: zahlungsMeta.sumupCheckoutId || null,
+      sumupClientTransactionId: zahlungsMeta.sumupClientTransactionId || null
+    });
+  }
   const verkauf = { id: neueID(), datum: new Date().toISOString(), zahlungsart, gesamt, positionen, abgeschlossen: false, abschlussID: null };
   verkaeufe.push(verkauf);
   warenkorb = {};
   zahlungsPfand.Bar = { aktiv:false, artikelId:null, menge:1 };
   zahlungsPfand.Karte = { aktiv:false, artikelId:null, menge:1 };
+  zahlungsTrinkgeld.Bar = 0;
+  zahlungsTrinkgeld.Karte = 0;
   speichernLokal(); queueUpsert("verkaeufe", verkaufZuDB(verkauf)); render();
 }
 
@@ -1958,7 +2007,7 @@ function aggregieren(liste) {
     gesamt += Number(v.gesamt);
 
     v.positionen.forEach(p => {
-      if (p?.typ === "pfandrueckgabe" || p?.typ === "pfandverkauf") return;
+      if (p?.typ === "pfandrueckgabe" || p?.typ === "pfandverkauf" || p?.typ === "sumup_meta" || p?.typ === "sumup_refund_meta" || p?.typ === "trinkgeld") return;
 
       anzahl += p.anzahl;
 
@@ -2040,7 +2089,12 @@ function statistikInhaltRendern() {
 
       <div class="stat">
         <span>Gesamt</span>
-        <strong>${euro(daten.gesamt)}</strong>
+        <strong>${euro(daten.gesamt - trinkgeldSumme(v))}</strong>
+      </div>
+
+      <div class="stat">
+        <span>Trinkgeld</span>
+        <strong>${euro(trinkgeldSumme(v))}</strong>
       </div>
 
     </div>
@@ -2319,6 +2373,13 @@ function abschlussBerechnen() {
     .filter(x => x.zahlungsart === "Karte")
     .reduce((summe, x) => summe + Number(x.gesamt), 0);
 
+  const trinkgeldBar = trinkgeldSumme(v, "Bar");
+  const trinkgeldKarte = trinkgeldSumme(v, "Karte");
+  const trinkgeldGesamt = trinkgeldBar + trinkgeldKarte;
+  const barUmsatz = bar - trinkgeldBar;
+  const karteUmsatz = karte - trinkgeldKarte;
+  const umsatzOhneTrinkgeld = daten.gesamt - trinkgeldGesamt;
+
   const start = zahl($("anfangsbestandInput").value);
   const einlagen = zahl($("einlagenInput").value);
   const entnahmen = zahl($("entnahmenInput").value);
@@ -2339,6 +2400,12 @@ function abschlussBerechnen() {
     daten,
     bar,
     karte,
+    barUmsatz,
+    karteUmsatz,
+    trinkgeldBar,
+    trinkgeldKarte,
+    trinkgeldGesamt,
+    umsatzOhneTrinkgeld,
     start,
     einlagen,
     entnahmen,
@@ -2361,12 +2428,12 @@ function abschlussAktualisieren() {
 
         <tr>
           <td>Barumsatz</td>
-          <td>${euro(d.bar)}</td>
+          <td>${euro(d.barUmsatz)}</td>
         </tr>
 
         <tr>
           <td>Kartenumsatz</td>
-          <td>${euro(d.karte)}</td>
+          <td>${euro(d.karteUmsatz)}</td>
         </tr>
 
         <tr>
@@ -2379,9 +2446,21 @@ function abschlussAktualisieren() {
           <td>− ${euro(pfandRueckgabenSumme(d.v, "Karte"))}</td>
         </tr>
 
+        <tr>
+          <td>Trinkgeld Bar</td>
+          <td>${euro(d.trinkgeldBar)}</td>
+        </tr>
+        <tr>
+          <td>Trinkgeld Karte</td>
+          <td>${euro(d.trinkgeldKarte)}</td>
+        </tr>
+        <tr>
+          <td>Trinkgeld gesamt</td>
+          <td>${euro(d.trinkgeldGesamt)}</td>
+        </tr>
         <tr class="gesamt">
-          <td>Gesamtumsatz</td>
-          <td>${euro(d.daten.gesamt)}</td>
+          <td>Gesamtumsatz (ohne Trinkgeld)</td>
+          <td>${euro(d.umsatzOhneTrinkgeld)}</td>
         </tr>
 
       </tbody>
@@ -2734,17 +2813,20 @@ async function tagesabschlussTeilen() {
 
           <tr>
             <td>Barumsatz</td>
-            <td>${euro(d.bar)}</td>
+            <td>${euro(d.barUmsatz)}</td>
           </tr>
 
           <tr>
             <td>Kartenumsatz</td>
-            <td>${euro(d.karte)}</td>
+            <td>${euro(d.karteUmsatz)}</td>
           </tr>
 
+          <tr><td>Trinkgeld Bar</td><td>${euro(d.trinkgeldBar)}</td></tr>
+          <tr><td>Trinkgeld Karte</td><td>${euro(d.trinkgeldKarte)}</td></tr>
+          <tr><td>Trinkgeld gesamt</td><td>${euro(d.trinkgeldGesamt)}</td></tr>
           <tr class="gesamt">
-            <td>Gesamtumsatz</td>
-            <td>${euro(d.daten.gesamt)}</td>
+            <td>Gesamtumsatz (ohne Trinkgeld)</td>
+            <td>${euro(d.umsatzOhneTrinkgeld)}</td>
           </tr>
 
         </tbody>
@@ -4616,6 +4698,7 @@ function barzahlungOeffnen() {
     console.error("Pfand-Initialisierung Bar fehlgeschlagen:", err);
     zahlungsPfand.Bar = { aktiv:false, artikelId:null, menge:1 };
   }
+  trinkgeldReset("Bar");
   let gesamtCent = grundCent;
   try { gesamtCent = centWert(zahlungGesamtpreis("Bar")); } catch (_) {}
 
@@ -4664,6 +4747,25 @@ function barzahlungBerechnen() {
   }
 }
 
+document.addEventListener("click", event => {
+  const btn = event.target.closest("[data-trinkgeld-art][data-trinkgeld-wert]");
+  if (!btn) return;
+  const art = btn.dataset.trinkgeldArt;
+  const wert = Number(btn.dataset.trinkgeldWert);
+  // Derselbe Schnellbutton ein zweites Mal = Trinkgeld wieder entfernen.
+  trinkgeldSetzen(art, Math.abs(trinkgeldBetrag(art) - wert) < 0.001 ? 0 : wert);
+});
+
+["Bar", "Karte"].forEach(art => {
+  const prefix = art === "Bar" ? "bar" : "karte";
+  const input = $(prefix + "TrinkgeldFrei");
+  if (input) input.addEventListener("input", () => {
+    const roh = input.value.trim().replace(",", ".");
+    const wert = Number(roh);
+    trinkgeldSetzen(art, Number.isFinite(wert) ? wert : 0);
+  });
+});
+
 $("barButton").onclick = barzahlungOeffnen;
 
 $("barzahlungGegeben").addEventListener("input", barzahlungBerechnen);
@@ -4695,6 +4797,7 @@ function kartenzahlungOeffnen() {
     console.error("Pfand-Initialisierung Karte fehlgeschlagen:", err);
     zahlungsPfand.Karte = { aktiv:false, artikelId:null, menge:1 };
   }
+  trinkgeldReset("Karte");
   let gesamtCent = grundCent;
   try { gesamtCent = centWert(zahlungGesamtpreis("Karte")); } catch (_) {}
 
@@ -4763,33 +4866,65 @@ $("kartenzahlungBestaetigen").onclick = async () => {
   const alterText = button.textContent;
 
   button.disabled = true;
-  button.textContent = "Wird an SumUp gesendet …";
+  button.textContent = "Warte auf SumUp …";
   hinweis.classList.remove("zahlung-fehler", "zahlung-ok");
-  hinweis.textContent = "SumUp Solo wird vorbereitet …";
+  hinweis.textContent = "Zahlung wird an das SumUp Solo gesendet …";
 
   try {
     const { data, error } = await sb.functions.invoke("sumup-payment", {
-      body: { amount: gesamtCent / 100 }
+      body: { action: "create", amount: gesamtCent / 100 }
     });
 
     if (error) throw error;
-    if (!data?.ok) {
-      const detail = data?.result?.errors?.detail || data?.result?.detail || data?.error || "SumUp hat die Zahlung nicht angenommen.";
-      throw new Error(detail);
+    if (!data?.ok) throw new Error(data?.error || data?.result?.detail || "SumUp hat die Zahlung nicht angenommen.");
+
+    const checkoutId = data?.checkoutId || data?.result?.data?.checkout_id || data?.result?.checkout_id;
+    if (!checkoutId) throw new Error("SumUp hat keine Checkout-ID zurückgegeben.");
+
+    hinweis.textContent = "Bitte Karte am SumUp Solo vorhalten …";
+
+    let finalData = null;
+    for (let i = 0; i < 120; i++) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const statusAntwort = await sb.functions.invoke("sumup-payment", {
+        body: { action: "status", checkoutId }
+      });
+      if (statusAntwort.error) throw statusAntwort.error;
+      const statusData = statusAntwort.data;
+      if (!statusData?.ok) throw new Error(statusData?.error || "Zahlungsstatus konnte nicht geprüft werden.");
+
+      const status = String(statusData.status || "pending").toLowerCase();
+      if (status === "pending") continue;
+      finalData = statusData;
+      break;
     }
 
-    hinweis.textContent = "Zahlung wurde an das SumUp Solo gesendet.";
-    hinweis.classList.add("zahlung-ok");
+    if (!finalData) throw new Error("Zeitüberschreitung beim Warten auf SumUp.");
 
-    // Die Edge Function bestätigt hier zunächst, dass SumUp den Checkout angenommen hat.
-    // Die endgültige Zahlungsbestätigung wird in einem nächsten Schritt per Checkout-Status ergänzt.
-    setTimeout(() => {
+    const status = String(finalData.status || "").toLowerCase();
+    if (status === "successful") {
+      hinweis.textContent = "Kartenzahlung erfolgreich.";
+      hinweis.classList.add("zahlung-ok");
+      await new Promise(resolve => setTimeout(resolve, 350));
       $("kartenzahlungDialog").close();
-      verkaufAbschliessen("Karte");
-    }, 500);
+      verkaufAbschliessen("Karte", {
+        sumupTransactionId: finalData.transactionId,
+        sumupCheckoutId: checkoutId,
+        sumupClientTransactionId: finalData.clientTransactionId
+      });
+      return;
+    }
+
+    // Abgebrochene oder fehlgeschlagene Zahlungen werden NICHT als Umsatz gebucht.
+    hinweis.textContent = status === "cancelled"
+      ? "Kartenzahlung wurde abgebrochen. Kein Umsatz gebucht."
+      : "Kartenzahlung fehlgeschlagen. Kein Umsatz gebucht.";
+    hinweis.classList.add("zahlung-fehler");
+    button.disabled = false;
+    button.textContent = alterText;
   } catch (err) {
     console.error("SumUp Kartenzahlung fehlgeschlagen:", err);
-    hinweis.textContent = "SumUp-Fehler: " + (err?.message || "Zahlung konnte nicht gestartet werden.");
+    hinweis.textContent = "SumUp-Fehler: " + (err?.message || "Zahlung konnte nicht abgeschlossen werden.");
     hinweis.classList.add("zahlung-fehler");
     button.disabled = false;
     button.textContent = alterText;
@@ -4916,18 +5051,29 @@ function pfandRueckgabeUI() {
   const a = liste.find(x => String(x.id) === String($("pfandRueckgabeArtikel").value)) || liste[0];
   const menge = Math.max(1, Number($("pfandMenge").value) || 1);
   $("pfandGesamt").textContent = a ? euro(a.preis * menge) : "0,00 €";
-  $("pfandBar").disabled = !a; $("pfandKarte").disabled = !a;
+  $("pfandBar").disabled = !a;
 }
-function pfandOeffnen() { $("pfandMenge").value = "1"; pfandRueckgabeUI(); $("pfandDialog").showModal(); }
+function pfandOeffnen() {
+  $("pfandMenge").value = "1";
+  pfandRueckgabeUI();
+  $("pfandHinweis").textContent = "Pfandrückgabe wird bar ausgezahlt.";
+  $("pfandDialog").showModal();
+}
 $("pfandButton").onclick = pfandOeffnen;
 $("pfandAbbrechen").onclick = () => $("pfandDialog").close();
 $("pfandRueckgabeArtikel").onchange = pfandRueckgabeUI;
 $("pfandMenge").oninput = pfandRueckgabeUI;
 $("pfandMinus").onclick = () => { $("pfandMenge").value = Math.max(1, (Number($("pfandMenge").value)||1)-1); pfandRueckgabeUI(); };
 $("pfandPlus").onclick = () => { $("pfandMenge").value = Math.max(1, (Number($("pfandMenge").value)||1)+1); pfandRueckgabeUI(); };
-function pfandRueckgabeAusDialog(zahlungsart) { const a = pfandArtikelLaden().find(x => String(x.id) === String($("pfandRueckgabeArtikel").value)); if (!a) return; pfandRueckgabeBuchen(zahlungsart, $("pfandMenge").value, a); $("pfandDialog").close(); }
-$("pfandBar").onclick = () => pfandRueckgabeAusDialog("Bar");
-$("pfandKarte").onclick = () => pfandRueckgabeAusDialog("Karte");
+
+function pfandRueckgabeAusDialog() {
+  const a = pfandArtikelLaden().find(x => String(x.id) === String($("pfandRueckgabeArtikel").value));
+  if (!a) return;
+  const menge = Math.max(1, Math.floor(Number($("pfandMenge").value) || 1));
+  pfandRueckgabeBuchen("Bar", menge, a);
+  $("pfandDialog").close();
+}
+$("pfandBar").onclick = pfandRueckgabeAusDialog;
 
 
 $("settingsGetraenkNeu")?.addEventListener("click", () => { neuesGetraenkOeffnen(); });

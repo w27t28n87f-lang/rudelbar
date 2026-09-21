@@ -858,6 +858,18 @@
 
     <div class="barzahlung-schnellwahl" id="barzahlungSchnellwahl"></div>
 
+
+    <div class="trinkgeld-box">
+      <div class="trinkgeld-kopf"><span>Trinkgeld</span><strong id="barTrinkgeldAnzeige">0,00 €</strong></div>
+      <div class="trinkgeld-schnellwahl">
+        <button type="button" data-trinkgeld-art="Bar" data-trinkgeld-wert="0.5">+ 0,50 €</button>
+        <button type="button" data-trinkgeld-art="Bar" data-trinkgeld-wert="1">+ 1,00 €</button>
+        <button type="button" data-trinkgeld-art="Bar" data-trinkgeld-wert="2">+ 2,00 €</button>
+      </div>
+      <label class="trinkgeld-frei-label">Frei
+        <div class="trinkgeld-frei-eingabe"><input id="barTrinkgeldFrei" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 1,50"><span>€</span></div>
+      </label>
+    </div>
     <div class="zahlungs-pfandbox">
       <button type="button" class="zahlungs-pfand-toggle" id="barPfandToggle" onclick="pfandToggle('Bar')">♻️ Pfand hinzufügen</button>
       <div class="zahlungs-pfand-inhalt versteckt" id="barPfandInhalt">
@@ -911,6 +923,18 @@
       <button type="button" id="kartenzahlungPassend">Passend</button>
     </div>
 
+
+    <div class="trinkgeld-box">
+      <div class="trinkgeld-kopf"><span>Trinkgeld</span><strong id="karteTrinkgeldAnzeige">0,00 €</strong></div>
+      <div class="trinkgeld-schnellwahl">
+        <button type="button" data-trinkgeld-art="Karte" data-trinkgeld-wert="0.5">+ 0,50 €</button>
+        <button type="button" data-trinkgeld-art="Karte" data-trinkgeld-wert="1">+ 1,00 €</button>
+        <button type="button" data-trinkgeld-art="Karte" data-trinkgeld-wert="2">+ 2,00 €</button>
+      </div>
+      <label class="trinkgeld-frei-label">Frei
+        <div class="trinkgeld-frei-eingabe"><input id="karteTrinkgeldFrei" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 1,50"><span>€</span></div>
+      </label>
+    </div>
     <div class="zahlungs-pfandbox">
       <button type="button" class="zahlungs-pfand-toggle" id="kartePfandToggle" onclick="pfandToggle('Karte')">♻️ Pfand hinzufügen</button>
       <div class="zahlungs-pfand-inhalt versteckt" id="kartePfandInhalt">
@@ -949,8 +973,8 @@
       <button type="button" id="pfandMinus">−</button><input id="pfandMenge" type="number" inputmode="numeric" min="1" step="1" value="1"><button type="button" id="pfandPlus">+</button>
     </div>
     <div class="barzahlung-gesamt pfand-gesamt"><span>Zurückzahlen</span><strong id="pfandGesamt">0,00 €</strong></div>
-    <p class="barzahlung-hinweis" id="pfandHinweis">Zahlungsweg der ursprünglichen Zahlung wählen.</p>
-    <div class="pfand-zahlung"><button type="button" class="zahlung-button bar" id="pfandBar">BAR ZURÜCK</button><button type="button" class="zahlung-button karte" id="pfandKarte">AUF KARTE ZURÜCK</button></div>
+    <p class="barzahlung-hinweis" id="pfandHinweis">Pfandrückgabe wird bar ausgezahlt.</p>
+    <div class="pfand-zahlung"><button type="button" class="zahlung-button bar" id="pfandBar">BAR ZURÜCK</button></div>
   </div>
 </dialog>
 
@@ -971,7 +995,7 @@
   </div>
 </dialog>
 
-<script src="app.js?v=149"></script>
+<script src="app.js?v=152"></script>
 
 
 </body>

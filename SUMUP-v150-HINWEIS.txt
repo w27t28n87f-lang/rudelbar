@@ -1,0 +1,14 @@
+Rudelbar v150 – SumUp
+
+1. Die PWA bucht Kartenumsatz erst, wenn SumUp den Checkout als "successful" meldet.
+   cancelled/failed werden NICHT in Tagesübersicht oder Tagesabschluss gebucht.
+
+2. Pfandrückgabe auf Karte:
+   - funktioniert für Kartenzahlungen, die ab v150 mit gespeicherter SumUp-Transaktions-ID gebucht wurden
+   - im Pfanddialog wird die ursprüngliche Kartenzahlung ausgewählt
+   - es kann höchstens der auf dieser Zahlung noch offene Pfandbetrag erstattet werden
+   - die Erstattung wird über SumUp auf die ursprüngliche Zahlung zurückgebucht
+
+3. WICHTIG: Die Supabase Edge Function "sumup-payment" muss ebenfalls durch die Datei
+   supabase/functions/sumup-payment/index.ts ersetzt und neu deployed werden.
+   Die API-Schlüssel bleiben ausschließlich als Supabase Secrets gespeichert.
