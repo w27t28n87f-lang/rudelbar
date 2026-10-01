@@ -7,9 +7,9 @@
 
   <title>Rudelbar</title>
 
-  <link rel="manifest" href="manifest.json?v=148">
+  <link rel="manifest" href="manifest.json?v=133">
   <link rel="apple-touch-icon" href="Logo-Haupt-Home.png">
-  <link rel="stylesheet" href="style.css?v=149">
+  <link rel="stylesheet" href="style.css?v=132">
 
 
   <script>
@@ -277,8 +277,6 @@
           </svg>
         </button>
 
-        <button type="button" class="iconbutton pfand-einstellungen-button" id="kassenEinstellungenBtn" aria-label="Kassen-Einstellungen öffnen" title="Einstellungen">⚙️</button>
-
         <button class="hauptbutton" id="getraenkHinzufuegen">
           + Getränk
         </button>
@@ -314,7 +312,6 @@
       <div class="zahlung">
         <button id="barButton" class="zahlung-button bar">BAR</button>
         <button id="karteButton" class="zahlung-button karte">KARTE</button>
-        <button id="pfandButton" class="zahlung-button pfand" type="button"><span class="pfand-button-text">♻️ PFAND<br>RÜCKGABE</span></button>
       </div>
 
       <button id="bestellungLoeschen" class="loeschen-button">
@@ -428,14 +425,10 @@
         <button class="settings-menu-row" type="button" data-settings-page="unternehmen"><span class="settings-menu-icon">🏢</span><span><strong>Unternehmensdaten</strong><small>Kontakt, Bank und Steuer</small></span><b>›</b></button>
         <button class="settings-menu-row" type="button" data-settings-page="rechnungen"><span class="settings-menu-icon">📄</span><span><strong>Rechnungen</strong><small>Mode, Facility Service, Security</small></span><b>›</b></button>
       </div>
-      <div class="settings-menu-group kassen-only-group">
-        <span class="settings-group-title">KASSE</span>
-        <button class="settings-menu-row" type="button" data-settings-page="getraenke"><span class="settings-menu-icon">🍺</span><span><strong>Getränke verwalten</strong><small>Anlegen, bearbeiten und löschen</small></span><b>›</b></button>
-        <button class="settings-menu-row" type="button" data-settings-page="pfand"><span class="settings-menu-icon">♻️</span><span><strong>Pfand verwalten</strong><small>Bezeichnung und Preis</small></span><b>›</b></button>
-      </div>
       <div class="settings-menu-group superuser-only">
         <span class="settings-group-title">APP</span>
         <button class="settings-menu-row" type="button" data-settings-page="darstellung"><span class="settings-menu-icon">🎨</span><span><strong>Darstellung</strong><small>Startbereich, Ansicht, Animationen</small></span><b>›</b></button>
+        <button class="settings-menu-row" type="button" data-settings-page="kasse"><span class="settings-menu-icon">🧹</span><span><strong>Kasse zurücksetzen</strong><small>Testverkäufe und Testabschlüsse löschen</small></span><b>›</b></button>
       </div>
       <div class="settings-menu-group">
         <span class="settings-group-title">INFO</span>
@@ -480,35 +473,25 @@
       <button id="rechnungSettingsSpeichernRechnung" class="hauptbutton voll settings-save" type="button">Rechnungseinstellungen speichern</button></section>
     </div>
 
-    <div id="settingsPageGetraenke" class="settings-page">
-      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Getränke verwalten</h3>
-      <p class="settings-page-sub">Getränke zentral anlegen, bearbeiten oder löschen. Die Kassenansicht bleibt dadurch aufgeräumt.</p>
-      <div id="settingsGetraenkeListe" class="kassen-settings-liste"></div>
-      <button id="settingsGetraenkNeu" class="hauptbutton voll settings-save" type="button">+ Neues Getränk anlegen</button>
-    </div>
-
-    <div id="settingsPagePfand" class="settings-page">
-      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Pfand verwalten</h3>
-      <p class="settings-page-sub">Nur Bezeichnung und Preis. Diese Pfandartikel stehen anschließend in Barzahlung, Kartenzahlung und Pfandrückgabe zur Verfügung.</p>
-      <h4 class="settings-subtitle">Gespeicherte Pfandartikel</h4>
-      <div id="settingsPfandListe" class="kassen-settings-liste"></div>
-      <div class="pfand-neu-box settings-section">
-        <label>Bezeichnung<input id="settingsPfandName" type="text" placeholder="z. B. Becher"></label>
-        <label>Preis<input id="settingsPfandPreis" type="text" inputmode="decimal" placeholder="2,00"></label>
-        <button type="button" class="hauptbutton voll" id="settingsPfandNeu">+ Pfandartikel anlegen</button>
-      </div>
-      <p class="barzahlung-hinweis" id="settingsPfandHinweis"></p>
-    </div>
-
     <div id="settingsPageDarstellung" class="settings-page superuser-only-page">
       <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Darstellung</h3><section class="settings-section"><label>Startbereich nach der Anmeldung<select id="settingsStartbereich"><option value="start">Bereichsauswahl</option><option value="kneipe">Mobile Kneipe</option><option value="mode">Mode</option><option value="service">Facility Service</option><option value="security">Security</option></select></label><label>Creator-Produktkarten auf dem Handy<select id="settingsCreatorSpalten"><option value="2">2 Spalten, größere Vorschau</option><option value="3">3 Spalten, kompakter</option></select></label><label class="settings-check"><input id="settingsAnimationen" type="checkbox" checked> Animationen verwenden</label></section>
+    </div>
+
+    <div id="settingsPageKasse" class="settings-page superuser-only-page">
+      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Kasse zurücksetzen</h3>
+      <section class="settings-section konto-gefahr">
+        <h4 class="settings-subtitle">Testdaten vollständig löschen</h4>
+        <p class="settings-hinweis">Löscht alle Verkäufe und Tagesabschlüsse aus dieser Rudelbar-Kasse, sowohl auf diesem Gerät als auch in Supabase. Getränke, Preise, Benutzer, Teamdaten und Einstellungen bleiben erhalten.</p>
+        <p class="settings-hinweis"><strong>Achtung:</strong> Nach dem ersten echten Verkauf nicht mehr als Test-Reset verwenden. Die gelöschten Kassendaten können nicht wiederhergestellt werden.</p>
+        <button id="settingsKasseReset" class="danger-button voll" type="button">🧹 Test-/Kassendaten zurücksetzen</button>
+      </section>
     </div>
 
     <div id="settingsPageInfo" class="settings-page">
       <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">App-Informationen</h3>
       <section class="settings-section">
         <div class="settings-info">
-          <div><span>Version</span><strong>Rudelbar v147</strong></div>
+          <div><span>Version</span><strong>Rudelbar v120</strong></div>
           <div><span>Zugang</span><strong id="settingsZugangInfo">–</strong></div>
         </div>
         <p class="settings-hinweis">Superuser verwalten die App vollständig. Mitarbeiter sehen in den Einstellungen ausschließlich ihr eigenes Konto und die App-Informationen.</p>
@@ -822,6 +805,7 @@
       </div>
       <button class="sekundaer" id="notizenSchliessen" type="button">Fertig</button>
     </div>
+    <p class="notizen-hinweis">Hier kann jeder im Rudel kurz festhalten, was verbessert, besorgt oder erledigt werden soll.</p>
     <label class="notizen-neu-label">Neue Nachricht
       <textarea id="notizenText" rows="3" placeholder="z. B. Bitte noch eine zweite Kabeltrommel für den Bierwagen besorgen."></textarea>
     </label>
@@ -857,34 +841,6 @@
     </div>
 
     <div class="barzahlung-schnellwahl" id="barzahlungSchnellwahl"></div>
-
-
-    <div class="trinkgeld-box">
-      <div class="trinkgeld-kopf"><span>Trinkgeld</span><strong id="barTrinkgeldAnzeige">0,00 €</strong></div>
-      <div class="trinkgeld-schnellwahl">
-        <button type="button" data-trinkgeld-art="Bar" data-trinkgeld-wert="0.5">+ 0,50 €</button>
-        <button type="button" data-trinkgeld-art="Bar" data-trinkgeld-wert="1">+ 1,00 €</button>
-        <button type="button" data-trinkgeld-art="Bar" data-trinkgeld-wert="2">+ 2,00 €</button>
-      </div>
-      <label class="trinkgeld-frei-label">Frei
-        <div class="trinkgeld-frei-eingabe"><input id="barTrinkgeldFrei" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 1,50"><span>€</span></div>
-      </label>
-    </div>
-    <div class="zahlungs-pfandbox">
-      <button type="button" class="zahlungs-pfand-toggle" id="barPfandToggle" onclick="pfandToggle('Bar')">♻️ Pfand hinzufügen</button>
-      <div class="zahlungs-pfand-inhalt versteckt" id="barPfandInhalt">
-        <label>Pfandartikel
-          <select id="barPfandArtikel"></select>
-        </label>
-        <div class="zahlungs-pfand-menge-label">Anzahl</div>
-        <div class="zahlungs-pfand-menge">
-          <button type="button" id="barPfandMinus" onclick="pfandMengeAendern('Bar', -1)">−</button>
-          <strong id="barPfandMenge">1</strong>
-          <button type="button" id="barPfandPlus" onclick="pfandMengeAendern('Bar', 1)">+</button>
-        </div>
-        <div class="zahlungs-pfand-summe"><span>Pfand gesamt</span><strong id="barPfandSumme">0,00 €</strong></div>
-      </div>
-    </div>
 
     <div class="barzahlung-rueckgeld" id="barzahlungRueckgeldBox">
       <span>Rückgeld</span>
@@ -923,34 +879,6 @@
       <button type="button" id="kartenzahlungPassend">Passend</button>
     </div>
 
-
-    <div class="trinkgeld-box">
-      <div class="trinkgeld-kopf"><span>Trinkgeld</span><strong id="karteTrinkgeldAnzeige">0,00 €</strong></div>
-      <div class="trinkgeld-schnellwahl">
-        <button type="button" data-trinkgeld-art="Karte" data-trinkgeld-wert="0.5">+ 0,50 €</button>
-        <button type="button" data-trinkgeld-art="Karte" data-trinkgeld-wert="1">+ 1,00 €</button>
-        <button type="button" data-trinkgeld-art="Karte" data-trinkgeld-wert="2">+ 2,00 €</button>
-      </div>
-      <label class="trinkgeld-frei-label">Frei
-        <div class="trinkgeld-frei-eingabe"><input id="karteTrinkgeldFrei" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 1,50"><span>€</span></div>
-      </label>
-    </div>
-    <div class="zahlungs-pfandbox">
-      <button type="button" class="zahlungs-pfand-toggle" id="kartePfandToggle" onclick="pfandToggle('Karte')">♻️ Pfand hinzufügen</button>
-      <div class="zahlungs-pfand-inhalt versteckt" id="kartePfandInhalt">
-        <label>Pfandartikel
-          <select id="kartePfandArtikel"></select>
-        </label>
-        <div class="zahlungs-pfand-menge-label">Anzahl</div>
-        <div class="zahlungs-pfand-menge">
-          <button type="button" id="kartePfandMinus" onclick="pfandMengeAendern('Karte', -1)">−</button>
-          <strong id="kartePfandMenge">1</strong>
-          <button type="button" id="kartePfandPlus" onclick="pfandMengeAendern('Karte', 1)">+</button>
-        </div>
-        <div class="zahlungs-pfand-summe"><span>Pfand gesamt</span><strong id="kartePfandSumme">0,00 €</strong></div>
-      </div>
-    </div>
-
     <p class="barzahlung-hinweis" id="kartenzahlungHinweis"></p>
 
     <button type="button" class="hauptbutton barzahlung-bestaetigen" id="kartenzahlungBestaetigen" disabled>
@@ -959,44 +887,7 @@
   </div>
 </dialog>
 
-
-<dialog id="pfandDialog">
-  <div class="dialogbox barzahlung-dialogbox pfand-dialogbox">
-    <div class="dialog-kopf">
-      <div><small class="barzahlung-kicker">PFANDRÜCKGABE</small><h2>Pfand zurücknehmen</h2></div>
-      <button type="button" class="sekundaer" id="pfandAbbrechen">✕</button>
-    </div>
-    <label class="barzahlung-label">Pfandartikel</label>
-    <select id="pfandRueckgabeArtikel" class="pfand-select"></select>
-    <label class="barzahlung-label">Anzahl</label>
-    <div class="pfand-mengen-zeile">
-      <button type="button" id="pfandMinus">−</button><input id="pfandMenge" type="number" inputmode="numeric" min="1" step="1" value="1"><button type="button" id="pfandPlus">+</button>
-    </div>
-    <div class="barzahlung-gesamt pfand-gesamt"><span>Zurückzahlen</span><strong id="pfandGesamt">0,00 €</strong></div>
-    <p class="barzahlung-hinweis" id="pfandHinweis">Pfandrückgabe wird bar ausgezahlt.</p>
-    <div class="pfand-zahlung"><button type="button" class="zahlung-button bar" id="pfandBar">BAR ZURÜCK</button></div>
-  </div>
-</dialog>
-
-<dialog id="pfandEinstellungenDialog">
-  <div class="dialogbox gross pfand-settings-dialogbox">
-    <div class="dialog-kopf">
-      <div><small class="barzahlung-kicker">GETRÄNKE · EINSTELLUNGEN</small><h2>Pfand Einstellungen</h2></div>
-      <button type="button" class="sekundaer" id="pfandEinstellungenSchliessen">Fertig</button>
-    </div>
-    <p class="notizen-hinweis">Pfandartikel einmal mit Bezeichnung und Preis anlegen. In Bar- und Kartenzahlung wird danach nur noch Artikel und Anzahl gewählt.</p>
-    <div id="pfandArtikelListe" class="pfand-artikel-liste"></div>
-    <div class="pfand-neu-box">
-      <label>Bezeichnung<input id="pfandNeuName" type="text" placeholder="z. B. Becher"></label>
-      <label>Preis<input id="pfandNeuPreis" type="text" inputmode="decimal" placeholder="2,00"></label>
-      <button type="button" class="hauptbutton voll" id="pfandArtikelHinzufuegen">+ Pfandartikel hinzufügen</button>
-    </div>
-    <p class="barzahlung-hinweis" id="pfandSettingsHinweis"></p>
-  </div>
-</dialog>
-
-<script src="app.js?v=152"></script>
-
+<script src="app.js?v=135"></script>
 
 </body>
 </html>
