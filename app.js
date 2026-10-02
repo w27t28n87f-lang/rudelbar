@@ -4353,6 +4353,54 @@ function barzahlungBerechnen() {
   }
 }
 
+// RUDELBAR v153 REBUILD 2: Pfandrückgabe als dritter Kassenbutton
+const PFAND_WERT = 2.00;
+
+function pfandMengeWert() {
+  const feld = $("pfandMenge");
+  let menge = Math.floor(Number(feld.value || 1));
+  if (!Number.isFinite(menge) || menge < 1) menge = 1;
+  feld.value = menge;
+  return menge;
+}
+
+function pfandAktualisieren() {
+  const menge = pfandMengeWert();
+  $("pfandGesamt").textContent = euro(menge * PFAND_WERT);
+}
+
+function pfandOeffnen() {
+  $("pfandMenge").value = "1";
+  pfandAktualisieren();
+  $("pfandDialog").showModal();
+}
+
+function pfandRueckgabeSpeichern() {
+  const menge = pfandMengeWert();
+  const gesamt = -(menge * PFAND_WERT);
+  const verkauf = {
+    id: neueID(),
+    datum: new Date().toISOString(),
+    zahlungsart: "Bar",
+    gesamt,
+    positionen: [{ getraenkId: "pfand-rueckgabe", name: "Pfandrückgabe", preis: -PFAND_WERT, anzahl: menge }],
+    abgeschlossen: false,
+    abschlussID: null
+  };
+  verkaeufe.push(verkauf);
+  speichernLokal();
+  queueUpsert("verkaeufe", verkaufZuDB(verkauf));
+  $("pfandDialog").close();
+  render();
+}
+
+$("pfandButton").onclick = pfandOeffnen;
+$("pfandMinus").onclick = () => { $("pfandMenge").value = Math.max(1, pfandMengeWert() - 1); pfandAktualisieren(); };
+$("pfandPlus").onclick = () => { $("pfandMenge").value = pfandMengeWert() + 1; pfandAktualisieren(); };
+$("pfandMenge").addEventListener("input", pfandAktualisieren);
+$("pfandAbbrechen").onclick = () => $("pfandDialog").close();
+$("pfandBestaetigen").onclick = pfandRueckgabeSpeichern;
+
 $("barButton").onclick = barzahlungOeffnen;
 
 $("barzahlungGegeben").addEventListener("input", barzahlungBerechnen);

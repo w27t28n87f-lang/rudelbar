@@ -312,6 +312,7 @@
       <div class="zahlung">
         <button id="barButton" class="zahlung-button bar">BAR</button>
         <button id="karteButton" class="zahlung-button karte">KARTE</button>
+        <button id="pfandButton" class="zahlung-button pfand"><span class="pfand-button-text">PFAND<br>ZURÜCK</span></button>
       </div>
 
       <button id="bestellungLoeschen" class="loeschen-button">
@@ -808,6 +809,26 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+
+<dialog id="pfandDialog">
+  <div class="dialogbox pfand-dialogbox">
+    <div class="dialog-kopf">
+      <div><small class="barzahlung-kicker">PFANDRÜCKGABE</small><h2>Becher zurück</h2></div>
+      <button type="button" class="sekundaer" id="pfandAbbrechen">✕</button>
+    </div>
+    <p>Pfandwert: <strong>2,00 € pro Becher</strong></p>
+    <div class="pfand-mengen-zeile">
+      <button type="button" id="pfandMinus">−</button>
+      <input id="pfandMenge" type="number" inputmode="numeric" min="1" step="1" value="1">
+      <button type="button" id="pfandPlus">+</button>
+    </div>
+    <div class="barzahlung-gesamt pfand-gesamt"><span>Auszahlung</span><strong id="pfandGesamt">2,00 €</strong></div>
+    <p class="barzahlung-hinweis">Pfandrückgabe wird als Barauszahlung verbucht.</p>
+    <button type="button" class="hauptbutton pfand-speichern" id="pfandBestaetigen">Pfand bar auszahlen</button>
+  </div>
+</dialog>
+
 <dialog id="barzahlungDialog">
   <div class="dialogbox barzahlung-dialogbox">
     <div class="dialog-kopf">
@@ -876,7 +897,7 @@
   </div>
 </dialog>
 
-<script src="app.js?v=153-rebuild1"></script>
+<script src="app.js?v=153-rebuild2-pfand"></script>
 
 </body>
 </html>
