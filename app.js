@@ -4504,10 +4504,59 @@ $("kartenzahlungPassend").onclick = () => {
 
 $("kartenzahlungAbbrechen").onclick = () => $("kartenzahlungDialog").close();
 
-$("kartenzahlungBestaetigen").onclick = () => {
+async function sumupKartenzahlungStarten(betragCent) {
+  const button = $("kartenzahlungBestaetigen");
+  const hinweis = $("kartenzahlungHinweis");
+  const alterText = button.textContent;
+
+  button.disabled = true;
+  button.textContent = "SumUp wird gestartet …";
+  hinweis.classList.remove("zahlung-fehler", "zahlung-ok");
+  hinweis.textContent = "Zahlung wird an das SumUp Solo gesendet …";
+
+  try {
+    const { data, error } = await sb.functions.invoke("sumup-payment", {
+      body: {
+        action: "checkout",
+        amount: betragCent,
+        amount_cent: betragCent,
+        currency: "EUR",
+        description: "Rudelbar Kartenzahlung"
+      }
+    });
+
+    if (error) throw error;
+
+    const status = String(data?.status || data?.payment_status || "").toLowerCase();
+    const erfolgreich = data?.success === true || data?.successful === true || status === "successful";
+
+    if (!erfolgreich) {
+      const meldung = data?.message || data?.error ||
+        (status === "cancelled" ? "Zahlung wurde am Terminal abgebrochen." :
+         status === "failed" ? "Kartenzahlung fehlgeschlagen." :
+         "SumUp hat die Zahlung nicht als erfolgreich bestätigt.");
+      throw new Error(meldung);
+    }
+
+    hinweis.textContent = "Zahlung erfolgreich.";
+    hinweis.classList.add("zahlung-ok");
+    $("kartenzahlungDialog").close();
+    verkaufAbschliessen("Karte", kartePfandAnzahl);
+  } catch (fehler) {
+    console.error("SumUp Kartenzahlung:", fehler);
+    hinweis.textContent = "SumUp: " + (fehler?.message || "Verbindung fehlgeschlagen.");
+    hinweis.classList.add("zahlung-fehler");
+  } finally {
+    button.textContent = alterText;
+    kartenzahlungBerechnen();
+  }
+}
+
+$("kartenzahlungBestaetigen").onclick = async () => {
   if ($("kartenzahlungBestaetigen").disabled) return;
-  $("kartenzahlungDialog").close();
-  verkaufAbschliessen("Karte", kartePfandAnzahl);
+  const betragCent = zahlGesamtCent(kartePfandAnzahl);
+  if (betragCent <= 0) return;
+  await sumupKartenzahlungStarten(betragCent);
 };
 
 $("bestellungLoeschen").onclick = () => {

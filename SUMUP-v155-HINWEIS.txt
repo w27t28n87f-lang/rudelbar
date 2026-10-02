@@ -1,0 +1,19 @@
+RUDELBAR v155 – SUMUP REPARATUR
+
+- Kartenzahlung wird nicht mehr lokal verbucht, bevor SumUp "successful" meldet.
+- cancelled / failed werden nicht als Verkauf gespeichert.
+- Pfand und Mengensteuerung aus v154 bleiben erhalten.
+- Service-Worker-Cache auf v155-sumup angehoben.
+
+WICHTIG:
+Die PWA ruft die Supabase Edge Function "sumup-payment" auf.
+Falls die bereits früher funktionierende Function noch deployed ist und das gleiche Schema nutzt, reicht das Hochladen der Webdateien.
+Falls die Function fehlt/abweicht, liegt die aktuelle Function unter:
+supabase/functions/sumup-payment/index.ts
+
+Benötigte Supabase Secrets:
+SUMUP_API_KEY
+SUMUP_MERCHANT_CODE
+SUMUP_READER_ID
+SUMUP_AFFILIATE_KEY
+optional: SUMUP_AFFILIATE_APP_ID
