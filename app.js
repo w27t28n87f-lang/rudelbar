@@ -86,28 +86,11 @@ function euro(wert) {
 }
 
 function zahl(text) {
-  const raw = String(text ?? "").trim().replace(/\s/g, "");
-  if (!raw) return 0;
-
-  let normalisiert = raw;
-
-  const hatKomma = normalisiert.includes(",");
-  const hatPunkt = normalisiert.includes(".");
-
-  if (hatKomma && hatPunkt) {
-    // Das zuletzt vorkommende Trennzeichen als Dezimaltrenner behandeln.
-    if (normalisiert.lastIndexOf(",") > normalisiert.lastIndexOf(".")) {
-      normalisiert = normalisiert.replace(/\./g, "").replace(",", ".");
-    } else {
-      normalisiert = normalisiert.replace(/,/g, "");
-    }
-  } else if (hatKomma) {
-    normalisiert = normalisiert.replace(",", ".");
-  }
-
-  normalisiert = normalisiert.replace(/[^0-9.-]/g, "");
-  const wert = Number(normalisiert);
-  return Number.isFinite(wert) ? wert : 0;
+  return Number(
+    String(text)
+      .replace(/\./g, "")
+      .replace(",", ".")
+  ) || 0;
 }
 
 function esc(text) {
@@ -536,7 +519,7 @@ function appSettingsSpeichern(){
   appSettingsAnwenden();
 }
 function settingsSeiteOeffnen(name="home") {
-  const geschuetzt=["team","unternehmen","rechnungen","darstellung","kasse"];
+  const geschuetzt=["team","unternehmen","rechnungen","darstellung"];
   if (aktuelleRolle !== "superuser" && geschuetzt.includes(name)) name="home";
   document.querySelectorAll(".settings-page").forEach(el=>el.classList.remove("aktiv"));
   const id=name==="home"?"settingsHome":"settingsPage"+name[0].toUpperCase()+name.slice(1);
@@ -549,72 +532,6 @@ function settingsRolleAnwenden(){
   document.querySelectorAll(".superuser-only-page").forEach(el=>{
     if (aktuelleRolle !== "superuser") el.classList.remove("aktiv");
   });
-}
-
-async function kassendatenZuruecksetzen(){
-  if (aktuelleRolle !== "superuser") {
-    alert("Nur Superuser dürfen die Kassendaten zurücksetzen.");
-    return;
-  }
-
-  const erste = confirm(
-    "Wirklich ALLE Verkäufe und Tagesabschlüsse löschen?\n\nGetränke, Preise, Benutzer und Einstellungen bleiben erhalten."
-  );
-  if (!erste) return;
-
-  const bestaetigung = prompt(
-    'Zur Sicherheit bitte RESET eingeben.\n\nDiese Aktion kann nicht rückgängig gemacht werden.'
-  );
-  if (String(bestaetigung || "").trim().toUpperCase() !== "RESET") {
-    alert("Abgebrochen. Es wurde nichts gelöscht.");
-    return;
-  }
-
-  const btn = $("settingsKasseReset");
-  const alterText = btn?.textContent;
-  if (btn) { btn.disabled = true; btn.textContent = "Kassendaten werden gelöscht…"; }
-
-  try {
-    // Verhindert, dass Realtime während des Resets alte Zwischenstände zurücklädt.
-    if (realtimeChannel) {
-      try { await sb.removeChannel(realtimeChannel); } catch {}
-      realtimeChannel = null;
-    }
-
-    // Bereits vorgemerkte Uploads/Löschungen dieser Tabellen dürfen nach dem Reset
-    // nicht wieder abgespielt werden.
-    syncQueue = syncQueue.filter(e => !["verkaeufe", "tagesabschluesse"].includes(e?.table));
-    localStorage.setItem(SYNC_KEY, JSON.stringify(syncQueue));
-
-    const [vResult, aResult] = await Promise.all([
-      sb.from("verkaeufe").delete().not("id", "is", null),
-      sb.from("tagesabschluesse").delete().not("id", "is", null)
-    ]);
-
-    if (vResult.error) throw new Error("Verkäufe: " + vResult.error.message);
-    if (aResult.error) throw new Error("Tagesabschlüsse: " + aResult.error.message);
-
-    // Erst nach erfolgreichem Löschen in Supabase lokal leeren.
-    verkaeufe = [];
-    abschluesse = [];
-    localStorage.setItem(VERKAEUFE_KEY, "[]");
-    localStorage.setItem(ABSCHLUSS_KEY, "[]");
-    localStorage.setItem(SYNC_KEY, JSON.stringify(syncQueue));
-
-    render();
-    if ($("statistikDialog")?.open) statistikInhaltRendern();
-    if ($("abschlussDialog")?.open) abschlussAktualisieren();
-
-    realtimeStarten();
-    alert("Kassendaten gelöscht. Verkäufe und Tagesabschlüsse stehen jetzt wieder auf 0.");
-    settingsSeiteOeffnen("home");
-  } catch (error) {
-    console.error(error);
-    realtimeStarten();
-    alert("Reset fehlgeschlagen.\n\n" + (error?.message || "Unbekannter Fehler"));
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = alterText || "🧹 Test-/Kassendaten zurücksetzen"; }
-  }
 }
 
 async function eigenesKontoLoeschen(){
@@ -1281,44 +1198,28 @@ async function ersteSynchronisierung() {
 
 /* REMOTE KOMPLETT NEU LADEN */
 
-let remoteNeuLadenLaeuft = false;
-
 async function remoteNeuLaden() {
-  if (
-    remoteNeuLadenLaeuft ||
-    !angemeldet ||
-    !navigator.onLine ||
-    syncQueue.length
-  ) return;
+  if (!angemeldet || !navigator.onLine || syncQueue.length) return;
 
-  remoteNeuLadenLaeuft = true;
+  const [g, v, a, m] = await Promise.all([
+    sb.from("getraenke").select("*").eq("aktiv", true),
+    sb.from("verkaeufe").select("*"),
+    sb.from("tagesabschluesse").select("*"),
+    sb.from("moduldaten").select("*")
+  ]);
 
-  try {
-    const [g, v, a, m] = await Promise.all([
-      sb.from("getraenke").select("*").eq("aktiv", true),
-      sb.from("verkaeufe").select("*"),
-      sb.from("tagesabschluesse").select("*"),
-      sb.from("moduldaten").select("*")
-    ]);
+  if (g.error || v.error || a.error || m.error) return;
 
-    if (g.error || v.error || a.error || m.error) {
-      console.warn("Remote-Neuladen fehlgeschlagen:", g.error, v.error, a.error, m.error);
-      return;
-    }
+  getraenke = g.data.map(getraenkVonDB);
+  verkaeufe = v.data.map(verkaufVonDB);
+  abschluesse = a.data.map(abschlussVonDB);
+  remoteModuldatenLokalSpeichern(m.data || []);
 
-    getraenke = g.data.map(getraenkVonDB);
-    verkaeufe = v.data.map(verkaufVonDB);
-    abschluesse = a.data.map(abschlussVonDB);
-    remoteModuldatenLokalSpeichern(m.data || []);
+  speichernLokal();
+  render();
 
-    speichernLokal();
-    render();
-
-    if ($("statistikDialog")?.open) statistikInhaltRendern();
-    if ($("abschlussDialog")?.open) abschlussAktualisieren();
-  } finally {
-    remoteNeuLadenLaeuft = false;
-  }
+  if ($("statistikDialog").open) statistikInhaltRendern();
+  if ($("abschlussDialog").open) abschlussAktualisieren();
 }
 
 
@@ -4331,7 +4232,6 @@ $("settingsInviteBtn").onclick = () => { settingsSeiteOeffnen("team"); einladung
 $("settingsAppTeilenBtn").onclick = appAdresseTeilen;
 $("settingsLogoutBtn").onclick = () => { if($("einstellungenDialog").open) $("einstellungenDialog").close(); abmelden(); };
 $("settingsKontoLoeschen")?.addEventListener("click", eigenesKontoLoeschen);
-$("settingsKasseReset")?.addEventListener("click", kassendatenZuruecksetzen);
 $("einladungSchliessen").onclick = () => {
   $("einladungDialog").close();
   if ($("einstellungenDialog").open) settingsSeiteOeffnen("team");
@@ -4588,47 +4488,6 @@ window.addEventListener("online", async () => {
 
   realtimeStarten();
 });
-
-
-/* REALTIME / IOS FALLBACK */
-let realtimeFallbackTimer = null;
-
-function realtimeFallbackStarten() {
-  if (realtimeFallbackTimer) clearInterval(realtimeFallbackTimer);
-
-  realtimeFallbackTimer = setInterval(async () => {
-    if (
-      angemeldet &&
-      navigator.onLine &&
-      document.visibilityState === "visible" &&
-      !syncQueue.length
-    ) {
-      await remoteNeuLaden();
-    }
-  }, 2500);
-}
-
-document.addEventListener("visibilitychange", async () => {
-  if (
-    document.visibilityState === "visible" &&
-    angemeldet &&
-    navigator.onLine
-  ) {
-    await syncStarten();
-    if (!syncQueue.length) await remoteNeuLaden();
-    realtimeStarten();
-  }
-});
-
-window.addEventListener("focus", async () => {
-  if (angemeldet && navigator.onLine) {
-    await syncStarten();
-    if (!syncQueue.length) await remoteNeuLaden();
-    realtimeStarten();
-  }
-});
-
-realtimeFallbackStarten();
 
 
 /* START */

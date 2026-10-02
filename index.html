@@ -428,7 +428,6 @@
       <div class="settings-menu-group superuser-only">
         <span class="settings-group-title">APP</span>
         <button class="settings-menu-row" type="button" data-settings-page="darstellung"><span class="settings-menu-icon">🎨</span><span><strong>Darstellung</strong><small>Startbereich, Ansicht, Animationen</small></span><b>›</b></button>
-        <button class="settings-menu-row" type="button" data-settings-page="kasse"><span class="settings-menu-icon">🧹</span><span><strong>Kasse zurücksetzen</strong><small>Testverkäufe und Testabschlüsse löschen</small></span><b>›</b></button>
       </div>
       <div class="settings-menu-group">
         <span class="settings-group-title">INFO</span>
@@ -475,16 +474,6 @@
 
     <div id="settingsPageDarstellung" class="settings-page superuser-only-page">
       <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Darstellung</h3><section class="settings-section"><label>Startbereich nach der Anmeldung<select id="settingsStartbereich"><option value="start">Bereichsauswahl</option><option value="kneipe">Mobile Kneipe</option><option value="mode">Mode</option><option value="service">Facility Service</option><option value="security">Security</option></select></label><label>Creator-Produktkarten auf dem Handy<select id="settingsCreatorSpalten"><option value="2">2 Spalten, größere Vorschau</option><option value="3">3 Spalten, kompakter</option></select></label><label class="settings-check"><input id="settingsAnimationen" type="checkbox" checked> Animationen verwenden</label></section>
-    </div>
-
-    <div id="settingsPageKasse" class="settings-page superuser-only-page">
-      <button class="settings-back" type="button">‹ Zurück</button><h3 class="settings-page-title">Kasse zurücksetzen</h3>
-      <section class="settings-section konto-gefahr">
-        <h4 class="settings-subtitle">Testdaten vollständig löschen</h4>
-        <p class="settings-hinweis">Löscht alle Verkäufe und Tagesabschlüsse aus dieser Rudelbar-Kasse, sowohl auf diesem Gerät als auch in Supabase. Getränke, Preise, Benutzer, Teamdaten und Einstellungen bleiben erhalten.</p>
-        <p class="settings-hinweis"><strong>Achtung:</strong> Nach dem ersten echten Verkauf nicht mehr als Test-Reset verwenden. Die gelöschten Kassendaten können nicht wiederhergestellt werden.</p>
-        <button id="settingsKasseReset" class="danger-button voll" type="button">🧹 Test-/Kassendaten zurücksetzen</button>
-      </section>
     </div>
 
     <div id="settingsPageInfo" class="settings-page">
@@ -887,7 +876,7 @@
   </div>
 </dialog>
 
-<script src="app.js?v=135"></script>
+<script src="app.js?v=132"></script>
 
 </body>
 </html>
