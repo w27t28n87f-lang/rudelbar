@@ -1637,8 +1637,9 @@ function bildVerkleinern(file, maxGroesse = 700, qualitaet = 0.65) {
 
 /* VERKAUF */
 
-function verkaufAbschliessen(zahlungsart) {
-  const gesamt = gesamtpreis();
+function verkaufAbschliessen(zahlungsart, pfandMenge = 0) {
+  pfandMenge = Math.max(0, Math.floor(Number(pfandMenge || 0)));
+  const gesamt = gesamtpreis() + (pfandMenge * PFAND_WERT);
   if (!gesamt) return;
 
   const positionen = getraenke
@@ -1649,6 +1650,13 @@ function verkaufAbschliessen(zahlungsart) {
       preis: g.preis,
       anzahl: warenkorb[g.id]
     }));
+
+  if (pfandMenge > 0) positionen.push({
+    getraenkId: "pfand-verkauf",
+    name: "Pfand",
+    preis: PFAND_WERT,
+    anzahl: pfandMenge
+  });
 
   const verkauf = {
     id: neueID(),
@@ -4304,9 +4312,17 @@ function euroAusCent(cent) {
   return euro(cent / 100);
 }
 
+let barPfandAnzahl = 0;
+let kartePfandAnzahl = 0;
+function zahlGesamtCent(pfandAnzahl=0){ return centWert(gesamtpreis() + Math.max(0,pfandAnzahl)*PFAND_WERT); }
+function barPfandRender(){ $("barPfandMenge").textContent=barPfandAnzahl; $("barzahlungGesamt").textContent=euroAusCent(zahlGesamtCent(barPfandAnzahl)); barzahlungBerechnen(); }
+function kartePfandRender(){ $("kartePfandMenge").textContent=kartePfandAnzahl; $("kartenzahlungGesamt").textContent=euroAusCent(zahlGesamtCent(kartePfandAnzahl)); kartenzahlungBerechnen(); }
+
 function barzahlungOeffnen() {
-  const gesamtCent = centWert(gesamtpreis());
+  barPfandAnzahl = 0;
+  const gesamtCent = zahlGesamtCent(barPfandAnzahl);
   if (gesamtCent <= 0) return;
+  $("barPfandMenge").textContent = "0";
 
   $("barzahlungGesamt").textContent = euroAusCent(gesamtCent);
   $("barzahlungGegeben").value = "";
@@ -4326,7 +4342,7 @@ function barzahlungOeffnen() {
 }
 
 function barzahlungBerechnen() {
-  const gesamtCent = centWert(gesamtpreis());
+  const gesamtCent = zahlGesamtCent(barPfandAnzahl);
   const roh = $("barzahlungGegeben").value.trim().replace(/\s/g, "").replace(",", ".");
   const gegebenCent = Math.round(Number(roh) * 100);
   const gueltig = roh !== "" && Number.isFinite(gegebenCent);
@@ -4401,6 +4417,11 @@ $("pfandMenge").addEventListener("input", pfandAktualisieren);
 $("pfandAbbrechen").onclick = () => $("pfandDialog").close();
 $("pfandBestaetigen").onclick = pfandRueckgabeSpeichern;
 
+$("barPfandMinus").onclick = () => { barPfandAnzahl=Math.max(0,barPfandAnzahl-1); barPfandRender(); };
+$("barPfandPlus").onclick = () => { barPfandAnzahl++; barPfandRender(); };
+$("kartePfandMinus").onclick = () => { kartePfandAnzahl=Math.max(0,kartePfandAnzahl-1); kartePfandRender(); };
+$("kartePfandPlus").onclick = () => { kartePfandAnzahl++; kartePfandRender(); };
+
 $("barButton").onclick = barzahlungOeffnen;
 
 $("barzahlungGegeben").addEventListener("input", barzahlungBerechnen);
@@ -4410,7 +4431,7 @@ $("barzahlungSchnellwahl").onclick = event => {
   const wert = event.target.closest("[data-bar-wert]");
   if (!exakt && !wert) return;
   $("barzahlungGegeben").value = exakt
-    ? (centWert(gesamtpreis()) / 100).toFixed(2).replace(".", ",")
+    ? (zahlGesamtCent(barPfandAnzahl) / 100).toFixed(2).replace(".", ",")
     : Number(wert.dataset.barWert).toFixed(2).replace(".", ",");
   barzahlungBerechnen();
 };
@@ -4420,11 +4441,13 @@ $("barzahlungAbbrechen").onclick = () => $("barzahlungDialog").close();
 $("barzahlungBestaetigen").onclick = () => {
   if ($("barzahlungBestaetigen").disabled) return;
   $("barzahlungDialog").close();
-  verkaufAbschliessen("Bar");
+  verkaufAbschliessen("Bar", barPfandAnzahl);
 };
 
 function kartenzahlungOeffnen() {
-  const gesamtCent = centWert(gesamtpreis());
+  kartePfandAnzahl = 0;
+  const gesamtCent = zahlGesamtCent(kartePfandAnzahl);
+  $("kartePfandMenge").textContent = "0";
   if (gesamtCent <= 0) return;
 
   $("kartenzahlungGesamt").textContent = euroAusCent(gesamtCent);
@@ -4438,7 +4461,7 @@ function kartenzahlungOeffnen() {
 }
 
 function kartenzahlungBerechnen() {
-  const gesamtCent = centWert(gesamtpreis());
+  const gesamtCent = zahlGesamtCent(kartePfandAnzahl);
   const roh = $("kartenzahlungBetrag").value.trim().replace(/\s/g, "").replace(",", ".");
   const betragCent = Math.round(Number(roh) * 100);
   const gueltig = roh !== "" && Number.isFinite(betragCent);
@@ -4475,7 +4498,7 @@ $("karteButton").onclick = kartenzahlungOeffnen;
 $("kartenzahlungBetrag").addEventListener("input", kartenzahlungBerechnen);
 
 $("kartenzahlungPassend").onclick = () => {
-  $("kartenzahlungBetrag").value = (centWert(gesamtpreis()) / 100).toFixed(2).replace(".", ",");
+  $("kartenzahlungBetrag").value = (zahlGesamtCent(kartePfandAnzahl) / 100).toFixed(2).replace(".", ",");
   kartenzahlungBerechnen();
 };
 
@@ -4484,7 +4507,7 @@ $("kartenzahlungAbbrechen").onclick = () => $("kartenzahlungDialog").close();
 $("kartenzahlungBestaetigen").onclick = () => {
   if ($("kartenzahlungBestaetigen").disabled) return;
   $("kartenzahlungDialog").close();
-  verkaufAbschliessen("Karte");
+  verkaufAbschliessen("Karte", kartePfandAnzahl);
 };
 
 $("bestellungLoeschen").onclick = () => {
