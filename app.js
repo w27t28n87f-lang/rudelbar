@@ -1357,6 +1357,12 @@ function renderGetraenke() {
 
         </button>
 
+        <div class="getraenk-menge">
+          <button type="button" data-card-minus="${g.id}" ${anzahl <= 0 ? "disabled" : ""}>−</button>
+          <strong>${anzahl}</strong>
+          <button type="button" data-card-plus="${g.id}">+</button>
+        </div>
+
         <div class="getraenk-aktionen">
 
           <button class="aktion bearbeiten" data-edit="${g.id}">
@@ -1375,6 +1381,25 @@ function renderGetraenke() {
   document.querySelectorAll("[data-add]").forEach(button => {
     button.onclick = () => {
       const id = button.dataset.add;
+      warenkorb[id] = (warenkorb[id] || 0) + 1;
+      render();
+    };
+  });
+
+  document.querySelectorAll("[data-card-minus]").forEach(button => {
+    button.onclick = event => {
+      event.stopPropagation();
+      const id = button.dataset.cardMinus;
+      if ((warenkorb[id] || 0) > 0) warenkorb[id]--;
+      if ((warenkorb[id] || 0) <= 0) delete warenkorb[id];
+      render();
+    };
+  });
+
+  document.querySelectorAll("[data-card-plus]").forEach(button => {
+    button.onclick = event => {
+      event.stopPropagation();
+      const id = button.dataset.cardPlus;
       warenkorb[id] = (warenkorb[id] || 0) + 1;
       render();
     };
