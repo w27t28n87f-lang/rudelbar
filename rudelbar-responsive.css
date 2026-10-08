@@ -63,3 +63,15 @@ img,svg,video{max-width:100%}
 .akademie-rechte {margin-bottom:7px;}
 .akademie-rechte-status {color:#aaa;display:block;margin-bottom:12px;}
 .team-karte {min-width:0;overflow-wrap:anywhere;}
+
+/* v161 – Breitenlayout ohne schmale Handyspalte auf Desktop */
+#bereichStart .bereich-start-inhalt{box-sizing:border-box;width:calc(100% - 32px)!important;max-width:1800px!important;margin-left:auto!important;margin-right:auto!important}
+#bereichStart .bereich-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:clamp(10px,1.2vw,22px)!important;width:100%!important}
+#bereichStart .start-schnellzugriff{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;width:100%!important;max-width:none!important}
+#bereichStart .bereich-karte{min-width:0!important;min-height:clamp(150px,13vw,225px)!important}
+#bereichStart .start-card-akademie{min-height:clamp(150px,13vw,225px)!important}
+#bereichStart .start-wolf-bg{pointer-events:none}
+@media(max-width:1200px){#bereichStart .bereich-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+@media(max-width:850px){#bereichStart .bereich-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}#bereichStart .start-schnellzugriff{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:600px){#bereichStart .bereich-start-inhalt{width:calc(100% - 20px)!important;max-width:540px!important;padding-inline:0!important}#bereichStart .bereich-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}#bereichStart .start-schnellzugriff{grid-template-columns:1fr!important}#bereichStart .bereich-karte{min-height:130px!important}}
+@media(max-width:350px){#bereichStart .bereich-karte{min-height:110px!important}}

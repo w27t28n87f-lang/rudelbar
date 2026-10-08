@@ -34,7 +34,7 @@
     }
     alleHauptansichtenVerstecken();
     document.getElementById('akademieAnsicht')?.classList.remove('versteckt');
-    if(!frame.getAttribute('src'))frame.src='academy/index.html';
+    if(!frame.getAttribute('src'))frame.src='akademie.html';
     window.scrollTo(0,0);
   });
   document.getElementById('akademieZurueck')?.addEventListener('click',()=>startseiteZeigen());

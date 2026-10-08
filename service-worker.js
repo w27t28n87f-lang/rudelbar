@@ -1,13 +1,13 @@
-const CACHE_NAME = "rudelbar-app-cache-v160";
+const CACHE_NAME = "rudelbar-app-cache-v161";
 
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./style.css?v=160",
-  "./app.js?v=160",
-  "./rudelbar-responsive.css?v=160",
-  "./rudelbar-akademie.js?v=160",
-  "./manifest.json?v=160",
+  "./style.css?v=161",
+  "./app.js?v=161",
+  "./rudelbar-responsive.css?v=161",
+  "./rudelbar-akademie.js?v=161",
+  "./manifest.json?v=161",
   "./Logo-Haupt.png",
   "./Logo-Haupt-Home.png",
   "./Logo-Mobile_Kneipe.png",

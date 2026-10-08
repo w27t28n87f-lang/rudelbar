@@ -1,1 +1,19 @@
-{"name":"Unternehmer Akademie","short_name":"Akademie","start_url":"./","display":"standalone","background_color":"#0b1020","theme_color":"#111827","icons":[]}
+{
+  "name": "Rudelbar",
+  "short_name": "Rudelbar",
+  "description": "Rudelbar Unternehmens-App mit Mobile Kneipe, Mode, Facility Service und Security",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#151515",
+  "theme_color": "#151515",
+  "icons": [
+    {
+      "src": "Logo-Haupt-Home.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
