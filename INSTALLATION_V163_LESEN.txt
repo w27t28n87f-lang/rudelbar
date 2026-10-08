@@ -1,0 +1,7 @@
+RUDELBAR v163
+
+Aenderungen: Einheitliche Oberflaeche fuer Bereichsmenue und Datenmodule; Teamfenster ohne horizontales Scrollen (maximal 2 Karten je Reihe, mobil 1).
+
+Installation: Repository vorher sichern. Alle Dateien und Ordner aus diesem ZIP ins GitHub-Repository hochladen, Ordnerstruktur beibehalten. GitHub Pages abwarten, Strg+F5.
+
+Keine SQL-Aenderungen. Kassen- und Teamlogik nicht veraendert. Bitte Teamdialog und alle wichtigen Funktionen nach Deployment testen.
