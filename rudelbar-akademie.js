@@ -12,14 +12,15 @@
   };
   window.rudelbarAcademySaveAccess=async(id,card)=>{
     const status=card.querySelector('[data-akademie-status]');
-    if(aktuelleRolle!=='superuser')return;
-    if(!rightsReady){alert('Akademie-Rechte nicht geladen. SQL-Einrichtung prüfen.');return;}
+    if(aktuelleRolle!=='superuser')return false;
+    if(!rightsReady){alert('Akademie-Rechte nicht geladen. SQL-Einrichtung prüfen.');return false;}
     const selected=[...card.querySelectorAll('[data-akademie-bereich]:checked')].map(x=>x.dataset.akademieBereich);
     if(status)status.textContent='Freigaben werden gespeichert…';
     const {error}=await sb.rpc('academy_set_access',{p_user_id:id,p_areas:selected});
-    if(error){if(status)status.textContent='⚠ Nicht gespeichert: '+error.message;alert('Akademie-Freigaben konnten nicht gespeichert werden: '+error.message);return;}
+    if(error){if(status)status.textContent='⚠ Nicht gespeichert: '+error.message;alert('Akademie-Freigaben konnten nicht gespeichert werden: '+error.message);return false;}
     window.rudelbarAcademyAccess[id]=selected;
     if(status)status.textContent='✓ Freigaben gespeichert';
+    return true;
   };
   const frame=document.getElementById('akademieFrame');
   document.getElementById('akademieStartBtn')?.addEventListener('click',async()=>{

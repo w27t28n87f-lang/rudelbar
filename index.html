@@ -10,7 +10,8 @@
   <link rel="manifest" href="manifest.json?v=161">
   <link rel="apple-touch-icon" href="Logo-Haupt-Home.png">
   <link rel="stylesheet" href="style.css?v=161">
-<link rel="stylesheet" href="rudelbar-responsive.css?v=161">
+<link rel="stylesheet" href="rudelbar-responsive.css?v=162">
+<link rel="stylesheet" href="rudelbar-akademie-layout.css?v=162">
 
 
   <script>
@@ -40,6 +41,18 @@
 
 <!-- STARTSEITE NACH LOGIN -->
 <section id="bereichStart" class="bereich-start versteckt" aria-label="Rudelbar Bereiche">
+  <aside class="rudelbar-side" aria-label="Rudelbar Navigation">
+    <div class="rudelbar-side-brand"><img src="Logo-Haupt.png" alt="Rudelbar"><span>RUDELBAR<br><small>VERWALTUNG</small></span></div>
+    <nav aria-label="Bereiche">
+      <button type="button" class="active" data-rudelbar-nav="start">⌂ &nbsp; Dashboard</button>
+      <button type="button" data-rudelbar-nav="kneipe">🍺 &nbsp; Mobile Kneipe</button>
+      <button type="button" data-rudelbar-nav="mode">👕 &nbsp; Mode</button>
+      <button type="button" data-rudelbar-nav="service">🛠 &nbsp; Facility Service</button>
+      <button type="button" data-rudelbar-nav="security">🛡 &nbsp; Security</button>
+      <button type="button" data-rudelbar-nav="akademie">🎓 &nbsp; Akademie</button>
+    </nav>
+    <div class="rudelbar-side-bottom">Gemeinsam. Überall. Rudelbar.</div>
+  </aside>
   <div class="bereich-start-inhalt">
     <img src="Wolf-Hintergrund.png" class="start-wolf-bg" alt="" aria-hidden="true">
     <div class="start-hero">
@@ -1005,8 +1018,9 @@
   </div>
 </dialog>
 
-<script src="app.js?v=161"></script>
-<script src="rudelbar-akademie.js?v=161"></script>
+<script src="app.js?v=162"></script>
+<script src="rudelbar-akademie.js?v=162"></script>
+<script src="rudelbar-layout.js?v=162"></script>
 
 
 </body>

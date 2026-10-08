@@ -3483,6 +3483,7 @@ function teamButtonAktualisieren(){
 
 async function teamOeffnen(){
   if(aktuelleRolle !== "superuser") return;
+  teamEntwuerfe.clear();
   $("teamDialog")?.showModal();
   const liste=$("teamListe");
   if(liste) liste.innerHTML='<div class="daten-leer"><strong>Team wird geladen…</strong></div>';
@@ -3495,7 +3496,40 @@ function teamBereichLabel(key){
   return ({kneipe:"🍺 Mobile Kneipe",service:"🛠️ Facility",security:"🛡️ Security",mode:"👕 Mode"})[key] || key;
 }
 
+// v162: Entwürfe bleiben auch bei Realtime- und Sync-Neuzeichnungen erhalten.
+const teamEntwuerfe = new Map();
+function teamEntwurfSichern(id, card) {
+  if (!card) return;
+  teamEntwuerfe.set(String(id), {
+    bereiche: [...card.querySelectorAll('[data-team-bereich]:checked')].map(el=>el.dataset.teamBereich),
+    akademie: [...card.querySelectorAll('[data-akademie-bereich]:checked')].map(el=>el.dataset.akademieBereich),
+    notiz: card.querySelector('[data-team-notiz]')?.value ?? ''
+  });
+}
+function teamEntwuerfeAusDOMSichern(){
+  document.querySelectorAll('#teamListe [data-team-id]').forEach(card=>{
+    const id=card.dataset.teamId;
+    if (teamEntwuerfe.has(String(id))) teamEntwurfSichern(id,card);
+  });
+}
+function teamEntwurfAnwenden(card,entwurf){
+  if(!entwurf) return;
+  card.querySelectorAll('[data-team-bereich]').forEach(el=>el.checked=entwurf.bereiche.includes(el.dataset.teamBereich));
+  card.querySelectorAll('[data-akademie-bereich]').forEach(el=>el.checked=entwurf.akademie.includes(el.dataset.akademieBereich));
+  const notiz=card.querySelector('[data-team-notiz]'); if(notiz) notiz.value=entwurf.notiz;
+  const status=card.querySelector('[data-akademie-status]');if(status) status.textContent='Ungespeicherte Änderungen';
+}
+function teamAenderungMerken(event){
+  const el=event.target;
+  if(!el.matches('[data-team-bereich],[data-akademie-bereich],[data-team-notiz]'))return;
+  const card=el.closest('[data-team-id]');if(card)teamEntwurfSichern(card.dataset.teamId,card);
+}
+// Delegierte Listener überleben den Austausch der Mitarbeiterkarten.
+document.getElementById('teamListe')?.addEventListener('change',teamAenderungMerken);
+document.getElementById('teamListe')?.addEventListener('input',teamAenderungMerken);
+
 function teamRendern(){
+  teamEntwuerfeAusDOMSichern();
   const liste=$("teamListe"); if(!liste) return;
   if(aktuelleRolle !== "superuser"){
     liste.innerHTML='<div class="daten-leer"><strong>Kein Zugriff</strong></div>';
@@ -3538,6 +3572,7 @@ function teamRendern(){
       </div>
     </article>`;
   }).join("");
+  liste.querySelectorAll('[data-team-id]').forEach(card=>teamEntwurfAnwenden(card,teamEntwuerfe.get(String(card.dataset.teamId))));
   liste.querySelectorAll("[data-team-save]").forEach(btn=>btn.onclick=()=>teamProfilSpeichern(btn.dataset.teamSave));
   liste.querySelectorAll("[data-team-delete]").forEach(btn=>btn.onclick=()=>teamMitgliedLoeschen(btn.dataset.teamDelete));
 }
@@ -3564,7 +3599,9 @@ async function teamProfilSpeichern(id){
     queueUpsert("moduldaten",modulZuDB(TEAM_BEREICH,TEAM_MODUL,profil));
     syncStarten();
   }
-  await window.rudelbarAcademySaveAccess?.(id,card);
+  const academyOk = await window.rudelbarAcademySaveAccess?.(id,card);
+  if (academyOk === false) return;
+  teamEntwuerfe.delete(String(id));
   teamRendern();
 }
 
