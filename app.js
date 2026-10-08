@@ -42,6 +42,8 @@ let neuesBild = null;
 let verkaufEditID = null;
 let verkaufEditPositionen = [];
 let realtimeChannel = null;
+let onlineTeam = new Map();
+let realtimeVerbindungsstatus = "GETRENNT";
 let angemeldet = false;
 let syncLaeuft = false;
 let aktuellerUser = null;
@@ -86,11 +88,28 @@ function euro(wert) {
 }
 
 function zahl(text) {
-  return Number(
-    String(text)
-      .replace(/\./g, "")
-      .replace(",", ".")
-  ) || 0;
+  const raw = String(text ?? "").trim().replace(/\s/g, "");
+  if (!raw) return 0;
+
+  let normalisiert = raw;
+
+  const hatKomma = normalisiert.includes(",");
+  const hatPunkt = normalisiert.includes(".");
+
+  if (hatKomma && hatPunkt) {
+    // Das zuletzt vorkommende Trennzeichen als Dezimaltrenner behandeln.
+    if (normalisiert.lastIndexOf(",") > normalisiert.lastIndexOf(".")) {
+      normalisiert = normalisiert.replace(/\./g, "").replace(",", ".");
+    } else {
+      normalisiert = normalisiert.replace(/,/g, "");
+    }
+  } else if (hatKomma) {
+    normalisiert = normalisiert.replace(",", ".");
+  }
+
+  normalisiert = normalisiert.replace(/[^0-9.-]/g, "");
+  const wert = Number(normalisiert);
+  return Number.isFinite(wert) ? wert : 0;
 }
 
 function esc(text) {
@@ -263,6 +282,8 @@ function remoteModuldatenLokalSpeichern(rows) {
   if ($("notizenDialog")?.open && typeof notizenRendern === "function") notizenRendern();
   if (typeof teamButtonAktualisieren === "function") teamButtonAktualisieren();
   if ($("teamDialog")?.open && typeof teamRendern === "function") teamRendern();
+  if ($("settingsPagePfand")?.classList.contains("aktiv") && typeof settingsPfandRendern === "function") settingsPfandRendern();
+  if ($("settingsPageGetraenke")?.classList.contains("aktiv") && typeof settingsGetraenkeRendern === "function") settingsGetraenkeRendern();
 }
 
 async function moduldatenErstSynchronisieren(remoteRows) {
@@ -334,7 +355,7 @@ function statusAktualisieren() {
 
 function queueUpsert(table, payload) {
   syncQueue = syncQueue.filter(
-    x => !(x.table === table && x.id === payload.id)
+    x => !(x.table === table && String(x.id) === String(payload.id))
   );
 
   syncQueue.push({
@@ -346,12 +367,12 @@ function queueUpsert(table, payload) {
 
   speichernLokal();
   statusAktualisieren();
-  syncStarten();
+  void syncStarten();
 }
 
 function queueDelete(table, id) {
   syncQueue = syncQueue.filter(
-    x => !(x.table === table && x.id === id)
+    x => !(x.table === table && String(x.id) === String(id))
   );
 
   syncQueue.push({
@@ -362,16 +383,33 @@ function queueDelete(table, id) {
 
   speichernLokal();
   statusAktualisieren();
-  syncStarten();
+  void syncStarten();
+}
+
+async function aenderungBroadcasten(job) {
+  if (!realtimeChannel || realtimeVerbindungsstatus !== "SUBSCRIBED") return;
+
+  try {
+    await realtimeChannel.send({
+      type: "broadcast",
+      event: "data_changed",
+      payload: {
+        table: job.table,
+        id: job.id,
+        action: job.action,
+        user_id: aktuellerUser?.id || null,
+        at: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.warn("Änderungs-Broadcast fehlgeschlagen:", error);
+  }
 }
 
 async function syncStarten() {
-  if (
-    syncLaeuft ||
-    !angemeldet ||
-    !navigator.onLine ||
-    !syncQueue.length
-  ) {
+  if (syncLaeuft) return;
+
+  if (!angemeldet || !navigator.onLine || !syncQueue.length) {
     statusAktualisieren();
     return;
   }
@@ -379,34 +417,87 @@ async function syncStarten() {
   syncLaeuft = true;
   syncStatus("wartet", "Synchronisiere…");
 
-  while (syncQueue.length && navigator.onLine) {
-    const job = syncQueue[0];
+  let gesamtFehler = 0;
+  let etwasGespeichert = false;
 
-    let result;
+  try {
+    // Wichtig: Die Queue wird in Runden verarbeitet. Kommt während eines laufenden
+    // Syncs ein neuer Eintrag hinzu, wird er in der nächsten Runde direkt mitgenommen.
+    // So bleibt kein Getränk, Verkauf, Abschluss oder Moduleintrag bis zum nächsten
+    // App-Neustart hängen.
+    while (navigator.onLine && angemeldet && syncQueue.length) {
+      const jobs = [...syncQueue];
+      let fortschritt = false;
+      let rundenFehler = 0;
 
-    if (job.action === "delete") {
-      result = await sb
-        .from(job.table)
-        .delete()
-        .eq("id", job.id);
-    } else {
-      result = await sb
-        .from(job.table)
-        .upsert(job.payload);
+      for (const job of jobs) {
+        if (!navigator.onLine || !angemeldet) break;
+
+        // Falls derselbe Datensatz inzwischen erneut geändert wurde, nur den aktuellsten
+        // Queue-Eintrag verarbeiten. Ältere Snapshots werden übersprungen.
+        const aktuell = syncQueue.find(
+          x => x.table === job.table && String(x.id) === String(job.id)
+        );
+        if (aktuell !== job) continue;
+
+        let result;
+        try {
+          if (job.action === "delete") {
+            result = await sb
+              .from(job.table)
+              .delete()
+              .eq("id", job.id);
+          } else {
+            result = await sb
+              .from(job.table)
+              .upsert(job.payload, { onConflict: "id" });
+          }
+        } catch (error) {
+          result = { error };
+        }
+
+        if (result?.error) {
+          rundenFehler += 1;
+          gesamtFehler += 1;
+          console.error("Sync Fehler:", job.table, job.id, result.error);
+          continue;
+        }
+
+        const index = syncQueue.indexOf(job);
+        if (index >= 0) syncQueue.splice(index, 1);
+        fortschritt = true;
+        etwasGespeichert = true;
+        speichernLokal();
+
+        // Zusätzlich zu postgres_changes wird auf dem bereits funktionierenden
+        // Realtime-Kanal ein Broadcast verschickt. Damit sehen andere Geräte die
+        // Änderung selbst dann sofort, wenn Postgres-Realtime auf iOS zickt.
+        await aenderungBroadcasten(job);
+      }
+
+      // Verhindert Endlosschleifen bei einem dauerhaft fehlerhaften Datensatz.
+      if (!fortschritt) {
+        if (rundenFehler > 0) break;
+        break;
+      }
     }
-
-    if (result.error) {
-      console.error("Sync Fehler:", result.error);
-      syncStatus("fehler", "Sync-Fehler");
-      break;
-    }
-
-    syncQueue.shift();
+  } finally {
+    syncLaeuft = false;
     speichernLokal();
   }
 
-  syncLaeuft = false;
-  statusAktualisieren();
+  if (gesamtFehler > 0 && syncQueue.length) {
+    syncStatus("fehler", `${syncQueue.length} Sync-Fehler`);
+  } else {
+    statusAktualisieren();
+  }
+
+  // Den Ursprung ebenfalls noch einmal vom Server abgleichen. Damit ist nach einem
+  // erfolgreichen Schreiben garantiert derselbe Datenstand sichtbar wie auf allen
+  // anderen Geräten.
+  if (etwasGespeichert && navigator.onLine && angemeldet) {
+    setTimeout(() => void remoteNeuLaden(), 150);
+  }
 }
 
 
@@ -524,6 +615,8 @@ function settingsSeiteOeffnen(name="home") {
   document.querySelectorAll(".settings-page").forEach(el=>el.classList.remove("aktiv"));
   const id=name==="home"?"settingsHome":"settingsPage"+name[0].toUpperCase()+name.slice(1);
   $(id)?.classList.add("aktiv");
+  if (name === "getraenke") settingsGetraenkeRendern();
+  if (name === "pfand") settingsPfandRendern();
 }
 function settingsRolleAnwenden(){
   document.body.classList.toggle("rolle-mitarbeiter", aktuelleRolle !== "superuser");
@@ -558,6 +651,7 @@ async function eigenesKontoLoeschen(){
 }
 
 function einstellungenOeffnen(){
+  $("einstellungenDialog")?.classList.remove("kassen-only-mode");
   settingsSeiteOeffnen("home");
   $("settingsName").textContent=aktuellerUser?.user_metadata?.name||"–";
   $("settingsEmail").textContent=aktuellerUser?.email||"–";
@@ -583,6 +677,7 @@ function einstellungenSchliessen(){
     rechnungsSettingsAusUI();
   }
   if($("einstellungenDialog").open) $("einstellungenDialog").close();
+  $("einstellungenDialog")?.classList.remove("kassen-only-mode");
 }
 async function appAdresseTeilen(){
   const url=basisAppURL().toString();
@@ -1108,6 +1203,8 @@ async function abmelden() {
     try { await sb.removeChannel(realtimeChannel); } catch {}
     realtimeChannel = null;
   }
+  onlineTeam = new Map();
+  teamOnlineAnzeigeAktualisieren();
 
   await sb.auth.signOut();
   angemeldet = false;
@@ -1135,6 +1232,8 @@ async function ersteSynchronisierung() {
 
   syncStatus("wartet", "Lade Daten…");
 
+  // Jede Tabelle wird unabhängig ausgewertet. Ein Fehler in nur einer Tabelle darf
+  // niemals mehr den kompletten Datenabgleich der Rudelbar blockieren.
   const [
     remoteGetraenke,
     remoteVerkaeufe,
@@ -1147,133 +1246,258 @@ async function ersteSynchronisierung() {
     sb.from("moduldaten").select("*")
   ]);
 
-  if (
-    remoteGetraenke.error ||
-    remoteVerkaeufe.error ||
-    remoteAbschluesse.error ||
-    remoteModuldaten.error
-  ) {
-    console.error(
-      remoteGetraenke.error,
-      remoteVerkaeufe.error,
-      remoteAbschluesse.error,
-      remoteModuldaten.error
-    );
+  const fehler = [];
 
-    syncStatus("fehler", "Verbindung fehlerhaft");
-    return;
-  }
-
-  if (remoteGetraenke.data.length === 0 && getraenke.length) {
+  if (remoteGetraenke.error) {
+    fehler.push("Getränke");
+    console.error("Getränke laden:", remoteGetraenke.error);
+  } else if (remoteGetraenke.data.length === 0 && getraenke.length) {
     getraenke.forEach(g => queueUpsert("getraenke", getraenkZuDB(g)));
-  } else if (remoteGetraenke.data.length) {
-    getraenke = remoteGetraenke.data.map(getraenkVonDB);
+  } else {
+    getraenke = (remoteGetraenke.data || []).map(getraenkVonDB);
   }
 
-  if (remoteVerkaeufe.data.length === 0 && verkaeufe.length) {
+  if (remoteVerkaeufe.error) {
+    fehler.push("Verkäufe");
+    console.error("Verkäufe laden:", remoteVerkaeufe.error);
+  } else if (remoteVerkaeufe.data.length === 0 && verkaeufe.length) {
     verkaeufe.forEach(v => queueUpsert("verkaeufe", verkaufZuDB(v)));
-  } else if (remoteVerkaeufe.data.length) {
-    verkaeufe = remoteVerkaeufe.data.map(verkaufVonDB);
+  } else {
+    verkaeufe = (remoteVerkaeufe.data || []).map(verkaufVonDB);
   }
 
-  if (remoteAbschluesse.data.length === 0 && abschluesse.length) {
-    abschluesse.forEach(a =>
-      queueUpsert("tagesabschluesse", abschlussZuDB(a))
-    );
-  } else if (remoteAbschluesse.data.length) {
-    abschluesse = remoteAbschluesse.data.map(abschlussVonDB);
+  if (remoteAbschluesse.error) {
+    fehler.push("Abschlüsse");
+    console.error("Abschlüsse laden:", remoteAbschluesse.error);
+  } else if (remoteAbschluesse.data.length === 0 && abschluesse.length) {
+    abschluesse.forEach(a => queueUpsert("tagesabschluesse", abschlussZuDB(a)));
+  } else {
+    abschluesse = (remoteAbschluesse.data || []).map(abschlussVonDB);
   }
 
-  await moduldatenErstSynchronisieren(remoteModuldaten.data || []);
-  await teamEigenesProfilSicherstellen();
-  if(aktuelleRolle === "superuser") await teamRemoteLaden();
+  if (remoteModuldaten.error) {
+    const code = remoteModuldaten.error.code ? ` ${remoteModuldaten.error.code}` : "";
+    fehler.push(`Module${code}`);
+    console.error("Moduldaten laden:", remoteModuldaten.error);
+  } else {
+    await moduldatenErstSynchronisieren(remoteModuldaten.data || []);
+  }
+
+  // Team-Funktionen ebenfalls nicht den restlichen Sync blockieren lassen.
+  try {
+    await teamEigenesProfilSicherstellen();
+    if (aktuelleRolle === "superuser") await teamRemoteLaden();
+  } catch (error) {
+    console.warn("Team-Synchronisierung:", error);
+  }
 
   speichernLokal();
   render();
 
   await syncStarten();
-  statusAktualisieren();
+
+  if (fehler.length) {
+    syncStatus("fehler", `Sync-Fehler: ${fehler.join(", ")}`);
+  } else {
+    statusAktualisieren();
+  }
 }
 
 
 /* REMOTE KOMPLETT NEU LADEN */
 
+let remoteNeuLadenLaeuft = false;
+
+function remoteMitWarteschlangeMischen(table, remoteRows) {
+  const map = new Map((remoteRows || []).map(row => [String(row.id), row]));
+  const jobs = syncQueue.filter(job => job.table === table);
+
+  jobs.forEach(job => {
+    const id = String(job.id);
+    if (job.action === "delete") map.delete(id);
+    else if (job.payload) map.set(id, job.payload);
+  });
+
+  return [...map.values()];
+}
+
 async function remoteNeuLaden() {
-  if (!angemeldet || !navigator.onLine || syncQueue.length) return;
+  if (remoteNeuLadenLaeuft || !angemeldet || !navigator.onLine) return;
 
-  const [g, v, a, m] = await Promise.all([
-    sb.from("getraenke").select("*").eq("aktiv", true),
-    sb.from("verkaeufe").select("*"),
-    sb.from("tagesabschluesse").select("*"),
-    sb.from("moduldaten").select("*")
-  ]);
+  remoteNeuLadenLaeuft = true;
 
-  if (g.error || v.error || a.error || m.error) return;
+  try {
+    const [g, v, a, m] = await Promise.all([
+      sb.from("getraenke").select("*").eq("aktiv", true),
+      sb.from("verkaeufe").select("*"),
+      sb.from("tagesabschluesse").select("*"),
+      sb.from("moduldaten").select("*")
+    ]);
 
-  getraenke = g.data.map(getraenkVonDB);
-  verkaeufe = v.data.map(verkaufVonDB);
-  abschluesse = a.data.map(abschlussVonDB);
-  remoteModuldatenLokalSpeichern(m.data || []);
+    const fehler = [];
+    let etwasGeladen = false;
 
-  speichernLokal();
-  render();
+    // Ganz bewusst getrennt: Ein defekter Bereich darf nicht mehr alle anderen
+    // gemeinsamen Daten einfrieren.
+    if (g.error) {
+      fehler.push("Getränke");
+      console.warn("Getränke neu laden:", g.error);
+    } else {
+      getraenke = remoteMitWarteschlangeMischen("getraenke", g.data || []).map(getraenkVonDB);
+      etwasGeladen = true;
+    }
 
-  if ($("statistikDialog").open) statistikInhaltRendern();
-  if ($("abschlussDialog").open) abschlussAktualisieren();
+    if (v.error) {
+      fehler.push("Verkäufe");
+      console.warn("Verkäufe neu laden:", v.error);
+    } else {
+      verkaeufe = remoteMitWarteschlangeMischen("verkaeufe", v.data || []).map(verkaufVonDB);
+      etwasGeladen = true;
+    }
+
+    if (a.error) {
+      fehler.push("Abschlüsse");
+      console.warn("Abschlüsse neu laden:", a.error);
+    } else {
+      abschluesse = remoteMitWarteschlangeMischen("tagesabschluesse", a.data || []).map(abschlussVonDB);
+      etwasGeladen = true;
+    }
+
+    if (m.error) {
+      const code = m.error.code ? ` ${m.error.code}` : "";
+      fehler.push(`Module${code}`);
+      console.warn("Moduldaten neu laden:", m.error);
+    } else {
+      remoteModuldatenLokalSpeichern(remoteMitWarteschlangeMischen("moduldaten", m.data || []));
+      etwasGeladen = true;
+    }
+
+    if (etwasGeladen) {
+      speichernLokal();
+      render();
+
+      if ($("statistikDialog")?.open) statistikInhaltRendern();
+      if ($("abschlussDialog")?.open) abschlussAktualisieren();
+      if ($("notizenDialog")?.open) notizenRendern();
+      if ($("teamDialog")?.open && typeof teamRendern === "function") teamRendern();
+    }
+
+    if (fehler.length) {
+      syncStatus("fehler", `Sync-Fehler: ${fehler.join(", ")}`);
+    } else if (!syncQueue.length) {
+      statusAktualisieren();
+    }
+  } catch (error) {
+    console.error("Remote-Neuladen Ausnahme:", error);
+    syncStatus("fehler", "Sync-Verbindung fehlerhaft");
+  } finally {
+    remoteNeuLadenLaeuft = false;
+  }
 }
 
 
 /* REALTIME */
 
+function teamIstOnline(id) {
+  return onlineTeam.has(String(id));
+}
+
+function teamOnlineAnzeigeAktualisieren() {
+  const text = $("startTeamOnlineText");
+  const anzahl = onlineTeam.size;
+
+  if (text) {
+    text.textContent = anzahl > 0
+      ? `${anzahl} online · Mitglieder & Einsatzbereiche`
+      : "Niemand online · Mitglieder & Einsatzbereiche";
+  }
+
+  if ($("teamDialog")?.open && typeof teamRendern === "function") {
+    teamRendern();
+  }
+}
+
+function presenceAusStateAktualisieren() {
+  if (!realtimeChannel) return;
+
+  const state = realtimeChannel.presenceState?.() || {};
+  const neu = new Map();
+
+  Object.values(state).flat().forEach(p => {
+    if (p?.user_id) neu.set(String(p.user_id), p);
+  });
+
+  onlineTeam = neu;
+  teamOnlineAnzeigeAktualisieren();
+}
+
+async function presenceTracken() {
+  if (!realtimeChannel || !aktuellerUser || document.visibilityState !== "visible") return;
+
+  try {
+    await realtimeChannel.track({
+      user_id: aktuellerUser.id,
+      email: aktuellerUser.email || "",
+      name: aktuellerUser?.user_metadata?.name || aktuellerUser?.email?.split("@")[0] || "Rudelbar-Mitglied",
+      rolle: aktuelleRolle,
+      online_at: new Date().toISOString()
+    });
+  } catch (error) {
+    console.warn("Presence konnte nicht gesetzt werden:", error);
+  }
+}
+
 function realtimeStarten() {
-  if (realtimeChannel) return;
+  if (realtimeChannel || !aktuellerUser) return;
+
+  realtimeVerbindungsstatus = "VERBINDET";
 
   realtimeChannel = sb
-    .channel("rudelbar-live")
+    .channel("rudelbar-live", {
+      config: {
+        presence: { key: String(aktuellerUser.id) }
+      }
+    })
 
     .on(
       "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "getraenke"
-      },
+      { event: "*", schema: "public", table: "getraenke" },
       () => remoteNeuLaden()
     )
-
     .on(
       "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "verkaeufe"
-      },
+      { event: "*", schema: "public", table: "verkaeufe" },
       () => remoteNeuLaden()
     )
-
     .on(
       "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "tagesabschluesse"
-      },
+      { event: "*", schema: "public", table: "tagesabschluesse" },
       () => remoteNeuLaden()
     )
-
     .on(
       "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "moduldaten"
-      },
+      { event: "*", schema: "public", table: "moduldaten" },
       () => remoteNeuLaden()
     )
+    .on(
+      "broadcast",
+      { event: "data_changed" },
+      () => remoteNeuLaden()
+    )
+    .on("presence", { event: "sync" }, presenceAusStateAktualisieren)
+    .on("presence", { event: "join" }, presenceAusStateAktualisieren)
+    .on("presence", { event: "leave" }, presenceAusStateAktualisieren)
+    .subscribe(async status => {
+      realtimeVerbindungsstatus = status;
 
-    .subscribe(status => {
       if (status === "SUBSCRIBED") {
+        await presenceTracken();
+        presenceAusStateAktualisieren();
         statusAktualisieren();
+      }
+
+      if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) {
+        console.warn("Realtime Status:", status);
       }
     });
 }
@@ -1332,85 +1556,29 @@ function render() {
 function renderGetraenke() {
   $("getraenkeListe").innerHTML = getraenke.map(g => {
     const anzahl = warenkorb[g.id] || 0;
-
     return `
       <article class="getraenk">
-
         <button class="getraenk-hauptbereich" data-add="${g.id}">
-
-          <div class="getraenk-bild">
-            ${
-              g.bild
-                ? `<img src="${g.bild}" alt="${esc(g.name)}">`
-                : bierSVG()
-            }
-          </div>
-
+          <div class="getraenk-bild">${g.bild ? `<img src="${g.bild}" alt="${esc(g.name)}">` : bierSVG()}</div>
           <div class="getraenk-name">${esc(g.name)}</div>
           <div class="getraenk-preis">${euro(g.preis)}</div>
-
-          ${
-            anzahl
-              ? `<div class="ausgewaehlt">${anzahl} × gewählt</div>`
-              : ""
-          }
-
         </button>
-
-        <div class="getraenk-menge">
+        <div class="getraenk-menge" aria-label="Stückzahl ${esc(g.name)}">
           <button type="button" data-card-minus="${g.id}" ${anzahl <= 0 ? "disabled" : ""}>−</button>
           <strong>${anzahl}</strong>
           <button type="button" data-card-plus="${g.id}">+</button>
         </div>
-
-        <div class="getraenk-aktionen">
-
-          <button class="aktion bearbeiten" data-edit="${g.id}">
-            ${stiftSVG()}
-          </button>
-
-          <button class="aktion entfernen" data-delete="${g.id}">
-            ${trashSVG()}
-          </button>
-
-        </div>
-
       </article>`;
   }).join("");
 
   document.querySelectorAll("[data-add]").forEach(button => {
-    button.onclick = () => {
-      const id = button.dataset.add;
-      warenkorb[id] = (warenkorb[id] || 0) + 1;
-      render();
-    };
+    button.onclick = () => { const id=button.dataset.add; warenkorb[id]=(warenkorb[id]||0)+1; render(); };
   });
-
   document.querySelectorAll("[data-card-minus]").forEach(button => {
-    button.onclick = event => {
-      event.stopPropagation();
-      const id = button.dataset.cardMinus;
-      if ((warenkorb[id] || 0) > 0) warenkorb[id]--;
-      if ((warenkorb[id] || 0) <= 0) delete warenkorb[id];
-      render();
-    };
+    button.onclick = (e) => { e.stopPropagation(); const id=button.dataset.cardMinus; const n=(warenkorb[id]||0)-1; if(n<=0) delete warenkorb[id]; else warenkorb[id]=n; render(); };
   });
-
   document.querySelectorAll("[data-card-plus]").forEach(button => {
-    button.onclick = event => {
-      event.stopPropagation();
-      const id = button.dataset.cardPlus;
-      warenkorb[id] = (warenkorb[id] || 0) + 1;
-      render();
-    };
-  });
-
-  document.querySelectorAll("[data-edit]").forEach(button => {
-    button.onclick = () => getraenkBearbeiten(button.dataset.edit);
-  });
-
-  document.querySelectorAll("[data-delete]").forEach(button => {
-    button.onclick = () => getraenkLoeschen(button.dataset.delete);
+    button.onclick = (e) => { e.stopPropagation(); const id=button.dataset.cardPlus; warenkorb[id]=(warenkorb[id]||0)+1; render(); };
   });
 }
 
@@ -1551,6 +1719,7 @@ function getraenkSpeichern() {
   queueUpsert("getraenke", getraenkZuDB(g));
 
   render();
+  if ($("settingsPageGetraenke")?.classList.contains("aktiv")) settingsGetraenkeRendern();
   $("getraenkDialog").close();
 }
 
@@ -1567,6 +1736,32 @@ function getraenkLoeschen(id) {
   queueDelete("getraenke", id);
 
   render();
+}
+
+
+/* KASSEN-EINSTELLUNGEN v145 */
+function settingsGetraenkeRendern() {
+  const box = $("settingsGetraenkeListe");
+  if (!box) return;
+  box.innerHTML = getraenke.map(g => `
+    <div class="kassen-settings-zeile">
+      <div class="kassen-settings-thumb">${g.bild ? `<img src="${g.bild}" alt="">` : bierSVG()}</div>
+      <div class="kassen-settings-info"><strong>${esc(g.name)}</strong><small>${euro(g.preis)}</small></div>
+      <button type="button" class="aktion bearbeiten" data-settings-drink-edit="${g.id}" aria-label="${esc(g.name)} bearbeiten">${stiftSVG()}</button>
+      <button type="button" class="aktion entfernen" data-settings-drink-delete="${g.id}" aria-label="${esc(g.name)} löschen">${trashSVG()}</button>
+    </div>`).join("");
+}
+
+function settingsPfandRendern() {
+  const box = $("settingsPfandListe");
+  if (!box) return;
+  box.innerHTML = pfandArtikelLaden().map(a => `
+    <div class="kassen-settings-zeile">
+      <div class="kassen-settings-icon">♻️</div>
+      <div class="kassen-settings-info"><strong>${esc(a.name)}</strong><small>${euro(a.preis)}</small></div>
+      <button type="button" class="aktion bearbeiten" data-settings-pfand-edit="${a.id}" aria-label="Pfand bearbeiten">${stiftSVG()}</button>
+      <button type="button" class="aktion entfernen" data-settings-pfand-delete="${a.id}" aria-label="Pfand löschen">${trashSVG()}</button>
+    </div>`).join("");
 }
 
 
@@ -1635,51 +1830,161 @@ function bildVerkleinern(file, maxGroesse = 700, qualitaet = 0.65) {
 }
 
 
-/* VERKAUF */
+/* PFAND v143: zentrale Pfandartikel + Verkauf/Rückgabe */
+const PFAND_BEREICH = "_system";
+const PFAND_MODUL = "kasse_pfandartikel";
+const PFAND_STANDARD_ID = "pfand-becher-standard";
 
-function verkaufAbschliessen(zahlungsart, pfandMenge = 0) {
-  pfandMenge = Math.max(0, Math.floor(Number(pfandMenge || 0)));
-  const gesamt = gesamtpreis() + (pfandMenge * PFAND_WERT);
-  if (!gesamt) return;
-
-  const positionen = getraenke
-    .filter(g => warenkorb[g.id])
-    .map(g => ({
-      getraenkId: g.id,
-      name: g.name,
-      preis: g.preis,
-      anzahl: warenkorb[g.id]
-    }));
-
-  if (pfandMenge > 0) positionen.push({
-    getraenkId: "pfand-verkauf",
-    name: "Pfand",
-    preis: PFAND_WERT,
-    anzahl: pfandMenge
-  });
-
-  const verkauf = {
-    id: neueID(),
-    datum: new Date().toISOString(),
-    zahlungsart,
-    gesamt,
-    positionen,
-    abgeschlossen: false,
-    abschlussID: null
-  };
-
-  verkaeufe.push(verkauf);
-
-  warenkorb = {};
-
-  speichernLokal();
-  queueUpsert("verkaeufe", verkaufZuDB(verkauf));
-
-  render();
+function pfandArtikelLaden() {
+  const key = modulKey(PFAND_BEREICH, PFAND_MODUL);
+  let daten = laden(key, []);
+  daten = Array.isArray(daten) ? daten.filter(x => x && x.aktiv !== false) : [];
+  if (!daten.length) {
+    daten = [{ id: PFAND_STANDARD_ID, name: "Becher", beschreibung: "", preis: 2, aktiv: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }];
+    localStorage.setItem(key, JSON.stringify(daten));
+  }
+  return daten;
 }
 
+function pfandArtikelAlleLaden() {
+  const key = modulKey(PFAND_BEREICH, PFAND_MODUL);
+  const daten = laden(key, []);
+  return Array.isArray(daten) && daten.length ? daten : pfandArtikelLaden();
+}
 
-/* STATISTIK */
+function pfandArtikelSpeichern(artikel) {
+  const key = modulKey(PFAND_BEREICH, PFAND_MODUL);
+  const daten = pfandArtikelAlleLaden();
+  const idx = daten.findIndex(x => String(x.id) === String(artikel.id));
+  const jetzt = new Date().toISOString();
+  const neu = { ...artikel, preis: Math.round(Number(artikel.preis) * 100) / 100, updatedAt: jetzt, createdAt: artikel.createdAt || jetzt };
+  if (!neu.name || !Number.isFinite(neu.preis) || neu.preis <= 0) return false;
+  if (idx >= 0) daten[idx] = neu; else daten.push(neu);
+  localStorage.setItem(key, JSON.stringify(daten));
+  queueUpsert("moduldaten", modulZuDB(PFAND_BEREICH, PFAND_MODUL, neu));
+  return true;
+}
+
+function pfandArtikelLoeschen(id) {
+  const key = modulKey(PFAND_BEREICH, PFAND_MODUL);
+  const daten = pfandArtikelAlleLaden();
+  const artikel = daten.find(x => String(x.id) === String(id));
+  if (!artikel) return;
+  artikel.aktiv = false;
+  artikel.updatedAt = new Date().toISOString();
+  localStorage.setItem(key, JSON.stringify(daten));
+  queueUpsert("moduldaten", modulZuDB(PFAND_BEREICH, PFAND_MODUL, artikel));
+}
+
+function istPfandRueckgabe(verkauf) {
+  return Array.isArray(verkauf?.positionen) && verkauf.positionen.some(p => p?.typ === "pfandrueckgabe");
+}
+
+function pfandRueckgabenSumme(liste, zahlungsart = null) {
+  return (liste || []).filter(v => istPfandRueckgabe(v) && (!zahlungsart || v.zahlungsart === zahlungsart)).reduce((summe, v) => summe + Math.abs(Number(v.gesamt || 0)), 0);
+}
+
+function pfandRueckgabeBuchen(zahlungsart, menge, artikel) {
+  const anzahl = Math.max(1, Math.floor(Number(menge) || 1));
+  const wert = Math.round(Number(artikel?.preis) * 100) / 100;
+  if (!Number.isFinite(wert) || wert <= 0) return;
+  const gesamt = -(Math.round(anzahl * wert * 100) / 100);
+  const verkauf = {
+    id: neueID(), datum: new Date().toISOString(), zahlungsart, gesamt,
+    positionen: [{ getraenkId: null, name: "Pfandrückgabe " + artikel.name, preis: -wert, anzahl, typ: "pfandrueckgabe", pfandArtikelId: artikel.id, pfandWert: wert }],
+    abgeschlossen: false, abschlussID: null
+  };
+  verkaeufe.push(verkauf); speichernLokal(); queueUpsert("verkaeufe", verkaufZuDB(verkauf)); render();
+}
+
+const zahlungsPfand = {
+  Bar: { aktiv: false, artikelId: null, menge: 1 },
+  Karte: { aktiv: false, artikelId: null, menge: 1 }
+};
+
+// v152: Trinkgeld wird getrennt vom Waren-/Pfandumsatz gespeichert.
+const zahlungsTrinkgeld = { Bar: 0, Karte: 0 };
+
+function trinkgeldBetrag(art) {
+  return Math.max(0, Math.round(Number(zahlungsTrinkgeld[art] || 0) * 100) / 100);
+}
+
+function trinkgeldAusVerkauf(v) {
+  return (v?.positionen || []).filter(p => p?.typ === "trinkgeld").reduce((s,p) => s + Number(p.preis || 0) * Number(p.anzahl || 1), 0);
+}
+
+function trinkgeldSumme(liste, zahlungsart = null) {
+  return (liste || []).filter(v => !zahlungsart || v.zahlungsart === zahlungsart).reduce((s,v) => s + trinkgeldAusVerkauf(v), 0);
+}
+
+function trinkgeldSetzen(art, wert) {
+  zahlungsTrinkgeld[art] = Math.max(0, Math.round(Number(wert || 0) * 100) / 100);
+  trinkgeldUI(art);
+  if (art === "Bar") barzahlungBerechnen(); else kartenzahlungBerechnen();
+}
+
+function trinkgeldUI(art) {
+  const prefix = art === "Bar" ? "bar" : "karte";
+  const wert = trinkgeldBetrag(art);
+  const anzeige = $(prefix + "TrinkgeldAnzeige");
+  if (anzeige) anzeige.textContent = euro(wert);
+  document.querySelectorAll(`[data-trinkgeld-art="${art}"][data-trinkgeld-wert]`).forEach(btn => {
+    btn.classList.toggle("aktiv", Math.abs(Number(btn.dataset.trinkgeldWert) - wert) < 0.001);
+  });
+  const frei = $(prefix + "TrinkgeldFrei");
+  if (frei && document.activeElement !== frei) frei.value = wert && ![0.5,1,2].includes(wert) ? wert.toFixed(2).replace(".", ",") : "";
+  if (art === "Bar" && $("barzahlungGesamt")) $("barzahlungGesamt").textContent = euro(zahlungGesamtpreis("Bar"));
+  if (art === "Karte" && $("kartenzahlungGesamt")) $("kartenzahlungGesamt").textContent = euro(zahlungGesamtpreis("Karte"));
+}
+
+function trinkgeldReset(art) { zahlungsTrinkgeld[art] = 0; trinkgeldUI(art); }
+
+function gewaehlterPfandArtikel(art) {
+  const liste = pfandArtikelLaden();
+  const zustand = zahlungsPfand[art];
+  return liste.find(x => String(x.id) === String(zustand.artikelId)) || liste[0] || null;
+}
+
+function pfandZuschlag(art) {
+  const z = zahlungsPfand[art];
+  if (!z?.aktiv) return 0;
+  const a = gewaehlterPfandArtikel(art);
+  return a ? Math.round(a.preis * Math.max(1, z.menge) * 100) / 100 : 0;
+}
+
+function zahlungGesamtpreis(art) { return Math.round((gesamtpreis() + pfandZuschlag(art) + trinkgeldBetrag(art)) * 100) / 100; }
+
+/* VERKAUF */
+
+function verkaufAbschliessen(zahlungsart, zahlungsMeta = null) {
+  const grundGesamt = gesamtpreis();
+  if (!grundGesamt) return;
+  const positionen = getraenke.filter(g => warenkorb[g.id]).map(g => ({ getraenkId: g.id, name: g.name, preis: g.preis, anzahl: warenkorb[g.id] }));
+  const z = zahlungsPfand[zahlungsart];
+  if (z?.aktiv) {
+    const a = gewaehlterPfandArtikel(zahlungsart);
+    if (a) positionen.push({ getraenkId: null, name: "Pfand " + a.name, preis: a.preis, anzahl: Math.max(1, z.menge), typ: "pfandverkauf", pfandArtikelId: a.id, pfandWert: a.preis });
+  }
+  const tip = trinkgeldBetrag(zahlungsart);
+  if (tip > 0) positionen.push({ getraenkId: null, name: "Trinkgeld", preis: tip, anzahl: 1, typ: "trinkgeld" });
+  const gesamt = zahlungGesamtpreis(zahlungsart);
+  if (zahlungsart === "Karte" && zahlungsMeta?.sumupTransactionId) {
+    positionen.push({
+      typ: "sumup_meta",
+      sumupTransactionId: zahlungsMeta.sumupTransactionId,
+      sumupCheckoutId: zahlungsMeta.sumupCheckoutId || null,
+      sumupClientTransactionId: zahlungsMeta.sumupClientTransactionId || null
+    });
+  }
+  const verkauf = { id: neueID(), datum: new Date().toISOString(), zahlungsart, gesamt, positionen, abgeschlossen: false, abschlussID: null };
+  verkaeufe.push(verkauf);
+  warenkorb = {};
+  zahlungsPfand.Bar = { aktiv:false, artikelId:null, menge:1 };
+  zahlungsPfand.Karte = { aktiv:false, artikelId:null, menge:1 };
+  zahlungsTrinkgeld.Bar = 0;
+  zahlungsTrinkgeld.Karte = 0;
+  speichernLokal(); queueUpsert("verkaeufe", verkaufZuDB(verkauf)); render();
+}
 
 function heuteVerkaeufe() {
   const heute = new Date().toDateString();
@@ -1702,6 +2007,8 @@ function aggregieren(liste) {
     gesamt += Number(v.gesamt);
 
     v.positionen.forEach(p => {
+      if (p?.typ === "pfandrueckgabe" || p?.typ === "pfandverkauf" || p?.typ === "sumup_meta" || p?.typ === "sumup_refund_meta" || p?.typ === "trinkgeld") return;
+
       anzahl += p.anzahl;
 
       if (!map[p.name]) {
@@ -1772,7 +2079,7 @@ function statistikInhaltRendern() {
 
       <div class="stat">
         <span>Verkäufe</span>
-        <strong>${v.length}</strong>
+        <strong>${v.filter(x => !istPfandRueckgabe(x)).length}</strong>
       </div>
 
       <div class="stat">
@@ -1782,7 +2089,12 @@ function statistikInhaltRendern() {
 
       <div class="stat">
         <span>Gesamt</span>
-        <strong>${euro(daten.gesamt)}</strong>
+        <strong>${euro(daten.gesamt - trinkgeldSumme(v))}</strong>
+      </div>
+
+      <div class="stat">
+        <span>Trinkgeld</span>
+        <strong>${euro(trinkgeldSumme(v))}</strong>
       </div>
 
     </div>
@@ -2061,6 +2373,13 @@ function abschlussBerechnen() {
     .filter(x => x.zahlungsart === "Karte")
     .reduce((summe, x) => summe + Number(x.gesamt), 0);
 
+  const trinkgeldBar = trinkgeldSumme(v, "Bar");
+  const trinkgeldKarte = trinkgeldSumme(v, "Karte");
+  const trinkgeldGesamt = trinkgeldBar + trinkgeldKarte;
+  const barUmsatz = bar - trinkgeldBar;
+  const karteUmsatz = karte - trinkgeldKarte;
+  const umsatzOhneTrinkgeld = daten.gesamt - trinkgeldGesamt;
+
   const start = zahl($("anfangsbestandInput").value);
   const einlagen = zahl($("einlagenInput").value);
   const entnahmen = zahl($("entnahmenInput").value);
@@ -2081,6 +2400,12 @@ function abschlussBerechnen() {
     daten,
     bar,
     karte,
+    barUmsatz,
+    karteUmsatz,
+    trinkgeldBar,
+    trinkgeldKarte,
+    trinkgeldGesamt,
+    umsatzOhneTrinkgeld,
     start,
     einlagen,
     entnahmen,
@@ -2103,17 +2428,39 @@ function abschlussAktualisieren() {
 
         <tr>
           <td>Barumsatz</td>
-          <td>${euro(d.bar)}</td>
+          <td>${euro(d.barUmsatz)}</td>
         </tr>
 
         <tr>
           <td>Kartenumsatz</td>
-          <td>${euro(d.karte)}</td>
+          <td>${euro(d.karteUmsatz)}</td>
         </tr>
 
+        <tr>
+          <td>davon Pfandrückgabe Bar</td>
+          <td>− ${euro(pfandRueckgabenSumme(d.v, "Bar"))}</td>
+        </tr>
+
+        <tr>
+          <td>davon Pfandrückgabe Karte</td>
+          <td>− ${euro(pfandRueckgabenSumme(d.v, "Karte"))}</td>
+        </tr>
+
+        <tr>
+          <td>Trinkgeld Bar</td>
+          <td>${euro(d.trinkgeldBar)}</td>
+        </tr>
+        <tr>
+          <td>Trinkgeld Karte</td>
+          <td>${euro(d.trinkgeldKarte)}</td>
+        </tr>
+        <tr>
+          <td>Trinkgeld gesamt</td>
+          <td>${euro(d.trinkgeldGesamt)}</td>
+        </tr>
         <tr class="gesamt">
-          <td>Gesamtumsatz</td>
-          <td>${euro(d.daten.gesamt)}</td>
+          <td>Gesamtumsatz (ohne Trinkgeld)</td>
+          <td>${euro(d.umsatzOhneTrinkgeld)}</td>
         </tr>
 
       </tbody>
@@ -2466,17 +2813,20 @@ async function tagesabschlussTeilen() {
 
           <tr>
             <td>Barumsatz</td>
-            <td>${euro(d.bar)}</td>
+            <td>${euro(d.barUmsatz)}</td>
           </tr>
 
           <tr>
             <td>Kartenumsatz</td>
-            <td>${euro(d.karte)}</td>
+            <td>${euro(d.karteUmsatz)}</td>
           </tr>
 
+          <tr><td>Trinkgeld Bar</td><td>${euro(d.trinkgeldBar)}</td></tr>
+          <tr><td>Trinkgeld Karte</td><td>${euro(d.trinkgeldKarte)}</td></tr>
+          <tr><td>Trinkgeld gesamt</td><td>${euro(d.trinkgeldGesamt)}</td></tr>
           <tr class="gesamt">
-            <td>Gesamtumsatz</td>
-            <td>${euro(d.daten.gesamt)}</td>
+            <td>Gesamtumsatz (ohne Trinkgeld)</td>
+            <td>${euro(d.umsatzOhneTrinkgeld)}</td>
           </tr>
 
         </tbody>
@@ -3165,7 +3515,10 @@ function teamRendern(){
     return `<article class="team-karte" data-team-id="${esc(m.id)}">
       <div class="team-kopf">
         <div class="team-identitaet"><span class="team-avatar">${esc((m.name||m.email||"?").trim().slice(0,2).toUpperCase())}</span><div><strong>${esc(m.name||"Teammitglied")}</strong><small>${esc(m.email||"")}</small></div></div>
-        <span class="team-rolle ${m.rolle==="superuser"?"superuser":""}">${m.rolle==="superuser"?"Superuser":"Mitarbeiter"}</span>
+        <div class="team-status-zeile">
+          <span class="team-online-status ${teamIstOnline(m.id)?"online":"offline"}"><i></i>${teamIstOnline(m.id)?"Online":"Offline"}</span>
+          <span class="team-rolle ${m.rolle==="superuser"?"superuser":""}">${m.rolle==="superuser"?"Superuser":"Mitarbeiter"}</span>
+        </div>
       </div>
       <div class="team-meta">Zuletzt angemeldet: ${esc(login)}</div>
       <div class="team-bereich-label">Einsetzbar in</div>
@@ -3245,15 +3598,37 @@ function notizenKey(){ return modulKey(NOTIZEN_BEREICH, NOTIZEN_MODUL); }
 function notizenLaden(){ return laden(notizenKey(), []); }
 function notizenSpeichern(daten){ localStorage.setItem(notizenKey(), JSON.stringify(daten)); }
 function notizenOffenAnzahl(){ return notizenLaden().filter(n => n.status !== "erledigt").length; }
+function notizIstEigene(n){
+  if (!aktuellerUser || !n) return false;
+
+  const uid = String(aktuellerUser.id || "").trim().toLowerCase();
+  const email = String(aktuellerUser.email || "").trim().toLowerCase();
+  const name = String(aktuellerUser?.user_metadata?.name || "").trim().toLowerCase();
+
+  const autorId = String(n.autorId || n.autor_id || "").trim().toLowerCase();
+  const autor = String(n.autor || "").trim().toLowerCase();
+
+  return Boolean(
+    (uid && autorId === uid) ||
+    (email && autor === email) ||
+    (name && autor === name)
+  );
+}
 function notizenBadgeAktualisieren(){
   const badge=$("startNotizenBadge"); if(!badge) return;
   const n=notizenOffenAnzahl(); badge.textContent=String(n); badge.classList.toggle("versteckt", n===0);
 }
-function notizenOeffnen(){
+async function notizenOeffnen(){
   notizenFilter="offen";
   $("notizenText").value="";
   notizenRendern();
   $("notizenDialog").showModal();
+
+  if (angemeldet && navigator.onLine) {
+    await syncStarten();
+    await remoteNeuLaden();
+    notizenRendern();
+  }
 }
 function notizenRendern(){
   const liste=$("notizenListe"); if(!liste) return;
@@ -3265,14 +3640,13 @@ function notizenRendern(){
     liste.innerHTML=`<div class="daten-leer"><strong>${notizenFilter==="erledigt"?"Noch nichts erledigt":"Keine offenen Notizen"}</strong><span>${notizenFilter==="erledigt"?"Erledigte Punkte erscheinen hier.":"Neue Ideen und Verbesserungen können oben eingetragen werden."}</span></div>`;
     notizenBadgeAktualisieren(); return;
   }
-  const superuser = aktuelleRolle === "superuser" || istRudelbarBesitzer();
   liste.innerHTML=gefiltert.map(n=>{
     const datum=n.createdAt?new Date(n.createdAt).toLocaleString("de-DE",{dateStyle:"short",timeStyle:"short"}):"";
     return `<article class="notiz-karte ${n.status==="erledigt"?"erledigt":""}">
       <div class="notiz-karte-kopf"><strong>${n.status==="erledigt"?"✓ Erledigt":"○ Offen"}</strong><small>${esc(datum)}</small></div>
       <p>${esc(n.text||"")}</p>
       <div class="notiz-meta">von ${esc(n.autor||"Rudelbar-Team")}</div>
-      ${superuser?`<div class="notiz-aktionen">${n.status!=="erledigt"?`<button type="button" data-notiz-erledigt="${esc(n.id)}">✓ Erledigt</button>`:""}<button class="gefahr" type="button" data-notiz-loeschen="${esc(n.id)}">🗑 Löschen</button></div>`:""}
+      <div class="notiz-aktionen">${n.status!=="erledigt"?`<button type="button" data-notiz-erledigt="${esc(n.id)}">✓ Erledigt</button>`:""}<button class="gefahr" type="button" data-notiz-loeschen="${esc(n.id)}">🗑 Löschen</button></div>
     </article>`;
   }).join("");
   liste.querySelectorAll("[data-notiz-erledigt]").forEach(btn=>btn.onclick=()=>notizErledigen(btn.dataset.notizErledigt));
@@ -3282,7 +3656,7 @@ function notizenRendern(){
 function notizHinzufuegen(){
   const text=$("notizenText").value.trim(); if(!text){ alert("Bitte zuerst eine Nachricht eingeben."); return; }
   const daten=notizenLaden();
-  const neu={id:neueID(),text,status:"offen",autor:aktuellerUser?.user_metadata?.name || aktuellerUser?.email || "Rudelbar-Team",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  const neu={id:neueID(),text,status:"offen",autorId:aktuellerUser?.id || "",autor:aktuellerUser?.user_metadata?.name || aktuellerUser?.email || "Rudelbar-Team",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
   daten.push(neu); notizenSpeichern(daten); queueUpsert("moduldaten",modulZuDB(NOTIZEN_BEREICH,NOTIZEN_MODUL,neu));
   $("notizenText").value=""; notizenFilter="offen"; notizenRendern();
 }
@@ -3291,8 +3665,11 @@ function notizErledigen(id){
   n.status="erledigt"; n.updatedAt=new Date().toISOString(); notizenSpeichern(daten); queueUpsert("moduldaten",modulZuDB(NOTIZEN_BEREICH,NOTIZEN_MODUL,n)); notizenRendern();
 }
 function notizLoeschen(id){
+  const alle = notizenLaden();
+  const n = alle.find(x=>String(x.id)===String(id));
+  if(!n) return;
   if(!confirm("Diese Notiz wirklich löschen?")) return;
-  const daten=notizenLaden().filter(x=>String(x.id)!==String(id)); notizenSpeichern(daten); queueDelete("moduldaten",id); notizenRendern();
+  const daten=alle.filter(x=>String(x.id)!==String(id)); notizenSpeichern(daten); queueDelete("moduldaten",id); notizenRendern();
 }
 
 function datenKarteHTML(x) {
@@ -4312,17 +4689,18 @@ function euroAusCent(cent) {
   return euro(cent / 100);
 }
 
-let barPfandAnzahl = 0;
-let kartePfandAnzahl = 0;
-function zahlGesamtCent(pfandAnzahl=0){ return centWert(gesamtpreis() + Math.max(0,pfandAnzahl)*PFAND_WERT); }
-function barPfandRender(){ $("barPfandMenge").textContent=barPfandAnzahl; $("barzahlungGesamt").textContent=euroAusCent(zahlGesamtCent(barPfandAnzahl)); barzahlungBerechnen(); }
-function kartePfandRender(){ $("kartePfandMenge").textContent=kartePfandAnzahl; $("kartenzahlungGesamt").textContent=euroAusCent(zahlGesamtCent(kartePfandAnzahl)); kartenzahlungBerechnen(); }
-
 function barzahlungOeffnen() {
-  barPfandAnzahl = 0;
-  const gesamtCent = zahlGesamtCent(barPfandAnzahl);
-  if (gesamtCent <= 0) return;
-  $("barPfandMenge").textContent = "0";
+  const grundCent = centWert(gesamtpreis());
+  if (grundCent <= 0) return;
+
+  // v143: Die Zahlungsfunktion darf niemals an der optionalen Pfand-Erweiterung scheitern.
+  try { zahlungsPfandReset("Bar"); } catch (err) {
+    console.error("Pfand-Initialisierung Bar fehlgeschlagen:", err);
+    zahlungsPfand.Bar = { aktiv:false, artikelId:null, menge:1 };
+  }
+  trinkgeldReset("Bar");
+  let gesamtCent = grundCent;
+  try { gesamtCent = centWert(zahlungGesamtpreis("Bar")); } catch (_) {}
 
   $("barzahlungGesamt").textContent = euroAusCent(gesamtCent);
   $("barzahlungGegeben").value = "";
@@ -4342,7 +4720,7 @@ function barzahlungOeffnen() {
 }
 
 function barzahlungBerechnen() {
-  const gesamtCent = zahlGesamtCent(barPfandAnzahl);
+  const gesamtCent = centWert(zahlungGesamtpreis("Bar"));
   const roh = $("barzahlungGegeben").value.trim().replace(/\s/g, "").replace(",", ".");
   const gegebenCent = Math.round(Number(roh) * 100);
   const gueltig = roh !== "" && Number.isFinite(gegebenCent);
@@ -4369,58 +4747,24 @@ function barzahlungBerechnen() {
   }
 }
 
-// RUDELBAR v153 REBUILD 2: Pfandrückgabe als dritter Kassenbutton
-const PFAND_WERT = 2.00;
+document.addEventListener("click", event => {
+  const btn = event.target.closest("[data-trinkgeld-art][data-trinkgeld-wert]");
+  if (!btn) return;
+  const art = btn.dataset.trinkgeldArt;
+  const wert = Number(btn.dataset.trinkgeldWert);
+  // Derselbe Schnellbutton ein zweites Mal = Trinkgeld wieder entfernen.
+  trinkgeldSetzen(art, Math.abs(trinkgeldBetrag(art) - wert) < 0.001 ? 0 : wert);
+});
 
-function pfandMengeWert() {
-  const feld = $("pfandMenge");
-  let menge = Math.floor(Number(feld.value || 1));
-  if (!Number.isFinite(menge) || menge < 1) menge = 1;
-  feld.value = menge;
-  return menge;
-}
-
-function pfandAktualisieren() {
-  const menge = pfandMengeWert();
-  $("pfandGesamt").textContent = euro(menge * PFAND_WERT);
-}
-
-function pfandOeffnen() {
-  $("pfandMenge").value = "1";
-  pfandAktualisieren();
-  $("pfandDialog").showModal();
-}
-
-function pfandRueckgabeSpeichern() {
-  const menge = pfandMengeWert();
-  const gesamt = -(menge * PFAND_WERT);
-  const verkauf = {
-    id: neueID(),
-    datum: new Date().toISOString(),
-    zahlungsart: "Bar",
-    gesamt,
-    positionen: [{ getraenkId: "pfand-rueckgabe", name: "Pfandrückgabe", preis: -PFAND_WERT, anzahl: menge }],
-    abgeschlossen: false,
-    abschlussID: null
-  };
-  verkaeufe.push(verkauf);
-  speichernLokal();
-  queueUpsert("verkaeufe", verkaufZuDB(verkauf));
-  $("pfandDialog").close();
-  render();
-}
-
-$("pfandButton").onclick = pfandOeffnen;
-$("pfandMinus").onclick = () => { $("pfandMenge").value = Math.max(1, pfandMengeWert() - 1); pfandAktualisieren(); };
-$("pfandPlus").onclick = () => { $("pfandMenge").value = pfandMengeWert() + 1; pfandAktualisieren(); };
-$("pfandMenge").addEventListener("input", pfandAktualisieren);
-$("pfandAbbrechen").onclick = () => $("pfandDialog").close();
-$("pfandBestaetigen").onclick = pfandRueckgabeSpeichern;
-
-$("barPfandMinus").onclick = () => { barPfandAnzahl=Math.max(0,barPfandAnzahl-1); barPfandRender(); };
-$("barPfandPlus").onclick = () => { barPfandAnzahl++; barPfandRender(); };
-$("kartePfandMinus").onclick = () => { kartePfandAnzahl=Math.max(0,kartePfandAnzahl-1); kartePfandRender(); };
-$("kartePfandPlus").onclick = () => { kartePfandAnzahl++; kartePfandRender(); };
+["Bar", "Karte"].forEach(art => {
+  const prefix = art === "Bar" ? "bar" : "karte";
+  const input = $(prefix + "TrinkgeldFrei");
+  if (input) input.addEventListener("input", () => {
+    const roh = input.value.trim().replace(",", ".");
+    const wert = Number(roh);
+    trinkgeldSetzen(art, Number.isFinite(wert) ? wert : 0);
+  });
+});
 
 $("barButton").onclick = barzahlungOeffnen;
 
@@ -4431,7 +4775,7 @@ $("barzahlungSchnellwahl").onclick = event => {
   const wert = event.target.closest("[data-bar-wert]");
   if (!exakt && !wert) return;
   $("barzahlungGegeben").value = exakt
-    ? (zahlGesamtCent(barPfandAnzahl) / 100).toFixed(2).replace(".", ",")
+    ? (centWert(zahlungGesamtpreis("Bar")) / 100).toFixed(2).replace(".", ",")
     : Number(wert.dataset.barWert).toFixed(2).replace(".", ",");
   barzahlungBerechnen();
 };
@@ -4441,14 +4785,21 @@ $("barzahlungAbbrechen").onclick = () => $("barzahlungDialog").close();
 $("barzahlungBestaetigen").onclick = () => {
   if ($("barzahlungBestaetigen").disabled) return;
   $("barzahlungDialog").close();
-  verkaufAbschliessen("Bar", barPfandAnzahl);
+  verkaufAbschliessen("Bar");
 };
 
 function kartenzahlungOeffnen() {
-  kartePfandAnzahl = 0;
-  const gesamtCent = zahlGesamtCent(kartePfandAnzahl);
-  $("kartePfandMenge").textContent = "0";
-  if (gesamtCent <= 0) return;
+  const grundCent = centWert(gesamtpreis());
+  if (grundCent <= 0) return;
+
+  // v143: Karte bleibt nutzbar, selbst wenn Pfand lokal/synchron nicht initialisiert werden kann.
+  try { zahlungsPfandReset("Karte"); } catch (err) {
+    console.error("Pfand-Initialisierung Karte fehlgeschlagen:", err);
+    zahlungsPfand.Karte = { aktiv:false, artikelId:null, menge:1 };
+  }
+  trinkgeldReset("Karte");
+  let gesamtCent = grundCent;
+  try { gesamtCent = centWert(zahlungGesamtpreis("Karte")); } catch (_) {}
 
   $("kartenzahlungGesamt").textContent = euroAusCent(gesamtCent);
   $("kartenzahlungBetrag").value = "";
@@ -4461,7 +4812,7 @@ function kartenzahlungOeffnen() {
 }
 
 function kartenzahlungBerechnen() {
-  const gesamtCent = zahlGesamtCent(kartePfandAnzahl);
+  const gesamtCent = centWert(zahlungGesamtpreis("Karte"));
   const roh = $("kartenzahlungBetrag").value.trim().replace(/\s/g, "").replace(",", ".");
   const betragCent = Math.round(Number(roh) * 100);
   const gueltig = roh !== "" && Number.isFinite(betragCent);
@@ -4498,66 +4849,259 @@ $("karteButton").onclick = kartenzahlungOeffnen;
 $("kartenzahlungBetrag").addEventListener("input", kartenzahlungBerechnen);
 
 $("kartenzahlungPassend").onclick = () => {
-  $("kartenzahlungBetrag").value = (zahlGesamtCent(kartePfandAnzahl) / 100).toFixed(2).replace(".", ",");
+  $("kartenzahlungBetrag").value = (centWert(zahlungGesamtpreis("Karte")) / 100).toFixed(2).replace(".", ",");
   kartenzahlungBerechnen();
 };
 
 $("kartenzahlungAbbrechen").onclick = () => $("kartenzahlungDialog").close();
 
-async function sumupKartenzahlungStarten(betragCent) {
+$("kartenzahlungBestaetigen").onclick = async () => {
   const button = $("kartenzahlungBestaetigen");
+  if (button.disabled) return;
+
+  const gesamtCent = centWert(zahlungGesamtpreis("Karte"));
+  if (gesamtCent <= 0) return;
+
   const hinweis = $("kartenzahlungHinweis");
   const alterText = button.textContent;
 
   button.disabled = true;
-  button.textContent = "SumUp wird gestartet …";
+  button.textContent = "Warte auf SumUp …";
   hinweis.classList.remove("zahlung-fehler", "zahlung-ok");
   hinweis.textContent = "Zahlung wird an das SumUp Solo gesendet …";
 
   try {
     const { data, error } = await sb.functions.invoke("sumup-payment", {
-      body: {
-        action: "checkout",
-        amount: betragCent,
-        amount_cent: betragCent,
-        currency: "EUR",
-        description: "Rudelbar Kartenzahlung"
-      }
+      body: { action: "create", amount: gesamtCent / 100 }
     });
 
     if (error) throw error;
+    if (!data?.ok) throw new Error(data?.error || data?.result?.detail || "SumUp hat die Zahlung nicht angenommen.");
 
-    const status = String(data?.status || data?.payment_status || "").toLowerCase();
-    const erfolgreich = data?.success === true || data?.successful === true || status === "successful";
+    const checkoutId = data?.checkoutId || data?.result?.data?.checkout_id || data?.result?.checkout_id;
+    if (!checkoutId) throw new Error("SumUp hat keine Checkout-ID zurückgegeben.");
 
-    if (!erfolgreich) {
-      const meldung = data?.message || data?.error ||
-        (status === "cancelled" ? "Zahlung wurde am Terminal abgebrochen." :
-         status === "failed" ? "Kartenzahlung fehlgeschlagen." :
-         "SumUp hat die Zahlung nicht als erfolgreich bestätigt.");
-      throw new Error(meldung);
+    hinweis.textContent = "Bitte Karte am SumUp Solo vorhalten …";
+
+    let finalData = null;
+    for (let i = 0; i < 120; i++) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const statusAntwort = await sb.functions.invoke("sumup-payment", {
+        body: { action: "status", checkoutId }
+      });
+      if (statusAntwort.error) throw statusAntwort.error;
+      const statusData = statusAntwort.data;
+      if (!statusData?.ok) throw new Error(statusData?.error || "Zahlungsstatus konnte nicht geprüft werden.");
+
+      const status = String(statusData.status || "pending").toLowerCase();
+      if (status === "pending") continue;
+      finalData = statusData;
+      break;
     }
 
-    hinweis.textContent = "Zahlung erfolgreich.";
-    hinweis.classList.add("zahlung-ok");
-    $("kartenzahlungDialog").close();
-    verkaufAbschliessen("Karte", kartePfandAnzahl);
-  } catch (fehler) {
-    console.error("SumUp Kartenzahlung:", fehler);
-    hinweis.textContent = "SumUp: " + (fehler?.message || "Verbindung fehlgeschlagen.");
+    if (!finalData) throw new Error("Zeitüberschreitung beim Warten auf SumUp.");
+
+    const status = String(finalData.status || "").toLowerCase();
+    if (status === "successful") {
+      hinweis.textContent = "Kartenzahlung erfolgreich.";
+      hinweis.classList.add("zahlung-ok");
+      await new Promise(resolve => setTimeout(resolve, 350));
+      $("kartenzahlungDialog").close();
+      verkaufAbschliessen("Karte", {
+        sumupTransactionId: finalData.transactionId,
+        sumupCheckoutId: checkoutId,
+        sumupClientTransactionId: finalData.clientTransactionId
+      });
+      return;
+    }
+
+    // Abgebrochene oder fehlgeschlagene Zahlungen werden NICHT als Umsatz gebucht.
+    hinweis.textContent = status === "cancelled"
+      ? "Kartenzahlung wurde abgebrochen. Kein Umsatz gebucht."
+      : "Kartenzahlung fehlgeschlagen. Kein Umsatz gebucht.";
     hinweis.classList.add("zahlung-fehler");
-  } finally {
+    button.disabled = false;
     button.textContent = alterText;
-    kartenzahlungBerechnen();
+  } catch (err) {
+    console.error("SumUp Kartenzahlung fehlgeschlagen:", err);
+    hinweis.textContent = "SumUp-Fehler: " + (err?.message || "Zahlung konnte nicht abgeschlossen werden.");
+    hinweis.classList.add("zahlung-fehler");
+    button.disabled = false;
+    button.textContent = alterText;
   }
+};
+
+
+function pfandOptionenHTML() {
+  return pfandArtikelLaden().map(a => `<option value="${a.id}">${esc(a.name)} · ${euro(a.preis)}</option>`).join("");
 }
 
-$("kartenzahlungBestaetigen").onclick = async () => {
-  if ($("kartenzahlungBestaetigen").disabled) return;
-  const betragCent = zahlGesamtCent(kartePfandAnzahl);
-  if (betragCent <= 0) return;
-  await sumupKartenzahlungStarten(betragCent);
+function zahlungsPfandUI(art) {
+  const prefix = art === "Bar" ? "bar" : "karte";
+  const z = zahlungsPfand[art];
+  const select = $(prefix + "PfandArtikel");
+  if (!select) return;
+  select.innerHTML = pfandOptionenHTML();
+  if (!z.artikelId && select.options.length) z.artikelId = select.options[0].value;
+  if (z.artikelId) select.value = z.artikelId;
+  $(prefix + "PfandInhalt").classList.toggle("versteckt", !z.aktiv);
+  $(prefix + "PfandToggle").classList.toggle("aktiv", z.aktiv);
+  $(prefix + "PfandMenge").textContent = String(Math.max(1, z.menge));
+  $(prefix + "PfandSumme").textContent = euro(pfandZuschlag(art));
+  if (art === "Bar") $("barzahlungGesamt").textContent = euro(zahlungGesamtpreis("Bar"));
+  else $("kartenzahlungGesamt").textContent = euro(zahlungGesamtpreis("Karte"));
+}
+
+function zahlungsPfandReset(art) {
+  zahlungsPfand[art] = { aktiv:false, artikelId:pfandArtikelLaden()[0]?.id || null, menge:1 };
+  zahlungsPfandUI(art);
+}
+
+function pfandToggle(art) {
+  zahlungsPfand[art].aktiv = !zahlungsPfand[art].aktiv;
+  if (!zahlungsPfand[art].artikelId) zahlungsPfand[art].artikelId = pfandArtikelLaden()[0]?.id || null;
+  zahlungsPfandUI(art);
+  if (art === "Bar") barzahlungBerechnen(); else kartenzahlungBerechnen();
+}
+
+function pfandMengeAendern(art, delta) {
+  zahlungsPfand[art].menge = Math.max(1, (Number(zahlungsPfand[art].menge) || 1) + delta);
+  zahlungsPfandUI(art);
+  if (art === "Bar") barzahlungBerechnen(); else kartenzahlungBerechnen();
+}
+
+// v147: explizit global für iOS/PWA-Inline-Bedienung.
+window.pfandToggle = pfandToggle;
+window.pfandMengeAendern = pfandMengeAendern;
+
+// v147: BAR/KARTE-Pfand ist zusätzlich direkt im HTML verdrahtet.
+// Diese Fallbacks greifen nur, falls die Inline-Bindung später einmal entfernt wird.
+if ($("barPfandToggle") && !$('barPfandToggle').getAttribute('onclick')) $("barPfandToggle").onclick = () => pfandToggle("Bar");
+if ($("kartePfandToggle") && !$('kartePfandToggle').getAttribute('onclick')) $("kartePfandToggle").onclick = () => pfandToggle("Karte");
+if ($("barPfandMinus") && !$('barPfandMinus').getAttribute('onclick')) $("barPfandMinus").onclick = () => pfandMengeAendern("Bar", -1);
+if ($("barPfandPlus") && !$('barPfandPlus').getAttribute('onclick')) $("barPfandPlus").onclick = () => pfandMengeAendern("Bar", 1);
+if ($("kartePfandMinus") && !$('kartePfandMinus').getAttribute('onclick')) $("kartePfandMinus").onclick = () => pfandMengeAendern("Karte", -1);
+if ($("kartePfandPlus") && !$('kartePfandPlus').getAttribute('onclick')) $("kartePfandPlus").onclick = () => pfandMengeAendern("Karte", 1);
+$("barPfandArtikel").onchange = e => { zahlungsPfand.Bar.artikelId = e.target.value; zahlungsPfandUI("Bar"); barzahlungBerechnen(); };
+$("kartePfandArtikel").onchange = e => { zahlungsPfand.Karte.artikelId = e.target.value; zahlungsPfandUI("Karte"); kartenzahlungBerechnen(); };
+
+function pfandEinstellungenRendern() {
+  const liste = pfandArtikelLaden();
+  $("pfandArtikelListe").innerHTML = liste.map(a => `
+    <div class="pfand-artikel-zeile" data-id="${a.id}">
+      <div><strong>${esc(a.name)}</strong></div>
+      <strong>${euro(a.preis)}</strong>
+      <button type="button" class="sekundaer" data-pfand-edit="${a.id}">✏️</button>
+      <button type="button" class="daten-loeschen" data-pfand-delete="${a.id}">🗑</button>
+    </div>`).join("");
+}
+
+function pfandEinstellungenOeffnen() {
+  pfandEinstellungenRendern();
+  $("pfandNeuName").value = ""; $("pfandNeuPreis").value = "";
+  $("pfandSettingsHinweis").textContent = "";
+  const dlg = $("pfandEinstellungenDialog");
+  if (!dlg.open) dlg.showModal();
+}
+window.pfandEinstellungenOeffnen = pfandEinstellungenOeffnen;
+
+function kassenEinstellungenOeffnen(){
+  const dlg = $("einstellungenDialog");
+  if (!dlg) return;
+  dlg.classList.add("kassen-only-mode");
+  settingsSeiteOeffnen("home");
+  if (!dlg.open) dlg.showModal();
+}
+
+const kassenSettingsButton = $("kassenEinstellungenBtn");
+if (kassenSettingsButton) kassenSettingsButton.onclick = kassenEinstellungenOeffnen;
+
+$("pfandEinstellungenSchliessen").onclick = () => $("pfandEinstellungenDialog").close();
+$("pfandArtikelHinzufuegen").onclick = () => {
+  const name = $("pfandNeuName").value.trim();
+  const preis = Number($("pfandNeuPreis").value.trim().replace(",", "."));
+  if (!name || !Number.isFinite(preis) || preis <= 0) { $("pfandSettingsHinweis").textContent = "Bitte Bezeichnung und gültigen Preis eingeben."; return; }
+  pfandArtikelSpeichern({ id: neueID(), name, beschreibung: "", preis, aktiv:true });
+  $("pfandNeuName").value = ""; $("pfandNeuPreis").value = "";
+  $("pfandSettingsHinweis").textContent = "Pfandartikel gespeichert und zur Synchronisierung vorgemerkt.";
+  pfandEinstellungenRendern();
 };
+
+$("pfandArtikelListe").onclick = e => {
+  const edit = e.target.closest("[data-pfand-edit]");
+  const del = e.target.closest("[data-pfand-delete]");
+  if (edit) {
+    const a = pfandArtikelLaden().find(x => String(x.id) === String(edit.dataset.pfandEdit)); if (!a) return;
+    const name = prompt("Bezeichnung", a.name); if (name === null) return;
+    const preisRoh = prompt("Preis in €", Number(a.preis).toFixed(2).replace(".", ",")); if (preisRoh === null) return;
+    const preis = Number(preisRoh.replace(",", "."));
+    if (!name.trim() || !Number.isFinite(preis) || preis <= 0) return;
+    pfandArtikelSpeichern({ ...a, name:name.trim(), beschreibung: "", preis }); pfandEinstellungenRendern();
+  }
+  if (del) {
+    const aktive = pfandArtikelLaden(); if (aktive.length <= 1) { $("pfandSettingsHinweis").textContent = "Mindestens ein Pfandartikel muss aktiv bleiben."; return; }
+    pfandArtikelLoeschen(del.dataset.pfandDelete); pfandEinstellungenRendern();
+  }
+};
+
+function pfandRueckgabeUI() {
+  const liste = pfandArtikelLaden();
+  $("pfandRueckgabeArtikel").innerHTML = pfandOptionenHTML();
+  $("pfandMenge").value = Math.max(1, Number($("pfandMenge").value) || 1);
+  const a = liste.find(x => String(x.id) === String($("pfandRueckgabeArtikel").value)) || liste[0];
+  const menge = Math.max(1, Number($("pfandMenge").value) || 1);
+  $("pfandGesamt").textContent = a ? euro(a.preis * menge) : "0,00 €";
+  $("pfandBar").disabled = !a;
+}
+function pfandOeffnen() {
+  $("pfandMenge").value = "1";
+  pfandRueckgabeUI();
+  $("pfandHinweis").textContent = "Pfandrückgabe wird bar ausgezahlt.";
+  $("pfandDialog").showModal();
+}
+$("pfandButton").onclick = pfandOeffnen;
+$("pfandAbbrechen").onclick = () => $("pfandDialog").close();
+$("pfandRueckgabeArtikel").onchange = pfandRueckgabeUI;
+$("pfandMenge").oninput = pfandRueckgabeUI;
+$("pfandMinus").onclick = () => { $("pfandMenge").value = Math.max(1, (Number($("pfandMenge").value)||1)-1); pfandRueckgabeUI(); };
+$("pfandPlus").onclick = () => { $("pfandMenge").value = Math.max(1, (Number($("pfandMenge").value)||1)+1); pfandRueckgabeUI(); };
+
+function pfandRueckgabeAusDialog() {
+  const a = pfandArtikelLaden().find(x => String(x.id) === String($("pfandRueckgabeArtikel").value));
+  if (!a) return;
+  const menge = Math.max(1, Math.floor(Number($("pfandMenge").value) || 1));
+  pfandRueckgabeBuchen("Bar", menge, a);
+  $("pfandDialog").close();
+}
+$("pfandBar").onclick = pfandRueckgabeAusDialog;
+
+
+$("settingsGetraenkNeu")?.addEventListener("click", () => { neuesGetraenkOeffnen(); });
+$("settingsGetraenkeListe")?.addEventListener("click", e => {
+  const edit=e.target.closest("[data-settings-drink-edit]");
+  const del=e.target.closest("[data-settings-drink-delete]");
+  if(edit){ getraenkBearbeiten(edit.dataset.settingsDrinkEdit); return; }
+  if(del){ getraenkLoeschen(del.dataset.settingsDrinkDelete); settingsGetraenkeRendern(); }
+});
+$("settingsPfandNeu")?.addEventListener("click", () => {
+  const name=$("settingsPfandName").value.trim();
+  const preis=Number($("settingsPfandPreis").value.trim().replace(",","."));
+  if(!name || !Number.isFinite(preis) || preis<=0){ $("settingsPfandHinweis").textContent="Bitte Bezeichnung und gültigen Preis eingeben."; return; }
+  pfandArtikelSpeichern({id:neueID(),name,beschreibung:"",preis,aktiv:true});
+  $("settingsPfandName").value=""; $("settingsPfandPreis").value=""; $("settingsPfandHinweis").textContent="Pfandartikel gespeichert."; settingsPfandRendern();
+});
+$("settingsPfandListe")?.addEventListener("click", e => {
+  const edit=e.target.closest("[data-settings-pfand-edit]");
+  const del=e.target.closest("[data-settings-pfand-delete]");
+  if(edit){
+    const a=pfandArtikelLaden().find(x=>String(x.id)===String(edit.dataset.settingsPfandEdit)); if(!a)return;
+    const name=prompt("Bezeichnung",a.name); if(name===null)return;
+    const pr=prompt("Preis in €",Number(a.preis).toFixed(2).replace(".",",")); if(pr===null)return;
+    const preis=Number(pr.replace(",",".")); if(!name.trim()||!Number.isFinite(preis)||preis<=0)return;
+    pfandArtikelSpeichern({...a,name:name.trim(),beschreibung:"",preis}); settingsPfandRendern(); return;
+  }
+  if(del){ const l=pfandArtikelLaden(); if(l.length<=1){$("settingsPfandHinweis").textContent="Mindestens ein Pfandartikel muss bestehen bleiben.";return;} pfandArtikelLoeschen(del.dataset.settingsPfandDelete); settingsPfandRendern(); }
+});
 
 $("bestellungLoeschen").onclick = () => {
   warenkorb = {};
@@ -4627,12 +5171,56 @@ window.addEventListener("online", async () => {
 
   await syncStarten();
 
-  if (!syncQueue.length) {
-    await remoteNeuLaden();
+  await remoteNeuLaden();
+  realtimeStarten();
+  await presenceTracken();
+});
+
+
+/* REALTIME / IOS FALLBACK */
+let realtimeFallbackTimer = null;
+
+function realtimeFallbackStarten() {
+  if (realtimeFallbackTimer) clearInterval(realtimeFallbackTimer);
+
+  realtimeFallbackTimer = setInterval(async () => {
+    if (
+      angemeldet &&
+      navigator.onLine &&
+      document.visibilityState === "visible"
+    ) {
+      await syncStarten();
+      await remoteNeuLaden();
+    }
+  }, 2500);
+}
+
+document.addEventListener("visibilitychange", async () => {
+  if (!angemeldet) return;
+
+  if (document.visibilityState === "hidden") {
+    try { await realtimeChannel?.untrack(); } catch {}
+    return;
   }
 
-  realtimeStarten();
+  if (navigator.onLine) {
+    await syncStarten();
+    await remoteNeuLaden();
+    realtimeStarten();
+    await presenceTracken();
+  }
 });
+
+window.addEventListener("focus", async () => {
+  if (angemeldet && navigator.onLine) {
+    await syncStarten();
+    await remoteNeuLaden();
+    realtimeStarten();
+    await presenceTracken();
+  }
+});
+
+realtimeFallbackStarten();
 
 
 /* START */
@@ -4647,7 +5235,8 @@ authStart();
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
-    .register("service-worker.js")
+    .register("service-worker.js", { updateViaCache: "none" })
+    .then(registration => registration.update().catch(() => {}))
     .catch(error => {
       console.error("Service Worker:", error);
     });
