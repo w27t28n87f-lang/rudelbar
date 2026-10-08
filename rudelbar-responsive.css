@@ -1,0 +1,65 @@
+/* Rudelbar v136: Zusatzlayout. Original style.css muss im Repository bleiben. */
+*,*::before,*::after{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:clip}
+img,svg,video{max-width:100%}
+.bereich-start-inhalt{width:min(100% - 32px,1800px)!important;max-width:1800px!important;margin-inline:auto!important}
+.bereich-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:clamp(10px,1.4vw,24px)!important;width:100%!important}
+.bereich-karte{min-width:0;min-height:150px}
+.start-schnellzugriff{width:100%!important;max-width:none!important;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.start-schnellzugriff>button{width:100%!important;max-width:none!important}
+.modul-wrap{max-width:1650px!important;width:min(100% - 36px,1650px)!important}
+.modul-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))!important}
+.team-dialogbox{width:min(94vw,1500px)!important;max-width:1500px!important}
+.team-liste{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px;align-items:start}
+.team-karte{min-width:0}
+.team-karte .team-bereiche{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.team-karte .team-bereiche label{min-width:0}
+.akademie-start-icon{font-size:clamp(34px,4vw,60px)}
+.start-card-akademie{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;border:1px solid #eab23c!important;background:linear-gradient(135deg,#171717,#28231b)!important;color:#eab23c!important;cursor:pointer;font-weight:800;letter-spacing:.06em}
+.start-card-akademie strong{color:white;font-size:clamp(14px,1.5vw,21px)}
+.akademie-ansicht{min-height:100dvh;background:#071018;display:flex;flex-direction:column}
+.akademie-ansicht.versteckt{display:none!important}
+.akademie-kopf{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:12px clamp(14px,2vw,30px);background:#111619;color:#eab23c;border-bottom:1px solid #655022}
+.akademie-kopf button{min-height:44px}
+#akademieFrame{display:block;flex:1;border:0;width:100%;min-height:calc(100dvh - 76px);background:#071018}
+.akademie-speicherstatus{font-size:12px;color:#f2bf58;margin-top:4px}
+@media(max-width:1100px){.bereich-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}.start-schnellzugriff{grid-template-columns:repeat(2,minmax(0,1fr))}.team-liste{grid-template-columns:repeat(auto-fit,minmax(min(100%,350px),1fr))}}
+@media(max-width:700px){.bereich-start-inhalt{width:min(100% - 22px,600px)!important}.bereich-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}.bereich-karte{min-height:120px}.start-schnellzugriff{grid-template-columns:1fr}.team-dialogbox{width:min(96vw,640px)!important}.team-liste{grid-template-columns:1fr}.team-karte .team-bereiche{grid-template-columns:repeat(2,minmax(0,1fr))}.modul-wrap{width:calc(100% - 20px)!important}}
+@media(max-width:370px){.team-karte .team-bereiche{grid-template-columns:1fr}.bereich-karte{min-height:105px}}
+
+/* v160: Tablet, Desktop, 27 Zoll und größere Monitore */
+@media (min-width: 768px) {
+  #bereichStart .bereich-start-inhalt { width:min(100%, 1200px) !important; max-width:1200px; padding:24px 32px 50px; }
+  #bereichStart .bereich-grid {grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;}
+  #bereichStart .bereich-karte {min-height:200px;}
+  #bereichStart .start-schnellzugriff {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;}
+  #bereichStart .start-hero {min-height:170px;}
+  #bereichStart .bereich-hauptlogo {width:min(260px,36vw);}
+  .team-dialogbox {width:min(96vw,1200px) !important;max-width:1200px !important;}
+  .team-liste {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;}
+}
+@media (min-width: 1400px) {
+  #bereichStart .bereich-start-inhalt {width:min(100%, 1640px) !important;max-width:1640px;}
+  #bereichStart .bereich-grid {grid-template-columns:repeat(5,minmax(0,1fr));}
+  #bereichStart .bereich-karte {min-height:210px;}
+  .team-liste {grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media (max-width:767px) {
+  #bereichStart .bereich-start-inhalt {width:100%;max-width:540px;}
+  #bereichStart .bereich-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+  #bereichStart .bereich-karte {min-height:145px;}
+  .team-liste {display:grid;grid-template-columns:minmax(0,1fr);}
+}
+#bereichStart .start-card-akademie {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
+#bereichStart .start-card-akademie::before {background-image:url('Logo-Haupt.png');opacity:.14;}
+.akademie-card-icon {font-size:clamp(36px,5vw,60px);line-height:1;}
+.akademie-card-title {font-weight:900;color:#efa834;font-size:clamp(16px,2vw,24px);letter-spacing:.08em;}
+.start-card-akademie small {color:#eee;font-size:12px;}
+.akademie-ansicht {position:fixed;inset:0;z-index:3000;background:#0a1015;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);}
+.akademie-topbar {min-height:54px;display:flex;align-items:center;gap:20px;padding:8px max(14px,env(safe-area-inset-left));border-bottom:1px solid #6d501f;flex-wrap:wrap;}
+.akademie-topbar button {background:#292929;border:1px solid #c38c2a;color:white;padding:10px 16px;border-radius:10px;min-height:44px;}
+.akademie-topbar strong {color:#efa834;letter-spacing:.04em;}
+#akademieFrame {border:0;width:100%;flex:1;min-height:0;background:#081018;}
+.akademie-rechte {margin-bottom:7px;}
+.akademie-rechte-status {color:#aaa;display:block;margin-bottom:12px;}
+.team-karte {min-width:0;overflow-wrap:anywhere;}
