@@ -1,9 +1,0 @@
-RUDELBAR v162 – Layout Akademie + Teamfreigaben Fix
-
-1. GitHub-Repository vor Upload sichern.
-2. ZIP entpacken und ALLE Dateien direkt ins Hauptverzeichnis von rudelbar hochladen, keinen Ordner rudelbar-main hochladen.
-3. Bestehende Dateien nicht pauschal löschen. Supabase SQL aus v161 wurde bereits separat ausgeführt und muss nicht erneut ausgeführt werden.
-4. Nach GitHub Pages Veröffentlichung mit Strg+F5 aktualisieren.
-5. Team testen: Haken setzen, länger als 3 Sekunden warten, speichern, Teamdialog schließen und neu öffnen.
-6. Teste außerdem Kasse, Pfand, SumUp, Login, Mobile Ansicht und Akademie. Live-Supabase-/Gerätetest war hier nicht möglich.
-7. Die Akademie zeigt die Lernfelder nur gemäß ihrer bestehenden Implementierung; Zugriffsprüfung für einzelne Inhalte sollte separat getestet werden.
