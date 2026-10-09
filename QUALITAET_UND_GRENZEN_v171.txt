@@ -1,0 +1,7 @@
+Rudelbar v171 - Qualitätsstand
+
+Creator-Modus in der Mode-Navigation vorläufig verborgen; technische Funktionen bleiben erhalten.
+48 Unternehmer-Fachlektionen: wiederholte Standardabschnitte entfernt, vorhandene themenspezifische Inhalte beibehalten.
+Reflexionsnotizen je Lektion lokal gespeichert, nicht zentral, nicht bewertet.
+WICHTIG: Alle vier Lehrgänge sind NICHT vollständig fachlich auf Hochschulniveau neu ausgearbeitet. Die vorhandenen Quizfragen wurden NICHT vollständig fachlich validiert.
+SQL-Reset getrennt, bewusst nicht automatisch ausgeführt.
