@@ -1,0 +1,4 @@
+RUDELBAR v165 – ERWEITERTER UNTERNEHMERBEREICH
+12 Unternehmer-Unterpfade mit je fünf eigenständigen Modulabschlussfragen, Auswertung und Erklärungen. Vorhandene Lektionen und Lern-IDs bleiben erhalten.
+WICHTIG: Noch KEIN vollständiger 15–25-Minuten-IHK-Lehrgang. Das wäre mit den bisherigen Inhalten eine irreführende Behauptung.
+Keine SQL-Änderung nötig. Vor GitHub-Upload Backup anlegen. Test im echten Supabase-Betrieb steht aus.
