@@ -659,7 +659,7 @@ function einstellungenOeffnen(){
   if($("settingsZugangInfo")) $("settingsZugangInfo").textContent=aktuelleRolle==="superuser"?"Vollzugriff":"Nur eigenes Konto";
   if(aktuelleRolle==="superuser"){
     $("settingsStartbereich").value=appSettings.startbereich||"start";
-    if ($("settingsCreatorSpalten")) $("settingsCreatorSpalten").value=appSettings.creatorSpalten||"2";
+    $("settingsCreatorSpalten").value=appSettings.creatorSpalten||"2";
     $("settingsAnimationen").checked=appSettings.animationen!==false;
     rechnungsSettingsInUI();
   }
@@ -2911,6 +2911,7 @@ const BEREICHE = {
     module: [
       { id: "auftraege", icon: "📦", titel: "Aufträge", text: "Bestellungen verwalten" },
       { id: "artikel", icon: "👕", titel: "Artikel", text: "Produkte und Bestand" },
+      { id: "creator", icon: "🎨", titel: "Creator Modus", text: "Designs auf Kleidung visualisieren" },
       { id: "kunden", icon: "👥", titel: "Kunden", text: "Kundendaten verwalten" },
       { id: "angebote", icon: "📝", titel: "Angebote", text: "Angebote erstellen" },
       { id: "rechnungen", icon: "🧾", titel: "Rechnungen", text: "Rechnungen verwalten" },
