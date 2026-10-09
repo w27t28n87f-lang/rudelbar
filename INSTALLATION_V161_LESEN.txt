@@ -1,9 +1,0 @@
-RUDELBAR v161 – ALLE DATEIEN IM ZIP-HAUPTVERZEICHNIS
-
-1. Vor dem Hochladen das GitHub-Repository und die Supabase-Daten sichern.
-2. ZIP entpacken. ALLE Dateien aus dem entpackten Verzeichnis direkt in das Hauptverzeichnis des GitHub-Repositories rudelbar hochladen. KEINEN Unterordner hochladen.
-3. index.html ist die RUDELBAR-Startseite. akademie.html ist die Akademie-Unterseite, die über die fünfte Kachel geöffnet wird.
-4. Alte Dateien, die nicht im Paket sind, nicht pauschal löschen.
-5. Akademie-Freigaben benötigen AKADEMIE_SUPABASE_SETUP.sql im BESTEHENDEN Rudelbar-Supabase-Projekt. SQL zuerst prüfen und Datenbank sichern.
-6. Test: Login, Teamfreigaben, Akademie, Kasse, Pfand, SumUp, Mobil- und Desktopansicht. Ein Live-Test wurde nicht durchgeführt.
-7. Vorhandene Lernfortschritte der separat gehosteten Akademie werden nicht automatisch übernommen.
