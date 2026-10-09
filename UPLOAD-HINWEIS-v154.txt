@@ -1,9 +1,0 @@
-RUDELBAR v154 – PFAND-BUTTON FIX
-
-Wichtig: Alle Dateien aus diesem Ordner in das ROOT des GitHub-Repositories hochladen und vorhandene Dateien ersetzen.
-Insbesondere: index.html, app.js, style.css und service-worker.js.
-
-Danach die PWA/App einmal vollständig schließen und neu öffnen. Der Cache wurde auf v154 angehoben.
-
-In der Kasse stehen unten drei Buttons nebeneinander:
-BAR | KARTE | PFAND ZURÜCK
