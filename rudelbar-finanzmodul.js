@@ -1,1 +1,11 @@
-(()=>{const pane=document.getElementById('rbFinanzen');const show=()=>{const role=typeof aktuelleRolle==='string'?aktuelleRolle:'mitarbeiter';const owner=typeof istRudelbarBesitzer==='function'&&istRudelbarBesitzer();if(role!=='superuser'&&!owner)return;pane.hidden=false;};document.getElementById('finanzenStartBtn')?.addEventListener('click',show);document.querySelector('[data-rudelbar-nav="finanzen"]')?.addEventListener('click',show);document.getElementById('rbFinBack')?.addEventListener('click',()=>pane.hidden=true);const sync=()=>{const role=typeof aktuelleRolle==='string'?aktuelleRolle:'mitarbeiter';const owner=typeof istRudelbarBesitzer==='function'&&istRudelbarBesitzer();document.querySelectorAll('[data-rudelbar-nav="finanzen"],#finanzenStartBtn').forEach(x=>x.hidden=!(role==='superuser'||owner));};setInterval(sync,800);sync();})();
+(()=>{
+  const pane=document.getElementById('rbFinanzen');
+  if(!pane)return;
+  const allowed=()=>{try{return (typeof istRudelbarBesitzer==='function'&&istRudelbarBesitzer())||(typeof aktuelleRolle!=='undefined'&&aktuelleRolle==='superuser');}catch(e){return false;}};
+  const show=()=>{if(!allowed())return;pane.hidden=false;};
+  document.getElementById('finanzenStartBtn')?.addEventListener('click',show);
+  document.querySelector('[data-rudelbar-nav="finanzen"]')?.addEventListener('click',show);
+  document.getElementById('rbFinBack')?.addEventListener('click',()=>{pane.hidden=true;});
+  const sync=()=>{document.querySelectorAll('[data-rudelbar-nav="finanzen"],#finanzenStartBtn').forEach(el=>{el.hidden=!allowed();});if(!allowed())pane.hidden=true;};
+  setInterval(sync,1000);sync();
+})();
