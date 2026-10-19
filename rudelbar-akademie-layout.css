@@ -1,0 +1,38 @@
+/* v162: optische Angleichung an die Rudelbar Akademie, nur Dashboard und Teamdialog. */
+#bereichStart.bereich-start{background:radial-gradient(circle at 75% 0%,#102333 0%,#071018 48%)!important;color:#f5f7f8;}
+#bereichStart .start-wolf-bg{opacity:.075!important;pointer-events:none;}
+#bereichStart .bereich-start-inhalt{padding-top:clamp(20px,3vw,42px)!important;max-width:1600px!important;}
+#bereichStart .start-hero{min-height:120px!important;place-items:start!important;justify-content:flex-start;align-items:center;border-bottom:1px solid #20313d;margin-bottom:24px;}
+#bereichStart .bereich-hauptlogo{width:170px!important;max-height:108px!important;}
+#bereichStart .start-begruessung{margin:0 0 24px!important;}
+#bereichStart .start-begruessung h2{font-size:clamp(24px,2.2vw,34px)!important;}
+#bereichStart .start-begruessung p{color:#aab6bf!important;}
+#bereichStart .bereich-grid{gap:16px!important;margin-bottom:18px!important;}
+#bereichStart .bereich-karte{background:linear-gradient(145deg,#101e29,#0d1821)!important;border:1px solid #253747!important;border-radius:14px!important;box-shadow:0 10px 35px #0003!important;min-height:185px!important;transition:transform .16s,border-color .16s;}
+#bereichStart .bereich-karte:hover{transform:translateY(-3px);border-color:#d89832!important;}
+#bereichStart .bereich-karte::before{opacity:.12!important;}
+#bereichStart .bereich-karte::after{background:linear-gradient(180deg,transparent,#07101899)!important;}
+#bereichStart .start-card-akademie{background:linear-gradient(145deg,#172531,#0d1821)!important;}
+#bereichStart .start-schnellzugriff>button{background:linear-gradient(145deg,#101e29,#0d1821)!important;border:1px solid #253747!important;border-radius:13px!important;box-shadow:0 10px 35px #0003!important;}
+#bereichStart .start-schnellzugriff>button:hover{border-color:#d89832!important;}
+#bereichStart .settings-trigger{border-color:#314657!important;background:#101e29!important;}
+.rudelbar-side{display:none;}
+#teamDialog .team-dialogbox{background:#0d1821!important;border:1px solid #2a3d4b!important;color:#f5f7f8!important;border-radius:16px!important;}
+#teamDialog .team-karte{background:linear-gradient(145deg,#101e29,#0d1821)!important;border:1px solid #2a3d4b!important;border-radius:13px!important;}
+#teamDialog .team-karte:focus-within{border-color:#d89832!important;}
+#teamDialog .team-karte button{min-height:42px;}
+@media(min-width:1150px){
+ #bereichStart.bereich-start{padding-left:230px!important;}
+ #bereichStart .bereich-start-inhalt{width:calc(100% - 64px)!important;max-width:1600px!important;}
+ .rudelbar-side{display:flex;position:fixed;z-index:15;inset:0 auto 0 0;width:230px;background:#081119;border-right:1px solid #20313d;flex-direction:column;padding:25px 16px;color:#f5f7f8;}
+ .rudelbar-side-brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.07em;margin-bottom:35px;font-size:14px;}
+ .rudelbar-side-brand img{width:53px;height:53px;object-fit:contain;}
+ .rudelbar-side-brand small{font-size:10px;color:#efb650;letter-spacing:.13em;}
+ .rudelbar-side nav{display:grid;gap:6px;}
+ .rudelbar-side nav button{color:#aab6bf;background:transparent;border:0;border-radius:9px;text-align:left;padding:13px 12px;cursor:pointer;font-size:14px;}
+ .rudelbar-side nav button:hover,.rudelbar-side nav button.active{background:#16232d;color:#efb650;box-shadow:inset 3px 0 #efb650;}
+ .rudelbar-side-bottom{margin-top:auto;font-size:11px;color:#8998a5;line-height:1.5;}
+}
+@media(max-width:1149px){#bereichStart .bereich-start-inhalt{width:calc(100% - 28px)!important;}}
+@media(max-width:700px){#bereichStart .bereich-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;}#bereichStart .bereich-karte{min-height:125px!important;}#bereichStart .start-hero{min-height:90px!important;}#bereichStart .bereich-hauptlogo{width:130px!important;}#bereichStart .start-schnellzugriff{grid-template-columns:1fr!important;}}
+@media(prefers-reduced-motion:reduce){#bereichStart .bereich-karte{transition:none!important;}}
