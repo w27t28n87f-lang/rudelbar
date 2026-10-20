@@ -3141,12 +3141,10 @@ function modulRendern() {
 
 
 const KALENDER_BEREICHE = {
-  kneipe: { name: "Mobile Kneipe", icon: "🍺", cls: "kneipe" },
-  service: { name: "Facility Service", icon: "🛠️", cls: "service" },
-  security: { name: "Security", icon: "🛡️", cls: "security" }
+  kneipe: { name: "Mobile Kneipe", icon: "🍺", cls: "kneipe" }
 };
 let kalenderMonat = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-let kalenderFilter = new Set(["kneipe", "service", "security"]);
+let kalenderFilter = new Set(["kneipe"]);
 
 function kalenderAlleTermine() {
   return Object.keys(KALENDER_BEREICHE).flatMap(bereich => {
@@ -3173,7 +3171,7 @@ function kalenderRendern() {
   const monatStart = new Date(kalenderMonat.getFullYear(), kalenderMonat.getMonth(), 1);
   const monatEnde = new Date(kalenderMonat.getFullYear(), kalenderMonat.getMonth()+1, 0);
 
-  const bereichFix = ["kneipe","service","security"].includes(aktiverBereich) ? aktiverBereich : null;
+  const bereichFix = ["kneipe"].includes(aktiverBereich) ? aktiverBereich : null;
   const sichtbar = bereichFix ? alle.filter(x => x.bereich === bereichFix) : alle.filter(x => kalenderFilter.has(x.bereich));
   const imMonat = sichtbar.filter(x => {
     const d=new Date(`${x.datum}T12:00:00`); return d>=monatStart && d<=monatEnde;
@@ -3248,14 +3246,14 @@ function kalenderTerminKarte(x){
 
 function kalenderNeuFuerDatum(datum, bereichVorgabe = null, ursprung = "modul"){
   const ursprungBereich = bereichVorgabe || aktiverBereich;
-  const istBereichsKalender = ["kneipe","service","security"].includes(bereichVorgabe);
+  const istBereichsKalender = ["kneipe"].includes(bereichVorgabe);
   modulEditID=null;
   const felder=veranstaltungsFelder(KALENDER_BEREICHE[ursprungBereich]?.name||"Veranstaltung");
   $("modulFormTitel").textContent="Neuen Termin anlegen";
 
   const bereichFeld = istBereichsKalender
     ? `<input type="hidden" name="__bereich" value="${ursprungBereich}">`
-    : `<label class="ganz">Bereich<select name="__bereich"><option value="kneipe">Mobile Kneipe</option><option value="service">Facility Service</option><option value="security">Security</option></select></label>`;
+    : `<label class="ganz">Bereich<select name="__bereich"><option value="kneipe">Mobile Kneipe</option></select></label>`;
 
   $("modulForm").innerHTML = bereichFeld + felder.map(f=>{
     const value=f.key==="datum"?datum:""; const cls=f.full?"ganz":"";
@@ -3413,7 +3411,7 @@ async function teamOeffnen(){
 }
 
 function teamBereichLabel(key){
-  return ({kneipe:"🍺 Mobile Kneipe",service:"🛠️ Facility",security:"🛡️ Security",mode:"👕 Mode"})[key] || key;
+  return ({kneipe:"🍺 Mobile Kneipe",mode:"👕 Mode"})[key] || key;
 }
 
 // v162: Entwürfe bleiben auch bei Realtime- und Sync-Neuzeichnungen erhalten.
@@ -3479,11 +3477,11 @@ function teamRendern(){
       <div class="team-meta">Zuletzt angemeldet: ${esc(login)}</div>
       <div class="team-bereich-label">Einsetzbar in</div>
       <div class="team-bereiche">
-        ${["kneipe","service","security","mode"].map(k=>`<label class="team-bereich-${k}"><input type="checkbox" data-team-bereich="${k}" ${bereiche.includes(k)?"checked":""}> <span>${teamBereichLabel(k)}</span></label>`).join("")}
+        ${["kneipe","mode"].map(k=>`<label class="team-bereich-${k}"><input type="checkbox" data-team-bereich="${k}" ${bereiche.includes(k)?"checked":""}> <span>${teamBereichLabel(k)}</span></label>`).join("")}
       </div>
       <div class="team-bereich-label">🎓 Akademie – Lernfelder freigeben</div>
       <div class="team-bereiche akademie-rechte">
-        ${[["unternehmer","📚 Unternehmertum"],["marketing","📣 Marketing"],["mobile-kneipe","🍺 Mobile Kneipe"],["security","🛡️ Security §34a"]].map(([k,t])=>`<label><input type="checkbox" data-akademie-bereich="${k}" ${akademieRechte.includes(k)?"checked":""}> <span>${t}</span></label>`).join("")}
+        ${[["unternehmer","📚 Unternehmertum"],["marketing","📣 Marketing"],["mobile-kneipe","🍺 Mobile Kneipe"]].map(([k,t])=>`<label><input type="checkbox" data-akademie-bereich="${k}" ${akademieRechte.includes(k)?"checked":""}> <span>${t}</span></label>`).join("")}
       </div><small data-akademie-status class="akademie-rechte-status">Nur Superuser können Lernfelder freigeben.</small>
       <label class="team-notiz-label">Notiz<textarea data-team-notiz rows="2" placeholder="z. B. 34a Sachkunde, Zapferfahrung, Führerschein…">${esc(m.notiz||"")}</textarea></label>
       <div class="team-aktionen">
@@ -3681,7 +3679,7 @@ function modulFormOeffnen(id = null) {
   $("modulFormTitel").textContent = id ? `${modul?.titel || "Eintrag"} bearbeiten` : `${modul?.titel || "Eintrag"} anlegen`;
   const terminLoeschenBtn = $("kalenderTerminLoeschen");
   if (terminLoeschenBtn) {
-    const istTerminBearbeitung = !!id && aktivesModul === "veranstaltungen" && ["kneipe","service","security"].includes(aktiverBereich);
+    const istTerminBearbeitung = !!id && aktivesModul === "veranstaltungen" && ["kneipe"].includes(aktiverBereich);
     terminLoeschenBtn.classList.toggle("versteckt", !istTerminBearbeitung);
     terminLoeschenBtn.dataset.id = istTerminBearbeitung ? String(id) : "";
     terminLoeschenBtn.dataset.bereich = istTerminBearbeitung ? aktiverBereich : "";
@@ -3751,7 +3749,7 @@ function kalenderTerminLoeschenAusForm() {
   const btn = $("kalenderTerminLoeschen");
   const id = btn?.dataset.id || modulEditID;
   const bereich = btn?.dataset.bereich || aktiverBereich;
-  if (!id || !["kneipe","service","security"].includes(bereich)) return;
+  if (!id || !["kneipe"].includes(bereich)) return;
   const daten = laden(modulKey(bereich,"veranstaltungen"),[]);
   const termin = daten.find(x => String(x.id) === String(id));
   if (!termin) return;
@@ -4577,7 +4575,7 @@ $("bereichMenuZurueck").onclick = startseiteZeigen;
 $("modulZurueck").onclick = () => bereichMenuZeigen(aktiverBereich);
 $("modulNeu").onclick = () => {
   if (aktivesModul === "rechnungen") return rechnungOeffnen();
-  if (aktivesModul === "veranstaltungen" && ["kneipe","service","security"].includes(aktiverBereich)) {
+  if (aktivesModul === "veranstaltungen" && ["kneipe"].includes(aktiverBereich)) {
     return kalenderNeuFuerDatum(kalenderDatumISO(new Date()), aktiverBereich);
   }
   modulFormOeffnen();
