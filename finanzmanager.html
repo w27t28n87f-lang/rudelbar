@@ -37,7 +37,22 @@ let cloudReady=false, cloudSaving=false, cloudTimer=null, cloudRevision=0;
 function cloudMessage(message){cloudStatus.textContent=message}
 function cloudAllowed(){try{return window.parent.rudelbarMenuCan('finanzen')}catch{return false}}
 async function cloudLoad(){
- if(!cloudClient||!cloudAllowed()){cloudMessage('Keine Finanzberechtigung oder keine Anmeldung.');return}
+ if(!cloudClient){cloudMessage('Keine Datenbankverbindung. Bitte Rudelbar neu öffnen.');return}
+ // Die Anmeldung und Menürechte werden in der Haupt-App asynchron geladen.
+ // Deshalb nicht schon beim ersten iframe-Aufruf den Zugriff ablehnen.
+ let authorized=false, signedIn=false;
+ for(let attempt=0;attempt<30;attempt++){
+  const {data:sessionData}=await cloudClient.auth.getSession();
+  signedIn=!!sessionData?.session?.user;
+  if(signedIn){
+   try{await window.parent.rudelbarFinanceEnsureAccess?.()}catch(e){console.warn('Finanzrechte:',e)}
+   authorized=cloudAllowed();
+   if(authorized)break;
+  }
+  await new Promise(resolve=>setTimeout(resolve,400));
+ }
+ if(!signedIn){cloudMessage('Keine Anmeldung. Bitte in der Rudelbar abmelden und erneut anmelden.');return}
+ if(!authorized){cloudMessage('Keine Finanzberechtigung. Bitte die Freigabe in der Teamverwaltung prüfen und speichern.');return}
  const {data,error}=await cloudClient.from('rudelbar_finances').select('data,revision').eq('id',1).maybeSingle();
  if(error){cloudMessage('Cloud nicht eingerichtet: '+error.message+' · Lokale Daten bleiben erhalten.');return}
  if(data){

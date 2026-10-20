@@ -3337,6 +3337,15 @@ async function rbMenuLoad(){
   } catch(e){ console.warn('Menürechte nicht geladen:',e.message);window.rudelbarMenuAccess[String(aktuellerUser.id)]=[]; }
   rbMenuApply();
 }
+// Für den Finanzmanager: aktuelle Rechte ausdrücklich vor dem Cloud-Zugriff nachladen.
+window.rudelbarFinanceEnsureAccess = async function(){
+  if(!aktuellerUser){
+    const {data}=await sb.auth.getUser();
+    if(data?.user) aktuellerUser=data.user;
+  }
+  if(aktuellerUser) await rbMenuLoad();
+  return window.rudelbarMenuCan('finanzen');
+};
 async function rbMenuLoadTeam(){
   try {const {data,error}=await sb.from('rudelbar_menu_access').select('user_id,area');if(error)throw error;
   for(const m of teamLaden())window.rudelbarMenuAccess[String(m.id)]=(data||[]).filter(x=>String(x.user_id)===String(m.id)).map(x=>x.area);
