@@ -7,12 +7,12 @@
 <section id="reports"><h2>EÜR / GuV / Umsatzsteuer</h2><p class="note">Vorläufige Managementauswertung für Kleinunternehmer nach § 19 UStG. Keine amtliche Anlage EÜR und keine ELSTER-Übermittlung. Abschreibungen, Privatanteile, Sonderfälle und zeitliche Zuordnung müssen gesondert geprüft werden. Zahlungen an das Finanzamt werden gesondert gezeigt.</p><div class="cards" id="reportKpis"></div><div class="panel"><h3>Monatliche Übersicht</h3><div class="scroll"><table><thead><tr><th>Monat</th><th>Einnahmen</th><th>Ausgaben inkl. Personal</th><th>Überschuss</th></tr></thead><tbody id="monthlyRows"></tbody></table></div></div><div class="panel"><h3>Umsatzsteuer-Orientierung</h3><div id="vatReport"></div><p class="note">Kleinunternehmerregelung ist voreingestellt. Ausnahmen sind steuerlich gesondert zu prüfen.</p></div><div class="actions"><button onclick="window.print()">Bericht drucken / als PDF sichern</button></div></section>
 <section id="personnel"><h2>Personal</h2><p class="note">Personalkosten werden über „Neue Buchung“ mit Art „Personal“ erfasst. Eine rechtssichere Lohnabrechnung oder Sozialversicherungsmeldung ersetzt dies nicht.</p><div class="panel"><div class="scroll"><table><thead><tr><th>Datum</th><th>Beschreibung</th><th>Veranstaltung</th><th>Betrag</th></tr></thead><tbody id="personnelRows"></tbody></table></div></div></section>
 <section id="events"><h2>Veranstaltungen</h2><div class="panel"><div class="scroll"><table><thead><tr><th>Veranstaltung</th><th>Einnahmen</th><th>Ausgaben inkl. Personal</th><th>Ergebnis</th></tr></thead><tbody id="eventRows"></tbody></table></div></div></section>
-<section id="settings"><h2>Einstellungen & Datensicherung</h2><div class="panel"><h3>Deine Daten</h3><p class="note">Diese Version speichert ausschließlich lokal im Browser dieses Geräts. Keine Cloud-Synchronisierung. Browserdaten können verloren gehen. Deshalb regelmäßig JSON-Backups herunterladen. Keine echten sensiblen Personaldaten eingeben, bevor eine sichere Datenbank angebunden ist.</p><div class="actions"><button class="primary" onclick="backup()">Backup herunterladen (JSON)</button><label class="btn" style="cursor:pointer">Backup importieren<input type="file" accept="application/json" id="restore" style="display:none"></label><button onclick="exportCSV()">Buchungen als CSV</button></div></div></section>
-</div><footer>Rudelbar Finanzmanager · Lokaler Prototyp · Keine steuerliche Beratung</footer><script>
+<section id="settings"><h2>Einstellungen & Datensicherung</h2><div class="panel"><h3>Deine Daten</h3><p class="note">Die Buchungen werden nach Einrichtung der Supabase-Tabelle gemeinsam synchronisiert. Bis dahin bleiben sie lokal gespeichert. Browserdaten können verloren gehen. Deshalb regelmäßig JSON-Backups herunterladen. Keine echten sensiblen Personaldaten eingeben, bevor eine sichere Datenbank angebunden ist.</p><div class="actions"><button class="primary" onclick="backup()">Backup herunterladen (JSON)</button><label class="btn" style="cursor:pointer">Backup importieren<input type="file" accept="application/json" id="restore" style="display:none"></label><button onclick="exportCSV()">Buchungen als CSV</button></div></div></section>
+</div><footer>Rudelbar Finanzmanager · Gemeinsame Finanzverwaltung · Keine steuerliche Beratung</footer><script>
 const tabs=[['dashboard','Übersicht'],['entry','＋ Eingabe'],['bookings','Buchungen'],['reports','EÜR / GuV / USt'],['personnel','Personal'],['events','Events'],['settings','Einstellungen']];
 const key='rudelbar-finanzmanager-v1';let editingId=null;let db;try{db=JSON.parse(localStorage.getItem(key))}catch{}if(!db||!Array.isArray(db.items))db={items:[],rate:30,base:'profit'};
 const eur=x=>Number(x||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'}),sum=a=>a.reduce((s,x)=>s+x,0),esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function save(){localStorage.setItem(key,JSON.stringify(db));render()};function show(id){document.querySelectorAll('section').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.id===id));window.scrollTo(0,0)};
+function save(){localStorage.setItem(key,JSON.stringify(db));render();scheduleCloudSave()};function show(id){document.querySelectorAll('section').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.id===id));window.scrollTo(0,0)};
 document.getElementById('nav').innerHTML=tabs.map(([id,t])=>`<button data-id="${id}" onclick="show('${id}')">${t}</button>`).join('');
 function income(x){return x.type==='Einnahme'}function cost(x){return x.type==='Ausgabe'||x.type==='Personal'}function vatPart(x){return Number(x.amount)*Number(x.vat)/(100+Number(x.vat))}function td(x){return `<td>${esc(x)}</td>`};
 function render(){const items=db.items,inc=sum(items.filter(income).map(x=>x.amount)),exp=sum(items.filter(cost).map(x=>x.amount)),personal=sum(items.filter(x=>x.type==='Personal').map(x=>x.amount)),taxPaid=sum(items.filter(x=>x.type==='Steuerzahlung').map(x=>x.amount)),profit=inc-exp,reserve=Math.max(0,db.base==='revenue'?inc:profit)*db.rate/100;
@@ -30,5 +30,50 @@ document.getElementById('entryForm').addEventListener('submit',e=>{e.preventDefa
 document.getElementById('reserveRate').addEventListener('change',e=>{db.rate=Math.min(100,Math.max(0,Number(e.target.value)||0));save()});document.getElementById('reserveBase').addEventListener('change',e=>{db.base=e.target.value;save()});
 function download(name,body,type){const a=document.createElement('a'),u=URL.createObjectURL(new Blob([body],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}function backup(){download('rudelbar-backup-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(db,null,2),'application/json')};function exportCSV(){const fields=['date','type','category','description','event','payment','amount','receipt','receiptRef'];const q=x=>'"'+String(x??'').replaceAll('"','""')+'"';download('rudelbar-buchungen.csv','\ufeff'+[fields.join(';'),...db.items.map(x=>fields.map(f=>q(f==='amount'?x[f].toFixed(2).replace('.',','):x[f])).join(';'))].join('\r\n'),'text/csv;charset=utf-8')};
 document.getElementById('restore').addEventListener('change',async e=>{try{const o=JSON.parse(await e.target.files[0].text());if(!Array.isArray(o.items)||!o.items.every(x=>typeof x.id==='string'&&typeof x.type==='string'&&typeof x.date==='string'&&Number.isFinite(x.amount)))throw Error('Ungültiges Backup');if(confirm('Alle aktuellen Daten durch das Backup ersetzen?')){db={items:o.items,audit:Array.isArray(o.audit)?o.audit:[],rate:Number(o.rate)||30,base:o.base==='revenue'?'revenue':'profit'};save()}}catch(err){alert('Import fehlgeschlagen: '+err.message)}e.target.value=''});
+// Gemeinsame Finanzdaten: nur angemeldete Benutzer mit Finanzrecht.
+const cloudStatus=document.createElement('div');cloudStatus.id='cloudStatus';cloudStatus.style.cssText='padding:10px 18px;background:#30271b;color:#ffe5b2;font-size:13px';cloudStatus.textContent='Finanzdaten: Verbindung wird geprüft …';document.querySelector('header').after(cloudStatus);
+const cloudClient=window.parent?.rudelbarFinanceClient;
+let cloudReady=false, cloudSaving=false, cloudTimer=null, cloudRevision=0;
+function cloudMessage(message){cloudStatus.textContent=message}
+function cloudAllowed(){try{return window.parent.rudelbarMenuCan('finanzen')}catch{return false}}
+async function cloudLoad(){
+ if(!cloudClient||!cloudAllowed()){cloudMessage('Keine Finanzberechtigung oder keine Anmeldung.');return}
+ const {data,error}=await cloudClient.from('rudelbar_finances').select('data,revision').eq('id',1).maybeSingle();
+ if(error){cloudMessage('Cloud nicht eingerichtet: '+error.message+' · Lokale Daten bleiben erhalten.');return}
+ if(data){
+  // Existierende Cloud-Daten niemals durch lokale Altbestände überschreiben.
+  if(db.items.length && !localStorage.getItem(key+'-migration-confirmed')){
+   const localCopy=JSON.stringify(db);
+   if(confirm('Auf diesem Gerät liegen lokale Buchungen. Sollen diese als zusätzliche Buchungen in die gemeinsamen Finanzen übernommen werden? Bereits vorhandene IDs werden nicht doppelt übernommen.')){
+    const known=new Set((data.data?.items||[]).map(x=>x.id));
+    db={...data.data,items:[...(data.data?.items||[]),...db.items.filter(x=>!known.has(x.id))]};
+    cloudRevision=data.revision;localStorage.setItem(key+'-migration-confirmed','1');localStorage.setItem(key,JSON.stringify(db));render();await cloudSave();return;
+   }
+   localStorage.setItem(key+'-precloud-backup',localCopy);
+  }
+  db=data.data;cloudRevision=data.revision;
+ }else if(db.items.length){
+  // Erster Upload ausschließlich durch den Inhaber.
+  const {data:auth}=await cloudClient.auth.getUser();
+  if(auth?.user?.email?.toLowerCase()!=='martin_kuester1988@web.de'){cloudMessage('Warte auf den erstmaligen Datenimport durch den Inhaber.');return}
+  const {error:insertError}=await cloudClient.from('rudelbar_finances').insert({id:1,data:db,revision:1});
+  if(insertError){cloudMessage('Import fehlgeschlagen: '+insertError.message);return}cloudRevision=1;
+ }
+ cloudReady=true;localStorage.setItem(key,JSON.stringify(db));render();cloudMessage('✓ Gemeinsame Finanzdaten synchronisiert');
+}
+function scheduleCloudSave(){if(!cloudReady)return;clearTimeout(cloudTimer);cloudTimer=setTimeout(cloudSave,350)}
+async function cloudSave(){
+ if(!cloudReady||cloudSaving||!cloudAllowed())return;
+ cloudSaving=true;cloudMessage('Finanzdaten werden gespeichert …');
+ const snapshot=JSON.stringify(db);
+ const {data,error}=await cloudClient.rpc('rudelbar_save_finances',{expected_revision:cloudRevision,new_data:JSON.parse(snapshot)});
+ cloudSaving=false;
+ if(error){cloudMessage('⚠ Nicht synchronisiert: '+error.message+' · Lokale Sicherung vorhanden.');return}
+ if(data===null){cloudReady=false;cloudMessage('⚠ Zwischenzeitliche Änderung auf anderem Gerät. Bitte Seite neu laden und Änderungen abgleichen.');return}
+ cloudRevision=data;cloudMessage('✓ Änderungen gemeinsam gespeichert');
+ if(JSON.stringify(db)!==snapshot)scheduleCloudSave();
+}
+window.addEventListener('focus',()=>{if(cloudReady&&!cloudSaving)cloudLoad()});
+setTimeout(cloudLoad,300);
 document.getElementById('date').value=new Date().toLocaleDateString('en-CA');render();show('dashboard');
 </script></body></html>

@@ -25,6 +25,8 @@ const sb = window.supabase.createClient(
   }
 );
 
+window.rudelbarFinanceClient = sb;
+
 let getraenke = laden(GETRAENKE_KEY, [
   { id: neueID(), name: "Pils", preis: 3.50, bild: null },
   { id: neueID(), name: "Radler", preis: 3.50, bild: null },
