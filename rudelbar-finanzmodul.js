@@ -1,1 +1,32 @@
-(()=>{'use strict';const pane=document.getElementById('rbFinanzen');if(!pane)return;const allowed=()=>{try{return (typeof istRudelbarBesitzer==='function'&&istRudelbarBesitzer())||(typeof aktuelleRolle!=='undefined'&&aktuelleRolle==='superuser');}catch(e){return false}};const open=e=>{if(!allowed()){e?.preventDefault();return;}pane.hidden=false;pane.style.setProperty('display','flex','important');document.body.style.overflow='hidden';};const close=()=>{pane.hidden=true;pane.style.setProperty('display','none','important');document.body.style.overflow='';};document.getElementById('finanzenStartBtn')?.addEventListener('click',open);document.querySelector('[data-rudelbar-nav="finanzen"]')?.addEventListener('click',open);document.getElementById('rbFinBack')?.addEventListener('click',close);document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!pane.hidden)close()});const sync=()=>{const ok=allowed();document.querySelectorAll('[data-rudelbar-nav="finanzen"],#finanzenStartBtn').forEach(el=>{el.hidden=!ok;el.style.display=ok?'':'none'});if(!ok&&!pane.hidden)close()};setInterval(sync,1500);sync();})();
+(()=>{
+  'use strict';
+  const pane=document.getElementById('rbFinanzen');
+  if(!pane)return;
+  const buttons=[document.getElementById('finanzenStartBtn'),...document.querySelectorAll('[data-rudelbar-nav="finanzen"]')].filter(Boolean);
+  function allowed(){
+    try {
+      if(typeof aktuellerUser==='undefined'||!aktuellerUser)return false;
+      if(typeof istRudelbarBesitzer==='function'&&istRudelbarBesitzer())return true;
+      if(typeof aktuelleRolle!=='undefined'&&aktuelleRolle==='superuser')return true;
+      if(typeof istAdmin!=='undefined'&&istAdmin===true)return true;
+    }catch(err){console.warn('Finanzrechte:',err)}
+    return false;
+  }
+  function close(){pane.hidden=true;pane.style.display='none';document.body.style.overflow=''}
+  function open(e){
+    e?.preventDefault();e?.stopPropagation();
+    if(!allowed()){console.warn('Finanzen: kein Inhaber-/Superuserzugriff oder Rolle noch nicht geladen');return}
+    pane.hidden=false;pane.style.display='flex';document.body.style.overflow='hidden';
+    const frame=document.getElementById('rbFinFrame');
+    if(frame&&!frame.getAttribute('src'))frame.src='finanzmanager.html';
+  }
+  buttons.forEach(b=>b.addEventListener('click',open,true));
+  document.getElementById('rbFinBack')?.addEventListener('click',close);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!pane.hidden)close()});
+  function sync(){
+    const ok=allowed();
+    buttons.forEach(b=>{b.hidden=!ok;b.style.display=ok?'':'none';b.disabled=!ok});
+    if(!ok&&!pane.hidden)close();
+  }
+  sync();setInterval(sync,1000);
+})();
