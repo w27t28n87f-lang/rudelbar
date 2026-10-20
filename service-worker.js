@@ -1,4 +1,4 @@
-const CACHE_NAME = "rb-finanz-layout-20261020b";
+const CACHE_NAME = "rb-finanz-auth-20261020c";
 
 const APP_SHELL = [
   "./",
@@ -20,7 +20,8 @@ const ALWAYS_FRESH = new Set([
   "style.css",
   "app.js",
   "manifest.json",
-  "service-worker.js"
+  "service-worker.js",
+  "finanzmanager.html"
 ]);
 
 self.addEventListener("install", event => {

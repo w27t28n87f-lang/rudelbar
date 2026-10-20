@@ -35,26 +35,27 @@ const cloudStatus=document.createElement('div');cloudStatus.id='cloudStatus';clo
 const cloudClient=window.parent?.rudelbarFinanceClient;
 let cloudReady=false, cloudSaving=false, cloudTimer=null, cloudRevision=0;
 function cloudMessage(message){cloudStatus.textContent=message}
-function cloudAllowed(){try{return window.parent.rudelbarMenuCan('finanzen')}catch{return false}}
+let cloudVerifiedUser=null;
+function cloudAllowed(){return !!cloudVerifiedUser}
 async function cloudLoad(){
  if(!cloudClient){cloudMessage('Keine Datenbankverbindung. Bitte Rudelbar neu öffnen.');return}
- // Die Anmeldung und Menürechte werden in der Haupt-App asynchron geladen.
- // Deshalb nicht schon beim ersten iframe-Aufruf den Zugriff ablehnen.
- let authorized=false, signedIn=false;
- for(let attempt=0;attempt<30;attempt++){
-  const {data:sessionData}=await cloudClient.auth.getSession();
-  signedIn=!!sessionData?.session?.user;
-  if(signedIn){
-   try{await window.parent.rudelbarFinanceEnsureAccess?.()}catch(e){console.warn('Finanzrechte:',e)}
-   authorized=cloudAllowed();
-   if(authorized)break;
-  }
+ // Supabase selbst ist die maßgebliche Quelle der Berechtigung.
+ // Die asynchronen Menürechte im Elternfenster sind kein verlässlicher Auth-Nachweis.
+ let sessionUser=null;
+ for(let attempt=0;attempt<20;attempt++){
+  const {data,error}=await cloudClient.auth.getUser();
+  if(!error && data?.user){sessionUser=data.user;break}
   await new Promise(resolve=>setTimeout(resolve,400));
  }
- if(!signedIn){cloudMessage('Keine Anmeldung. Bitte in der Rudelbar abmelden und erneut anmelden.');return}
- if(!authorized){cloudMessage('Keine Finanzberechtigung. Bitte die Freigabe in der Teamverwaltung prüfen und speichern.');return}
+ if(!sessionUser){cloudMessage('Keine gültige Supabase-Anmeldung erkannt. Bitte Rudelbar neu anmelden.');return}
+ const {data:access,error:accessError}=await cloudClient.from('rudelbar_menu_access')
+  .select('area').eq('user_id',sessionUser.id).eq('area','finanzen').limit(1);
+ if(accessError){cloudMessage('Finanzrechte konnten nicht geprüft werden: '+accessError.message);return}
+ const isOwner=sessionUser.email?.toLowerCase()==='martin_kuester1988@web.de';
+ if(!isOwner && !access?.length){cloudMessage('Finanzrecht für dieses Konto nicht in Supabase vorhanden.');return}
+ cloudVerifiedUser=sessionUser.id;
  const {data,error}=await cloudClient.from('rudelbar_finances').select('data,revision').eq('id',1).maybeSingle();
- if(error){cloudMessage('Cloud nicht eingerichtet: '+error.message+' · Lokale Daten bleiben erhalten.');return}
+ if(error){cloudReady=false;cloudVerifiedUser=null;cloudMessage('Finanzdaten-Zugriff fehlgeschlagen: '+error.message+' · Lokale Daten bleiben erhalten.');return}
  if(data){
   // Existierende Cloud-Daten niemals durch lokale Altbestände überschreiben.
   if(db.items.length && !localStorage.getItem(key+'-migration-confirmed')){

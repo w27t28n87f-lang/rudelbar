@@ -10,7 +10,7 @@
     if(!allowed()){console.warn('Finanzen: kein Inhaber-/Superuserzugriff oder Rolle noch nicht geladen');return}
     pane.hidden=false;pane.style.display='flex';document.body.style.overflow='hidden';
     const frame=document.getElementById('rbFinFrame');
-    if(frame&&!frame.getAttribute('src'))frame.src='finanzmanager.html';
+    if(frame&&!frame.getAttribute('src'))frame.src='finanzmanager.html?v=20261020c';
   }
   buttons.forEach(b=>b.addEventListener('click',open,true));
   document.getElementById('rbFinBack')?.addEventListener('click',close);
