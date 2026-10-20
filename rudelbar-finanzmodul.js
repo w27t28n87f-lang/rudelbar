@@ -3,15 +3,7 @@
   const pane=document.getElementById('rbFinanzen');
   if(!pane)return;
   const buttons=[document.getElementById('finanzenStartBtn'),...document.querySelectorAll('[data-rudelbar-nav="finanzen"]')].filter(Boolean);
-  function allowed(){
-    try {
-      if(typeof aktuellerUser==='undefined'||!aktuellerUser)return false;
-      if(typeof istRudelbarBesitzer==='function'&&istRudelbarBesitzer())return true;
-      if(typeof aktuelleRolle!=='undefined'&&aktuelleRolle==='superuser')return true;
-      if(typeof istAdmin!=='undefined'&&istAdmin===true)return true;
-    }catch(err){console.warn('Finanzrechte:',err)}
-    return false;
-  }
+  function allowed(){return typeof window.rudelbarMenuCan==='function' && window.rudelbarMenuCan('finanzen');}
   function close(){pane.hidden=true;pane.style.display='none';document.body.style.overflow=''}
   function open(e){
     e?.preventDefault();e?.stopPropagation();

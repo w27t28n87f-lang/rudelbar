@@ -3320,6 +3320,38 @@ const NOTIZEN_BEREICH = "global";
 /* TEAM / EINSATZBEREICHE */
 const TEAM_BEREICH = "system";
 const TEAM_MODUL = "team";
+const RB_MENU_KEYS = ["kneipe","mode","finanzen","akademie"];
+window.rudelbarMenuAccess = {};
+window.rudelbarMenuCan = function(key){
+  if (typeof istRudelbarBesitzer === "function" && istRudelbarBesitzer()) return true;
+  return !!(aktuellerUser && window.rudelbarMenuAccess[String(aktuellerUser.id)]?.includes(key));
+};
+async function rbMenuLoad(){
+  if(!aktuellerUser) return;
+  try {
+    const {data,error}=await sb.from('rudelbar_menu_access').select('area,user_id').eq('user_id',aktuellerUser.id);
+    if(error) throw error;
+    window.rudelbarMenuAccess[String(aktuellerUser.id)]=(data||[]).map(x=>x.area);
+  } catch(e){ console.warn('Menürechte nicht geladen:',e.message);window.rudelbarMenuAccess[String(aktuellerUser.id)]=[]; }
+  rbMenuApply();
+}
+async function rbMenuLoadTeam(){
+  try {const {data,error}=await sb.from('rudelbar_menu_access').select('user_id,area');if(error)throw error;
+  for(const m of teamLaden())window.rudelbarMenuAccess[String(m.id)]=(data||[]).filter(x=>String(x.user_id)===String(m.id)).map(x=>x.area);
+  }catch(e){console.warn('Team-Menürechte:',e.message)}
+}
+function rbMenuApply(){
+  for(const [key,selector] of Object.entries({kneipe:'[data-rudelbar-nav="kneipe"],.start-card-kneipe',mode:'[data-rudelbar-nav="mode"],.start-card-mode',finanzen:'[data-rudelbar-nav="finanzen"],#finanzenStartBtn',akademie:'[data-rudelbar-nav="akademie"],#akademieStartBtn'})){
+    document.querySelectorAll(selector).forEach(el=>{const yes=window.rudelbarMenuCan(key);el.hidden=!yes;el.style.display=yes?'':'none';});
+  }
+}
+setInterval(()=>{if(aktuellerUser && !window.rudelbarMenuAccess[String(aktuellerUser.id)]) rbMenuLoad();else rbMenuApply()},2500);
+document.addEventListener('click',e=>{
+ const el=e.target.closest('[data-rudelbar-nav],[data-bereich]');if(!el)return;
+ const key=el.dataset.rudelbarNav||el.dataset.bereich;
+ if(RB_MENU_KEYS.includes(key)&&!window.rudelbarMenuCan(key)){e.preventDefault();e.stopImmediatePropagation();alert('Für diesen Bereich fehlen dir die Zugriffsrechte.');}
+},true);
+
 
 function teamKey(){ return modulKey(TEAM_BEREICH, TEAM_MODUL); }
 function teamLaden(){ return laden(teamKey(), []); }
@@ -3406,6 +3438,7 @@ async function teamOeffnen(){
   const liste=$("teamListe");
   if(liste) liste.innerHTML='<div class="daten-leer"><strong>Team wird geladen…</strong></div>';
   await teamRemoteLaden();
+  await rbMenuLoadTeam();
   await window.rudelbarAcademyLoadAccess?.();
   teamRendern();
 }
@@ -3421,6 +3454,7 @@ function teamEntwurfSichern(id, card) {
   teamEntwuerfe.set(String(id), {
     bereiche: [...card.querySelectorAll('[data-team-bereich]:checked')].map(el=>el.dataset.teamBereich),
     akademie: [...card.querySelectorAll('[data-akademie-bereich]:checked')].map(el=>el.dataset.akademieBereich),
+    rechte: [...card.querySelectorAll('[data-menu-recht]:checked')].map(el=>el.dataset.menuRecht),
     notiz: card.querySelector('[data-team-notiz]')?.value ?? ''
   });
 }
@@ -3433,13 +3467,14 @@ function teamEntwuerfeAusDOMSichern(){
 function teamEntwurfAnwenden(card,entwurf){
   if(!entwurf) return;
   card.querySelectorAll('[data-team-bereich]').forEach(el=>el.checked=entwurf.bereiche.includes(el.dataset.teamBereich));
+  card.querySelectorAll('[data-menu-recht]').forEach(el=>el.checked=entwurf.rechte?.includes(el.dataset.menuRecht));
   card.querySelectorAll('[data-akademie-bereich]').forEach(el=>el.checked=entwurf.akademie.includes(el.dataset.akademieBereich));
   const notiz=card.querySelector('[data-team-notiz]'); if(notiz) notiz.value=entwurf.notiz;
   const status=card.querySelector('[data-akademie-status]');if(status) status.textContent='Ungespeicherte Änderungen';
 }
 function teamAenderungMerken(event){
   const el=event.target;
-  if(!el.matches('[data-team-bereich],[data-akademie-bereich],[data-team-notiz]'))return;
+  if(!el.matches('[data-team-bereich],[data-akademie-bereich],[data-menu-recht],[data-team-notiz]'))return;
   const card=el.closest('[data-team-id]');if(card)teamEntwurfSichern(card.dataset.teamId,card);
 }
 // Delegierte Listener überleben den Austausch der Mitarbeiterkarten.
@@ -3464,6 +3499,7 @@ function teamRendern(){
   liste.innerHTML=daten.map(m=>{
     const bereiche=Array.isArray(m.einsatzbereiche)?m.einsatzbereiche:[];
     const akademieRechte=window.rudelbarAcademyAccess?.[m.id]||[];
+    const menurechte=window.rudelbarMenuAccess?.[m.id]||[];
     const login=m.letzterLogin?new Date(m.letzterLogin).toLocaleString("de-DE",{dateStyle:"short",timeStyle:"short"}):"–";
     const istEigenesKonto=String(m.id)===String(aktuellerUser?.id||"");
     return `<article class="team-karte" data-team-id="${esc(m.id)}">
@@ -3479,11 +3515,15 @@ function teamRendern(){
       <div class="team-bereiche">
         ${["kneipe","mode"].map(k=>`<label class="team-bereich-${k}"><input type="checkbox" data-team-bereich="${k}" ${bereiche.includes(k)?"checked":""}> <span>${teamBereichLabel(k)}</span></label>`).join("")}
       </div>
+      <div class="team-bereich-label">🔐 Menüzugriff freigeben</div>
+      <div class="team-bereiche">
+        ${[["kneipe","🍺 Mobile Kneipe"],["mode","👕 Mode"],["finanzen","💰 Finanzen"],["akademie","🎓 Akademie"]].map(([k,t])=>`<label><input type="checkbox" data-menu-recht="${k}" ${istRudelbarBesitzer({email:m.email})?'checked disabled':menurechte.includes(k)?'checked':''}> <span>${t}</span></label>`).join("")}
+      </div>
       <div class="team-bereich-label">🎓 Akademie – Lernfelder freigeben</div>
       <div class="team-bereiche akademie-rechte">
         ${[["unternehmer","📚 Unternehmertum"],["marketing","📣 Marketing"],["mobile-kneipe","🍺 Mobile Kneipe"]].map(([k,t])=>`<label><input type="checkbox" data-akademie-bereich="${k}" ${akademieRechte.includes(k)?"checked":""}> <span>${t}</span></label>`).join("")}
       </div><small data-akademie-status class="akademie-rechte-status">Nur Superuser können Lernfelder freigeben.</small>
-      <label class="team-notiz-label">Notiz<textarea data-team-notiz rows="2" placeholder="z. B. 34a Sachkunde, Zapferfahrung, Führerschein…">${esc(m.notiz||"")}</textarea></label>
+      <label class="team-notiz-label">Notiz<textarea data-team-notiz rows="2" placeholder="z. B. Zapferfahrung, Führerschein…">${esc(m.notiz||"")}</textarea></label>
       <div class="team-aktionen">
         <button class="hauptbutton team-speichern" type="button" data-team-save="${esc(m.id)}">Speichern</button>
         ${istEigenesKonto?"":`<button class="danger-button team-loeschen" type="button" data-team-delete="${esc(m.id)}">🗑 Konto löschen</button>`}
@@ -3503,6 +3543,12 @@ async function teamProfilSpeichern(id){
   if(!profil||!card) return;
   profil.einsatzbereiche=[...card.querySelectorAll("[data-team-bereich]:checked")].map(x=>x.dataset.teamBereich);
   profil.notiz=card.querySelector("[data-team-notiz]")?.value.trim()||"";
+  if(!istRudelbarBesitzer({email:profil.email})){
+    const selected=[...card.querySelectorAll('[data-menu-recht]:checked')].map(x=>x.dataset.menuRecht);
+    const {error:accessError}=await sb.rpc('rudelbar_set_menu_access',{p_user_id:id,p_areas:selected});
+    if(accessError){alert('Menürechte NICHT gespeichert. Bitte SQL-Setup ausführen: '+accessError.message);return;}
+    window.rudelbarMenuAccess[String(id)]=selected;
+  }
   profil.updatedAt=new Date().toISOString();
   teamSpeichern(daten);
   try{
@@ -3548,6 +3594,7 @@ async function teamMitgliedLoeschen(id){
   const daten=teamLaden().filter(x=>String(x.id)!==String(id));
   teamSpeichern(daten);
   await teamRemoteLaden();
+  await rbMenuLoadTeam();
   teamRendern();
   teamButtonAktualisieren();
   try{ await remoteNeuLaden(); }catch{}
