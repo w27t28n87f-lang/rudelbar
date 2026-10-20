@@ -1,11 +1,1 @@
-(()=>{
-  const pane=document.getElementById('rbFinanzen');
-  if(!pane)return;
-  const allowed=()=>{try{return (typeof istRudelbarBesitzer==='function'&&istRudelbarBesitzer())||(typeof aktuelleRolle!=='undefined'&&aktuelleRolle==='superuser');}catch(e){return false;}};
-  const show=()=>{if(!allowed())return;pane.hidden=false;};
-  document.getElementById('finanzenStartBtn')?.addEventListener('click',show);
-  document.querySelector('[data-rudelbar-nav="finanzen"]')?.addEventListener('click',show);
-  document.getElementById('rbFinBack')?.addEventListener('click',()=>{pane.hidden=true;});
-  const sync=()=>{document.querySelectorAll('[data-rudelbar-nav="finanzen"],#finanzenStartBtn').forEach(el=>{el.hidden=!allowed();});if(!allowed())pane.hidden=true;};
-  setInterval(sync,1000);sync();
-})();
+(()=>{'use strict';const pane=document.getElementById('rbFinanzen');if(!pane)return;const allowed=()=>{try{return (typeof istRudelbarBesitzer==='function'&&istRudelbarBesitzer())||(typeof aktuelleRolle!=='undefined'&&aktuelleRolle==='superuser');}catch(e){return false}};const open=e=>{if(!allowed()){e?.preventDefault();return;}pane.hidden=false;document.body.style.overflow='hidden';};const close=()=>{pane.hidden=true;document.body.style.overflow='';};document.getElementById('finanzenStartBtn')?.addEventListener('click',open);document.querySelector('[data-rudelbar-nav="finanzen"]')?.addEventListener('click',open);document.getElementById('rbFinBack')?.addEventListener('click',close);document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!pane.hidden)close()});const sync=()=>{const ok=allowed();document.querySelectorAll('[data-rudelbar-nav="finanzen"],#finanzenStartBtn').forEach(el=>{el.hidden=!ok;el.style.display=ok?'':'none'});if(!ok&&!pane.hidden)close()};setInterval(sync,1500);sync();})();

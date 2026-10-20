@@ -1,4 +1,4 @@
-const CACHE_NAME = "rudelbar-app-cache-v175";
+const CACHE_NAME = "rb-finanz-integriert-20261020";
 
 const APP_SHELL = [
   "./",
