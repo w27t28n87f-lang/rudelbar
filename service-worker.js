@@ -1,4 +1,4 @@
-const CACHE_NAME = "rb-finanz-integriert-20261020";
+const CACHE_NAME = "rb-finanz-layout-20261020b";
 
 const APP_SHELL = [
   "./",
