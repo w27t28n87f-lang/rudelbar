@@ -1,4 +1,4 @@
-const CACHE_NAME = "rb-finanz-auth-20261020c";
+const CACHE_NAME = "rudelbar-2026-10-21-belege-jahre-v2";
 
 const APP_SHELL = [
   "./",
