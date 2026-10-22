@@ -3684,12 +3684,47 @@ function notizErledigen(id){
   const daten=notizenLaden(); const n=daten.find(x=>String(x.id)===String(id)); if(!n)return;
   n.status="erledigt"; n.updatedAt=new Date().toISOString(); notizenSpeichern(daten); queueUpsert("moduldaten",modulZuDB(NOTIZEN_BEREICH,NOTIZEN_MODUL,n)); notizenRendern();
 }
-function notizLoeschen(id){
+async function notizLoeschen(id){
   const alle = notizenLaden();
   const n = alle.find(x=>String(x.id)===String(id));
   if(!n) return;
   if(!confirm("Diese Notiz wirklich löschen?")) return;
-  const daten=alle.filter(x=>String(x.id)!==String(id)); notizenSpeichern(daten); queueDelete("moduldaten",id); notizenRendern();
+  if(!angemeldet || !navigator.onLine || !sb){
+    alert("Zum dauerhaften Löschen der Notiz ist eine aktive Verbindung zu Supabase erforderlich. Bitte online erneut versuchen.");
+    return;
+  }
+  const knopf = [...document.querySelectorAll("[data-notiz-loeschen]")]
+    .find(el=>el.dataset.notizLoeschen===String(id));
+  if(knopf){ knopf.disabled=true; knopf.textContent="Lösche…"; }
+  try {
+    // Keine optimistische lokale Löschung: erst die Datenbank bestätigen lassen.
+    // .select() liefert auch bei durch RLS blockiertem DELETE eine leere Liste.
+    const {data, error} = await sb.from("moduldaten")
+      .delete().eq("id",id).eq("bereich",NOTIZEN_BEREICH)
+      .eq("modul",NOTIZEN_MODUL).select("id");
+    if(error) throw error;
+    if(!data?.some(row=>String(row.id)===String(id))){
+      // Eventuell wurde der Datensatz bereits auf einem anderen Gerät gelöscht.
+      const check = await sb.from("moduldaten").select("id")
+        .eq("id",id).eq("bereich",NOTIZEN_BEREICH)
+        .eq("modul",NOTIZEN_MODUL).limit(1);
+      if(check.error) throw check.error;
+      if(check.data?.length) throw new Error("Keine Löschberechtigung für diese Notiz (Supabase RLS).");
+    }
+    // Ein älterer ausstehender Upsert darf den gelöschten Datensatz nicht wiederherstellen.
+    syncQueue=syncQueue.filter(job=>!(job.table==="moduldaten" && String(job.id)===String(id)));
+    notizenSpeichern(notizenLaden().filter(x=>String(x.id)!==String(id)));
+    speichernLokal();
+    notizenRendern();
+    await aenderungBroadcasten({table:"moduldaten",id,action:"delete"});
+    await remoteNeuLaden();
+  } catch(error){
+    console.error("Notiz konnte nicht dauerhaft gelöscht werden:",error);
+    alert("Notiz konnte nicht dauerhaft gelöscht werden. " + (error?.message||"Bitte Berechtigungen und Verbindung prüfen."));
+    notizenRendern();
+  } finally {
+    if(knopf?.isConnected){knopf.disabled=false;knopf.textContent="🗑 Löschen";}
+  }
 }
 
 function datenKarteHTML(x) {
