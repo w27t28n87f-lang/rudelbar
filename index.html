@@ -51,6 +51,7 @@
       <button type="button" data-rudelbar-nav="mode">👕 &nbsp; Mode</button>
       <button type="button" data-rudelbar-nav="finanzen">💰 &nbsp; Finanzen</button>
       <button type="button" data-rudelbar-nav="akademie">🎓 &nbsp; Akademie</button>
+      <button type="button" data-rudelbar-nav="projekte">📋 &nbsp; Projekte</button>
     </nav>
     <div class="rudelbar-side-bottom">Gemeinsam. Überall. Rudelbar.</div>
   </aside>
@@ -79,6 +80,7 @@
       <button class="bereich-karte start-card-akademie" id="akademieStartBtn" type="button" aria-label="Rudelbar Akademie öffnen">
         <span class="akademie-card-icon">🎓</span><span class="akademie-card-title">AKADEMIE</span><small>Lernen · Üben · Prüfungen</small>
       </button>
+      <button class="bereich-karte" id="projekteStartBtn" type="button" style="display:none;flex-direction:column;gap:10px"><span style="font-size:3rem">📋</span><span style="font-weight:800">PROJEKTE</span><small>Events & Unternehmen</small></button>
     </div>
 
     <div class="start-schnellzugriff">
@@ -1014,9 +1016,11 @@
 <section id="rbFinanzen" class="rb-finanz-overlay" style="display:none;position:fixed;inset:0;width:100vw;height:100dvh;z-index:99999;background:#111;flex-direction:column;margin:0;padding:0;max-width:none;overflow:hidden" hidden aria-label="Rudelbar Finanzmanager"><div class="rb-finanz-top"><button type="button" id="rbFinBack">← Zur Rudelbar</button><strong>🐺 RUDELBAR · FINANZEN</strong><span>Finanzmanager</span></div><iframe id="rbFinFrame" title="Rudelbar Finanzmanager" src="finanzmanager.html?v=20261020c" style="display:block;position:relative;width:100%;height:100%;flex:1 1 auto;min-height:0;min-width:0;border:0;max-width:none" loading="eager"></iframe></section>
 <script src="app.js?v=181"></script>
 <script src="rudelbar-akademie.js?v=162"></script>
+<script src="rudelbar-projekte.js?v=20261022a"></script>
 <script src="rudelbar-layout.js?v=175"></script>
 <script src="rudelbar-finanzmodul.js?v=181"></script>
 
 
+<section id="rbProjects" hidden style="display:none;position:fixed;inset:0;z-index:100001;background:#0d1119;flex-direction:column"><header style="display:flex;align-items:center;gap:12px;padding:12px;background:#151d2b;color:white"><button type="button" id="rbProjectsBack" style="padding:10px 14px;border-radius:10px">← Zur Rudelbar</button><strong>🐺 RUDELBAR · PROJEKTE</strong></header><iframe id="rbProjectsFrame" title="Rudelbar Projektmanager" data-src="projektmanager.html?v=20261022b" style="width:100%;flex:1;border:0;min-height:0"></iframe></section>
 </body>
 </html>

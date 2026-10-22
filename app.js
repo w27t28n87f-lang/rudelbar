@@ -3322,7 +3322,7 @@ const NOTIZEN_BEREICH = "global";
 /* TEAM / EINSATZBEREICHE */
 const TEAM_BEREICH = "system";
 const TEAM_MODUL = "team";
-const RB_MENU_KEYS = ["kneipe","mode","finanzen","akademie"];
+const RB_MENU_KEYS = ["kneipe","mode","finanzen","akademie","projekte"];
 window.rudelbarMenuAccess = {};
 window.rudelbarMenuCan = function(key){
   if (typeof istRudelbarBesitzer === "function" && istRudelbarBesitzer()) return true;
@@ -3352,7 +3352,7 @@ async function rbMenuLoadTeam(){
   }catch(e){console.warn('Team-Menürechte:',e.message)}
 }
 function rbMenuApply(){
-  for(const [key,selector] of Object.entries({kneipe:'[data-rudelbar-nav="kneipe"],.start-card-kneipe',mode:'[data-rudelbar-nav="mode"],.start-card-mode',finanzen:'[data-rudelbar-nav="finanzen"],#finanzenStartBtn',akademie:'[data-rudelbar-nav="akademie"],#akademieStartBtn'})){
+  for(const [key,selector] of Object.entries({kneipe:'[data-rudelbar-nav="kneipe"],.start-card-kneipe',mode:'[data-rudelbar-nav="mode"],.start-card-mode',finanzen:'[data-rudelbar-nav="finanzen"],#finanzenStartBtn',akademie:'[data-rudelbar-nav="akademie"],#akademieStartBtn',projekte:'[data-rudelbar-nav="projekte"],#projekteStartBtn'})){
     document.querySelectorAll(selector).forEach(el=>{const yes=window.rudelbarMenuCan(key);el.hidden=!yes;el.style.display=yes?'':'none';});
   }
 }
@@ -3528,7 +3528,7 @@ function teamRendern(){
       </div>
       <div class="team-bereich-label">🔐 Menüzugriff freigeben</div>
       <div class="team-bereiche">
-        ${[["kneipe","🍺 Mobile Kneipe"],["mode","👕 Mode"],["finanzen","💰 Finanzen"],["akademie","🎓 Akademie"]].map(([k,t])=>`<label><input type="checkbox" data-menu-recht="${k}" ${istRudelbarBesitzer({email:m.email})?'checked disabled':menurechte.includes(k)?'checked':''}> <span>${t}</span></label>`).join("")}
+        ${[["kneipe","🍺 Mobile Kneipe"],["mode","👕 Mode"],["finanzen","💰 Finanzen"],["akademie","🎓 Akademie"],["projekte","📋 Projekte"]].map(([k,t])=>`<label><input type="checkbox" data-menu-recht="${k}" ${istRudelbarBesitzer({email:m.email})?'checked disabled':menurechte.includes(k)?'checked':''}> <span>${t}</span></label>`).join("")}
       </div>
       <div class="team-bereich-label">🎓 Akademie – Lernfelder freigeben</div>
       <div class="team-bereiche akademie-rechte">

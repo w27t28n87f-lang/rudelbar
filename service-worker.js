@@ -1,4 +1,4 @@
-const CACHE_NAME = "rudelbar-2026-10-21-belege-jahre-v2";
+const CACHE_NAME = "rudelbar-2026-10-22-projekte-v2";
 
 const APP_SHELL = [
   "./",
@@ -21,7 +21,9 @@ const ALWAYS_FRESH = new Set([
   "app.js",
   "manifest.json",
   "service-worker.js",
-  "finanzmanager.html"
+  "finanzmanager.html",
+  "projektmanager.html",
+  "rudelbar-projekte.js"
 ]);
 
 self.addEventListener("install", event => {
