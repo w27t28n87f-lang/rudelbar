@@ -3223,7 +3223,7 @@ function kalenderRendern() {
     <div class="kalender-wrap">
       <div class="kalender-grid">${wochenkopf}${zellen}</div>
       <section class="kalender-naechste"><div class="kalender-naechste-kopf"><h3>${bereichFix ? "Nächste Termine" : "Nächste Termine"}</h3><button type="button" data-kal-neu>+ Neuer Termin</button></div>
-        ${kommende.length?kommende.map(x=>kalenderTerminKarte(x)).join(""):'<div class="daten-leer"><strong>Keine kommenden Termine</strong><span>Lege mit „+ Neuer Termin“ den ersten Einsatz an.</span></div>'}
+        ${kommende.length?kommende.map(x=>kalenderTerminKarte(x)).join(""):'<div class="daten-leer"><strong>Keine kommenden Termine</strong><span>Termine werden im Projektmanager verwaltet.</span></div>'}
       </section>
     </div>`;
 
@@ -3231,10 +3231,10 @@ function kalenderRendern() {
   document.querySelector("[data-kal-next]").onclick=()=>{kalenderMonat=new Date(kalenderMonat.getFullYear(),kalenderMonat.getMonth()+1,1);kalenderRendern();};
   document.querySelector("[data-kal-heute]").onclick=()=>{const n=new Date();kalenderMonat=new Date(n.getFullYear(),n.getMonth(),1);kalenderRendern();};
   document.querySelectorAll("[data-kal-filter]").forEach(btn=>btn.onclick=()=>{const id=btn.dataset.kalFilter; kalenderFilter.has(id)?kalenderFilter.delete(id):kalenderFilter.add(id); if(!kalenderFilter.size) kalenderFilter.add(id); kalenderRendern();});
-  document.querySelectorAll("[data-kal-datum]").forEach(btn=>btn.onclick=(ev)=>{ if(ev.target.closest("[data-kal-event]")) return; kalenderNeuFuerDatum(btn.dataset.kalDatum, bereichFix); });
+  document.querySelectorAll("[data-kal-datum]").forEach(btn=>btn.onclick=()=>{});
   document.querySelectorAll("[data-kal-event]").forEach(el=>el.onclick=(ev)=>{ev.stopPropagation();const [bereich,id]=el.dataset.kalEvent.split("|");kalenderTerminDetails(bereich,id,"modul");});
   document.querySelectorAll("[data-kal-open]").forEach(el=>el.onclick=()=>{const [bereich,id]=el.dataset.kalOpen.split("|");kalenderTerminDetails(bereich,id,"modul");});
-  document.querySelector("[data-kal-neu]").onclick=()=>kalenderNeuFuerDatum(heute, bereichFix);
+  document.querySelector("[data-kal-neu]").remove();
 }
 function kalenderTerminKarte(x){
   const b=KALENDER_BEREICHE[x.bereich];
@@ -3273,6 +3273,7 @@ function kalenderTerminDetails(bereich,id,origin="modul"){
   const daten=laden(modulKey(bereich,"veranstaltungen"),[]); const x=daten.find(e=>String(e.id)===String(id)); if(!x)return;
   const b=KALENDER_BEREICHE[bereich];
   const text=[`${b.icon} ${b.name}`,x.titel||"Termin",x.datum||"",[x.start,x.ende].filter(Boolean).join(" – "),x.ort?`Ort: ${x.ort}`:"",x.kunde?`Kunde: ${x.kunde}`:"",x.team?`Team: ${x.team}`:"",x.status?`Status: ${x.status}`:"",x.notiz||""].filter(Boolean).join("\n");
+  alert(text); return;
   const bearbeiten=confirm(`${text}\n\nOK = bearbeiten · Abbrechen = schließen`);
   if(!bearbeiten)return;
   aktiverBereich=bereich; aktivesModul="veranstaltungen";
@@ -3313,7 +3314,7 @@ function startKalenderRendern(){
     </div>`;
   root.querySelector("[data-start-kal-prev]").onclick=()=>{kalenderMonat=new Date(kalenderMonat.getFullYear(),kalenderMonat.getMonth()-1,1);startKalenderRendern();};
   root.querySelector("[data-start-kal-next]").onclick=()=>{kalenderMonat=new Date(kalenderMonat.getFullYear(),kalenderMonat.getMonth()+1,1);startKalenderRendern();};
-  root.querySelectorAll("[data-start-kal-datum]").forEach(btn=>btn.onclick=()=>kalenderNeuFuerDatum(btn.dataset.startKalDatum,null,"start"));
+  root.querySelectorAll("[data-start-kal-datum]").forEach(btn=>btn.onclick=()=>{});
   root.querySelectorAll("[data-start-kal-open]").forEach(btn=>btn.onclick=()=>{const [bereich,id]=btn.dataset.startKalOpen.split("|");kalenderTerminDetails(bereich,id,"start");});
 }
 
@@ -4642,7 +4643,7 @@ document.querySelectorAll(".bereich-karte").forEach(button => {
   });
 });
 
-$("startKalenderNeu")?.addEventListener("click",()=>kalenderNeuFuerDatum(kalenderDatumISO(new Date()),null,"start"));
+
 $("startKalenderToggle")?.addEventListener("click",()=>{
   const panel=$("startKalender");
   if(!panel) return;
