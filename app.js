@@ -3115,8 +3115,9 @@ function modulRendern() {
     archivModulRendern();
     return;
   }
-  if (["kneipe", "service", "security"].includes(aktiverBereich) && aktivesModul === "veranstaltungen") {
+  if (["kneipe", "mode", "service", "security"].includes(aktiverBereich) && aktivesModul === "veranstaltungen") {
     kalenderRendern();
+    zentralenKalenderLaden();
     return;
   }
 
@@ -3143,18 +3144,53 @@ function modulRendern() {
 
 
 const KALENDER_BEREICHE = {
-  kneipe: { name: "Mobile Kneipe", icon: "🍺", cls: "kneipe" }
+  kneipe: { name: "Mobile Kneipe", icon: "🍺", cls: "kneipe" },
+  mode: { name: "Mode", icon: "👕", cls: "mode" },
+  allgemein: { name: "Projekte", icon: "📁", cls: "kneipe" }
 };
 let kalenderMonat = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-let kalenderFilter = new Set(["kneipe"]);
-
-function kalenderAlleTermine() {
-  return Object.keys(KALENDER_BEREICHE).flatMap(bereich => {
-    const daten = laden(modulKey(bereich, "veranstaltungen"), []);
-    return daten.map(x => ({ ...x, bereich }));
-  }).filter(x => x.datum);
+let kalenderFilter = new Set(Object.keys(KALENDER_BEREICHE));
+let zentraleKalenderProjekte = [];
+let zentraleKalenderAnfragen = [];
+let kalenderLadefehler = null;
+let kalenderAbfrage = null;
+async function zentralenKalenderLaden() {
+  if(kalenderAbfrage) return kalenderAbfrage;
+  kalenderAbfrage = (async()=>{
+    const [pr,an] = await Promise.all([
+      sb.from('rudelbar_projects').select('id,title,area,kind,status,start_date,due_date,location'),
+      sb.from('rudelbar_project_inquiries').select('id,title,status,event_date,location,project_id')
+    ]);
+    if(pr.error || an.error){
+      kalenderLadefehler = (pr.error || an.error).message;
+      zentraleKalenderProjekte=[]; zentraleKalenderAnfragen=[];
+    } else {
+      kalenderLadefehler=null;
+      zentraleKalenderProjekte=pr.data||[];
+      zentraleKalenderAnfragen=an.data||[];
+    }
+    if($('startKalenderInhalt') && !$('startKalender')?.classList.contains('versteckt')) startKalenderRendern();
+    if(aktivesModul==='veranstaltungen' && !$('modulAnsicht')?.classList.contains('versteckt')) kalenderRendern();
+  })().finally(()=>{kalenderAbfrage=null});
+  return kalenderAbfrage;
 }
-
+function kalenderAlleTermine() {
+  const termine=[];
+  for(const p of zentraleKalenderProjekte){
+    const von=p.start_date||p.due_date, bis=p.due_date||von;
+    if(!von || !/^\d{4}-\d{2}-\d{2}$/.test(von))continue;
+    const end=bis>=von?bis:von;
+    let d=new Date(von+'T12:00:00');
+    for(let i=0;i<370 && kalenderDatumISO(d)<=end;i++,d.setDate(d.getDate()+1)){
+      termine.push({id:p.id,bereich:KALENDER_BEREICHE[p.area]?p.area:'allgemein',datum:kalenderDatumISO(d),titel:p.title,status:p.status,ort:p.location||'',quelle:'projekt'});
+    }
+  }
+  for(const a of zentraleKalenderAnfragen){
+    if(!a.event_date || a.project_id)continue;
+    termine.push({id:a.id,bereich:'allgemein',datum:a.event_date,titel:a.title,status:a.status,ort:a.location||'',quelle:'anfrage'});
+  }
+  return termine;
+}
 function kalenderDatumISO(d) {
   const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
@@ -3168,12 +3204,12 @@ function kalenderStatusKlasse(x) {
 }
 
 function kalenderRendern() {
-  $("modulNeu").style.display = "";
+  $("modulNeu").style.display = "none";
   const alle = kalenderAlleTermine();
   const monatStart = new Date(kalenderMonat.getFullYear(), kalenderMonat.getMonth(), 1);
   const monatEnde = new Date(kalenderMonat.getFullYear(), kalenderMonat.getMonth()+1, 0);
 
-  const bereichFix = ["kneipe"].includes(aktiverBereich) ? aktiverBereich : null;
+  const bereichFix = ["kneipe","mode"].includes(aktiverBereich) ? aktiverBereich : null;
   const sichtbar = bereichFix ? alle.filter(x => x.bereich === bereichFix) : alle.filter(x => kalenderFilter.has(x.bereich));
   const imMonat = sichtbar.filter(x => {
     const d=new Date(`${x.datum}T12:00:00`); return d>=monatStart && d<=monatEnde;
@@ -3223,7 +3259,7 @@ function kalenderRendern() {
     <div class="kalender-wrap">
       <div class="kalender-grid">${wochenkopf}${zellen}</div>
       <section class="kalender-naechste"><div class="kalender-naechste-kopf"><h3>${bereichFix ? "Nächste Termine" : "Nächste Termine"}</h3><button type="button" data-kal-neu>+ Neuer Termin</button></div>
-        ${kommende.length?kommende.map(x=>kalenderTerminKarte(x)).join(""):'<div class="daten-leer"><strong>Keine kommenden Termine</strong><span>Termine werden im Projektmanager verwaltet.</span></div>'}
+        ${kalenderLadefehler?'<small class="start-kal-leer">Kalender konnte nicht geladen werden: '+esc(kalenderLadefehler)+'</small>':kommende.length?kommende.map(x=>kalenderTerminKarte(x)).join(""):'<div class="daten-leer"><strong>Keine kommenden Termine</strong><span>Termine werden im Projektmanager verwaltet.</span></div>'}
       </section>
     </div>`;
 
@@ -3234,7 +3270,7 @@ function kalenderRendern() {
   document.querySelectorAll("[data-kal-datum]").forEach(btn=>btn.onclick=()=>{});
   document.querySelectorAll("[data-kal-event]").forEach(el=>el.onclick=(ev)=>{ev.stopPropagation();const [bereich,id]=el.dataset.kalEvent.split("|");kalenderTerminDetails(bereich,id,"modul");});
   document.querySelectorAll("[data-kal-open]").forEach(el=>el.onclick=()=>{const [bereich,id]=el.dataset.kalOpen.split("|");kalenderTerminDetails(bereich,id,"modul");});
-  document.querySelector("[data-kal-neu]").remove();
+  document.querySelector("[data-kal-neu]")?.remove();
 }
 function kalenderTerminKarte(x){
   const b=KALENDER_BEREICHE[x.bereich];
@@ -3270,10 +3306,10 @@ function kalenderNeuFuerDatum(datum, bereichVorgabe = null, ursprung = "modul"){
   $("modulFormDialog").showModal();
 }
 function kalenderTerminDetails(bereich,id,origin="modul"){
-  const daten=laden(modulKey(bereich,"veranstaltungen"),[]); const x=daten.find(e=>String(e.id)===String(id)); if(!x)return;
+  const x=kalenderAlleTermine().find(e=>e.bereich===bereich && String(e.id)===String(id)); if(!x)return;
   const b=KALENDER_BEREICHE[bereich];
   const text=[`${b.icon} ${b.name}`,x.titel||"Termin",x.datum||"",[x.start,x.ende].filter(Boolean).join(" – "),x.ort?`Ort: ${x.ort}`:"",x.kunde?`Kunde: ${x.kunde}`:"",x.team?`Team: ${x.team}`:"",x.status?`Status: ${x.status}`:"",x.notiz||""].filter(Boolean).join("\n");
-  alert(text); return;
+  alert(text + "\n\nBearbeitung ausschließlich im Projektmanager."); return;
   const bearbeiten=confirm(`${text}\n\nOK = bearbeiten · Abbrechen = schließen`);
   if(!bearbeiten)return;
   aktiverBereich=bereich; aktivesModul="veranstaltungen";
@@ -3310,7 +3346,7 @@ function startKalenderRendern(){
     <div class="start-kal-grid">${wochenkopf}${zellen}</div>
     <div class="start-kal-legende"><span><b class="anfrage"></b>Anfrage</span><span><b class="bestaetigt"></b>Bestätigt</span></div>
     <div class="start-kal-naechste">
-      ${kommende.length?kommende.map(x=>`<button type="button" data-start-kal-open="${x.bereich}|${x.id}"><span>${new Date(`${x.datum}T12:00:00`).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}</span><b>${KALENDER_BEREICHE[x.bereich].icon} ${esc(x.titel||"Termin")}</b><small>${KALENDER_BEREICHE[x.bereich].name}${x.start?` · ${esc(x.start)}`:""}</small><em class="kal-status-chip ${kalenderStatusKlasse(x)}">${kalenderStatus(x)}</em></button>`).join(""):'<small class="start-kal-leer">Keine kommenden Termine</small>'}
+      ${kalenderLadefehler?'<small class="start-kal-leer">Kalender konnte nicht geladen werden: '+esc(kalenderLadefehler)+'</small>':kommende.length?kommende.map(x=>`<button type="button" data-start-kal-open="${x.bereich}|${x.id}"><span>${new Date(`${x.datum}T12:00:00`).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}</span><b>${KALENDER_BEREICHE[x.bereich].icon} ${esc(x.titel||"Termin")}</b><small>${KALENDER_BEREICHE[x.bereich].name}${x.start?` · ${esc(x.start)}`:""}</small><em class="kal-status-chip ${kalenderStatusKlasse(x)}">${kalenderStatus(x)}</em></button>`).join(""):'<small class="start-kal-leer">Keine kommenden Termine</small>'}
     </div>`;
   root.querySelector("[data-start-kal-prev]").onclick=()=>{kalenderMonat=new Date(kalenderMonat.getFullYear(),kalenderMonat.getMonth()-1,1);startKalenderRendern();};
   root.querySelector("[data-start-kal-next]").onclick=()=>{kalenderMonat=new Date(kalenderMonat.getFullYear(),kalenderMonat.getMonth()+1,1);startKalenderRendern();};
@@ -4650,7 +4686,7 @@ $("startKalenderToggle")?.addEventListener("click",()=>{
   panel.classList.toggle("versteckt");
   const offen=!panel.classList.contains("versteckt");
   $("startKalenderToggle")?.setAttribute("aria-expanded", String(offen));
-  if(offen) startKalenderRendern();
+  if(offen) { startKalenderRendern(); zentralenKalenderLaden(); }
 });
 $("startKalenderSchliessen")?.addEventListener("click",()=>{
   $("startKalender")?.classList.add("versteckt");
@@ -5297,3 +5333,7 @@ if ("serviceWorker" in navigator) {
       console.error("Service Worker:", error);
     });
 }
+// Zentrale Kalenderdaten bei Rückkehr in die App aktualisieren.
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)zentralenKalenderLaden();});
+window.addEventListener('focus',()=>zentralenKalenderLaden());
+zentralenKalenderLaden();
