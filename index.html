@@ -53,6 +53,7 @@
       <button type="button" data-rudelbar-nav="finanzen">💰 &nbsp; Finanzen</button>
       <button type="button" data-rudelbar-nav="akademie">🎓 &nbsp; Akademie</button>
       <button type="button" data-rudelbar-nav="projekte">📋 &nbsp; Projekte</button>
+      <button type="button" data-rudelbar-nav="tourplanung">🗺️ &nbsp; Tourplanung</button>
     </nav>
     <div class="rudelbar-side-bottom">Gemeinsam. Überall. Rudelbar.</div>
   </aside>
@@ -75,6 +76,7 @@
       <button class="bereich-karte start-card-finanzen rb-uniform-card" id="finanzenStartBtn" type="button" aria-label="Finanzen öffnen"><span class="rb-card-visual rb-card-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="10" y="19" width="44" height="34" rx="7"/><path d="M19 19V12h26v7M17 30h30M32 25v23M38 30c0-7-12-7-12 0s12 6 12 12-12 7-12 0"/></svg></span><span class="rb-card-heading">FINANZEN</span><small>Finanzmanager</small></button>
       <button class="bereich-karte start-card-akademie rb-uniform-card" id="akademieStartBtn" type="button" aria-label="Akademie öffnen"><span class="rb-card-visual rb-card-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M6 23 32 11l26 12-26 12L6 23ZM16 29v14c9 9 23 9 32 0V29M58 23v21M54 50l4-6 4 6"/></svg></span><span class="rb-card-heading">AKADEMIE</span><small>Lernen · Üben · Prüfungen</small></button>
       <button class="bereich-karte rb-uniform-card" id="projekteStartBtn" type="button" style="display:none" aria-label="Projekte öffnen"><span class="rb-card-visual rb-card-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M7 18h20l6 7h24v26H7zM7 18v-6h20l6 6h17v7M17 35h30M17 43h21"/></svg></span><span class="rb-card-heading">PROJEKTE</span><small>Events & Planung</small></button>
+      <button class="bereich-karte rb-uniform-card" id="tourplanungStartBtn" type="button" style="display:none" aria-label="Tourplanung öffnen"><span class="rb-card-visual rb-card-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M8 13l15-5 18 6 15-5v42l-15 5-18-6-15 5zM23 8v42M41 14v42M29 26l7 7 12-15"/></svg></span><span class="rb-card-heading">TOURPLANUNG</span><small>Orte & Bewertung</small></button>
     </div>
 
     <div class="start-schnellzugriff">
@@ -1016,5 +1018,7 @@
 
 
 <section id="rbProjects" hidden style="display:none;position:fixed;inset:0;z-index:100001;background:#0d1119;flex-direction:column"><header style="display:flex;align-items:center;gap:12px;padding:12px;background:#151d2b;color:white"><button type="button" id="rbProjectsBack" style="padding:10px 14px;border-radius:10px">← Zur Rudelbar</button><strong>🐺 RUDELBAR · PROJEKTE</strong></header><iframe id="rbProjectsFrame" title="Rudelbar Projektmanager" data-src="projektmanager.html?v=20261022b" style="width:100%;flex:1;border:0;min-height:0"></iframe></section>
+<script src="rudelbar-tour-nav.js?v=20261026"></script>
+<section id="rbTour" hidden style="display:none;position:fixed;inset:0;z-index:100002;background:#0d1119;flex-direction:column"><header style="display:flex;align-items:center;gap:12px;padding:12px;background:#151d2b;color:white"><button type="button" id="rbTourBack" style="padding:10px 14px;border-radius:10px">← Zur Rudelbar</button><strong>🐺 RUDELBAR · TOURPLANUNG</strong></header><iframe id="rbTourFrame" title="Rudelbar Tourplanung" data-src="tourplanung.html?v=20261026" style="width:100%;flex:1;border:0;min-height:0"></iframe></section>
 </body>
 </html>

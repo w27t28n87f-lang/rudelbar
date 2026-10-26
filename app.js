@@ -3368,7 +3368,7 @@ const NOTIZEN_BEREICH = "global";
 /* TEAM / EINSATZBEREICHE */
 const TEAM_BEREICH = "system";
 const TEAM_MODUL = "team";
-const RB_MENU_KEYS = ["kneipe","mode","finanzen","akademie","projekte"];
+const RB_MENU_KEYS = ["kneipe","mode","finanzen","akademie","projekte","tourplanung"];
 window.rudelbarMenuAccess = {};
 window.rudelbarMenuCan = function(key){
   if (typeof istRudelbarBesitzer === "function" && istRudelbarBesitzer()) return true;
@@ -3398,7 +3398,7 @@ async function rbMenuLoadTeam(){
   }catch(e){console.warn('Team-Menürechte:',e.message)}
 }
 function rbMenuApply(){
-  for(const [key,selector] of Object.entries({kneipe:'[data-rudelbar-nav="kneipe"],.start-card-kneipe',mode:'[data-rudelbar-nav="mode"],.start-card-mode',finanzen:'[data-rudelbar-nav="finanzen"],#finanzenStartBtn',akademie:'[data-rudelbar-nav="akademie"],#akademieStartBtn',projekte:'[data-rudelbar-nav="projekte"],#projekteStartBtn'})){
+  for(const [key,selector] of Object.entries({kneipe:'[data-rudelbar-nav="kneipe"],.start-card-kneipe',mode:'[data-rudelbar-nav="mode"],.start-card-mode',finanzen:'[data-rudelbar-nav="finanzen"],#finanzenStartBtn',akademie:'[data-rudelbar-nav="akademie"],#akademieStartBtn',projekte:'[data-rudelbar-nav="projekte"],#projekteStartBtn',tourplanung:'[data-rudelbar-nav="tourplanung"],#tourplanungStartBtn'})){
     document.querySelectorAll(selector).forEach(el=>{const yes=window.rudelbarMenuCan(key);el.hidden=!yes;el.style.display=yes?'':'none';});
   }
 }
