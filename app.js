@@ -36,7 +36,10 @@ let getraenke = laden(GETRAENKE_KEY, [
 
 let verkaeufe = laden(VERKAEUFE_KEY, []);
 let abschluesse = laden(ABSCHLUSS_KEY, []);
-let syncQueue = laden(SYNC_KEY, []);
+let syncQueue = laden(SYNC_KEY, []).filter(job =>
+  !(job.table === "moduldaten" && job.payload?.bereich === "global" && job.payload?.modul === "notizen")
+);
+localStorage.setItem(SYNC_KEY, JSON.stringify(syncQueue));
 
 let warenkorb = {};
 let editID = null;
@@ -303,6 +306,9 @@ async function moduldatenErstSynchronisieren(remoteRows) {
 
   lokale.forEach(({ bereich, modul, eintrag }) => {
     const remote = remoteMap.get(eintrag.id);
+
+    // Notizen sind serverseitig maßgeblich: keine alten lokalen Kopien hochladen.
+    if (bereich === "global" && modul === "notizen") return;
 
     if (!remote) {
       setze(bereich, modul, eintrag);
@@ -1370,7 +1376,10 @@ async function remoteNeuLaden() {
       fehler.push(`Module${code}`);
       console.warn("Moduldaten neu laden:", m.error);
     } else {
-      remoteModuldatenLokalSpeichern(remoteMitWarteschlangeMischen("moduldaten", m.data || []));
+      const moduleRows = remoteMitWarteschlangeMischen("moduldaten", m.data || [])
+        .filter(row => !(row.bereich === "global" && row.modul === "notizen"));
+      moduleRows.push(...(m.data || []).filter(row => row.bereich === "global" && row.modul === "notizen"));
+      remoteModuldatenLokalSpeichern(moduleRows);
       etwasGeladen = true;
     }
 
@@ -3649,6 +3658,8 @@ async function teamMitgliedLoeschen(id){
 }
 
 const NOTIZEN_MODUL = "notizen";
+// Einmaliger Schutz gegen Altlasten: Startseiten-Notizen nur aus Supabase laden.
+// Beim ersten Online-Abgleich ersetzt der Server die lokale Sammlung.
 let notizenFilter = "offen";
 
 function notizenKey(){ return modulKey(NOTIZEN_BEREICH, NOTIZEN_MODUL); }

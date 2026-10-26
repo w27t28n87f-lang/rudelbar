@@ -1,10 +1,10 @@
-const CACHE_NAME = "rudelbar-2026-10-22-projekte-v2";
+const CACHE_NAME = "rudelbar-2026-10-26-notizen2";
 
 const APP_SHELL = [
   "./",
   "./index.html",
   "./style.css?v=161",
-  "./app.js?v=161",
+  "./app.js?v=20261026-notizen2",
   "./rudelbar-responsive.css?v=161",
   "./rudelbar-akademie.js?v=161",
   "./manifest.json?v=161",
