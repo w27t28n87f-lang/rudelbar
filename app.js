@@ -3574,7 +3574,7 @@ function teamRendern(){
       </div>
       <div class="team-bereich-label">🔐 Menüzugriff freigeben</div>
       <div class="team-bereiche">
-        ${[["kneipe","🍺 Mobile Kneipe"],["mode","👕 Mode"],["finanzen","💰 Finanzen"],["akademie","🎓 Akademie"],["projekte","📋 Projekte"]].map(([k,t])=>`<label><input type="checkbox" data-menu-recht="${k}" ${istRudelbarBesitzer({email:m.email})?'checked disabled':menurechte.includes(k)?'checked':''}> <span>${t}</span></label>`).join("")}
+        ${[["kneipe","🍺 Mobile Kneipe"],["mode","👕 Mode"],["finanzen","💰 Finanzen"],["akademie","🎓 Akademie"],["projekte","📋 Projekte"],["tourplanung","🗺️ Tourplanung"]].map(([k,t])=>`<label><input type="checkbox" data-menu-recht="${k}" ${istRudelbarBesitzer({email:m.email})?'checked disabled':menurechte.includes(k)?'checked':''}> <span>${t}</span></label>`).join("")}
       </div>
       <div class="team-bereich-label">🎓 Akademie – Lernfelder freigeben</div>
       <div class="team-bereiche akademie-rechte">
