@@ -28,7 +28,24 @@ function updateVat(){const choice=document.getElementById('vatSelect').value;doc
 document.getElementById('vatSelect').addEventListener('change',updateVat);document.getElementById('vatCustom').addEventListener('input',updateVat);document.getElementById('amount').addEventListener('input',updateVat);
 function cancelEdit(){editingId=null;document.getElementById('receiptFiles').value='';document.getElementById('receiptAttachments').textContent='';document.getElementById('entryForm').reset();document.getElementById('saveBooking').textContent='Buchung speichern';document.getElementById('date').value=new Date().toLocaleDateString('en-CA');document.getElementById('vatSelect').value='0';document.getElementById('vatCustom').value='0';updateVat();}
 function editItem(id){const x=db.items.find(y=>y.id===id);if(!x)return;if(isYearClosed(x.date)){alert('Dieses Geschäftsjahr ist abgeschlossen. Änderungen sind gesperrt.');return}editingId=id;document.getElementById('receiptAttachments').innerHTML=(x.attachments||[]).map(a=>'<div>📎 '+esc(a.name)+'</div>').join('');for(const k of ['type','date','amount','category','event','payment','description'])document.getElementById(k).value=x[k]??'';document.getElementById('receipt').value=x.receipt||'no';document.getElementById('receiptRef').value=x.receiptRef||'';const rate=Number(x.vat)||0;document.getElementById('vatSelect').value=[0,7,19].includes(rate)?String(rate):'custom';document.getElementById('vatCustom').value=String(rate);updateVat();document.getElementById('saveBooking').textContent='Änderungen speichern';show('entry')}
-function removeItem(id){const x=db.items.find(y=>y.id===id);if(!x||isYearClosed(x.date)||!confirm('Buchung stornieren? Der ursprüngliche Datensatz bleibt im Änderungsprotokoll des Backups erhalten.'))return;db.audit??=[];db.audit.push({action:'storno',at:new Date().toISOString(),before:structuredClone(x)});db.items=db.items.filter(y=>y.id!==id);save()};
+async function removeItem(id){
+ const x=db.items.find(y=>y.id===id);
+ if(!x)return;
+ if(isYearClosed(x.date))return alert('Dieses Geschäftsjahr ist abgeschlossen.');
+ if(!cloudReady||!cloudAllowed())return alert('Stornierung nur mit aktiver Supabase-Verbindung möglich. Bitte Verbindung prüfen.');
+ if(cloudSaving)return alert('Ein Speichervorgang läuft noch. Bitte kurz warten und erneut versuchen.');
+ if(!confirm('Buchung stornieren? Die ursprüngliche Buchung bleibt im Änderungsprotokoll erhalten.'))return;
+ clearTimeout(cloudTimer);
+ const previous=structuredClone(db);
+ db.audit??=[];
+ db.audit.push({action:'storno',id:x.id,at:new Date().toISOString(),before:structuredClone(x)});
+ db.items=db.items.filter(y=>y.id!==id);
+ render();
+ const success=await cloudSave();
+ if(!success){db=previous;localStorage.setItem(key,JSON.stringify(db));render();alert('Stornierung nicht gespeichert. Die Buchung wurde wiederhergestellt. Bitte die Synchronisierung prüfen.');return}
+ localStorage.setItem(key,JSON.stringify(db));
+ alert('Buchung erfolgreich storniert und synchronisiert.');
+}
 updateVat();document.getElementById('entryForm').addEventListener('submit',e=>{e.preventDefault();const get=id=>document.getElementById(id).value;const amount=Number(get('amount'));if(!Number.isFinite(amount)||amount<=0)return alert('Bitte einen gültigen Betrag eingeben.');const vat=currentVat();if(!Number.isFinite(vat)||vat<0||vat>100)return alert('Bitte einen gültigen Steuersatz zwischen 0 und 100 % eingeben.');const old=editingId?db.items.find(x=>x.id===editingId):null;if(isYearClosed(get('date'))||(old&&isYearClosed(old.date))){alert('Geschäftsjahr abgeschlossen. Keine Änderung möglich.');return}const item={attachments:old?.attachments||[],id:old?.id||crypto.randomUUID(),type:get('type'),date:get('date'),amount:Math.round(amount*100)/100,category:get('category'),event:get('event'),payment:get('payment'),vat:vat,description:get('description'),receipt:get('receipt'),receiptRef:get('receiptRef')};db.audit??=[];if(old){db.audit.push({action:'bearbeitet',at:new Date().toISOString(),before:structuredClone(old),after:structuredClone(item)});db.items[db.items.indexOf(old)]=item}else{db.items.push(item);db.audit.push({action:'angelegt',at:new Date().toISOString(),after:structuredClone(item)})}save();const files=[...document.getElementById('receiptFiles').files];if(files.length)awaitUploadReceipts(item.id,files);cancelEdit();show('bookings')});
 document.getElementById('reserveRate').addEventListener('change',e=>{db.rate=Math.min(100,Math.max(0,Number(e.target.value)||0));save()});document.getElementById('reserveBase').addEventListener('change',e=>{db.base=e.target.value;save()});
 function download(name,body,type){const a=document.createElement('a'),u=URL.createObjectURL(new Blob([body],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}function backup(){download('rudelbar-backup-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(db,null,2),'application/json')};function exportCSV(){const fields=['date','type','category','description','event','payment','amount','vat','receipt','receiptRef'];const q=x=>'"'+String(x??'').replaceAll('"','""')+'"';download('rudelbar-buchungen.csv','\ufeff'+[fields.join(';'),...db.items.map(x=>fields.map(f=>q(f==='amount'?x[f].toFixed(2).replace('.',','):x[f])).join(';'))].join('\r\n'),'text/csv;charset=utf-8')};
@@ -36,7 +53,7 @@ document.getElementById('restore').addEventListener('change',async e=>{try{const
 // Gemeinsame Finanzdaten: nur angemeldete Benutzer mit Finanzrecht.
 const cloudStatus=document.createElement('div');cloudStatus.id='cloudStatus';cloudStatus.style.cssText='padding:10px 18px;background:#30271b;color:#ffe5b2;font-size:13px';cloudStatus.textContent='Finanzdaten: Verbindung wird geprüft …';document.querySelector('header').after(cloudStatus);
 const cloudClient=window.parent?.rudelbarFinanceClient;
-let cloudReady=false, cloudSaving=false, cloudTimer=null, cloudRevision=0;
+let cloudReady=false, cloudSaving=false, cloudSavePending=false, cloudTimer=null, cloudRevision=0;
 function cloudMessage(message){cloudStatus.textContent=message}
 let cloudVerifiedUser=null;
 function cloudAllowed(){return !!cloudVerifiedUser}
@@ -82,15 +99,23 @@ async function cloudLoad(){
 }
 function scheduleCloudSave(){if(!cloudReady)return;clearTimeout(cloudTimer);cloudTimer=setTimeout(cloudSave,350)}
 async function cloudSave(){
- if(!cloudReady||cloudSaving||!cloudAllowed())return;
+ if(!cloudReady||!cloudAllowed())return false;
+ if(cloudSaving){cloudSavePending=true;return false}
  cloudSaving=true;cloudMessage('Finanzdaten werden gespeichert …');
  const snapshot=JSON.stringify(db);
- const {data,error}=await cloudClient.rpc('rudelbar_save_finances',{expected_revision:cloudRevision,new_data:JSON.parse(snapshot)});
- cloudSaving=false;
- if(error){cloudMessage('⚠ Nicht synchronisiert: '+error.message+' · Lokale Sicherung vorhanden.');return}
- if(data===null){cloudReady=false;cloudMessage('⚠ Zwischenzeitliche Änderung auf anderem Gerät. Bitte Seite neu laden und Änderungen abgleichen.');return}
- cloudRevision=data;cloudMessage('✓ Änderungen gemeinsam gespeichert');
- if(JSON.stringify(db)!==snapshot)scheduleCloudSave();
+ let success=false;
+ try{
+  const {data,error}=await cloudClient.rpc('rudelbar_save_finances',{expected_revision:cloudRevision,new_data:JSON.parse(snapshot)});
+  if(error){cloudMessage('⚠ Nicht synchronisiert: '+error.message+' · Lokale Sicherung vorhanden.');return false}
+  if(data===null||!Number.isFinite(Number(data))){cloudReady=false;cloudMessage('⚠ Versionskonflikt. Bitte Seite neu laden und Änderungen abgleichen.');return false}
+  cloudRevision=Number(data);success=true;
+  cloudMessage('✓ Änderungen gemeinsam gespeichert');
+  return true;
+ }catch(error){cloudMessage('⚠ Speicherfehler: '+(error?.message||String(error)));return false}
+ finally{
+  cloudSaving=false;
+  if(success&&(cloudSavePending||JSON.stringify(db)!==snapshot)){cloudSavePending=false;scheduleCloudSave()}
+ }
 }
 window.addEventListener('focus',()=>{if(cloudReady&&!cloudSaving)cloudLoad()});
 setTimeout(cloudLoad,300);
